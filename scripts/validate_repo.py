@@ -2,6 +2,8 @@
 """Validate skill versions, case files, and source-registry defaults offline."""
 import json, re, sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from open_ielts_strategy.composition import resolve_dependencies
 ROOT=Path(__file__).resolve().parents[1]
 SEMVER=re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
@@ -32,6 +34,10 @@ def main():
             data=json.loads(cases.read_text())
             ids=[c.get("id") for c in data]
             if not data or len(ids)!=len(set(ids)): errors.append(f"{sid}: empty or duplicate eval IDs")
+    try:
+        resolve_dependencies(list(names), lock.get("skills", []))
+    except ValueError as exc:
+        errors.append(f"skills.lock dependency graph: {exc}")
     source_ids=set()
     for src in registry.get("sources",[]):
         sid=src.get("id")
