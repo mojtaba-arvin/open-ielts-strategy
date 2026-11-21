@@ -1,0 +1,46 @@
+{
+  "registry_version": 1,
+  "policy": "metadata-only; public_content_allowed defaults to false",
+  "sources": [
+    {
+      "id": "all-ears-english-ielts",
+      "name": "All Ears English IELTS category",
+      "source_type": "podcast_and_website",
+      "source_url": "https://www.allearsenglish.com/category/ielts/",
+      "source_timestamp": null,
+      "last_verified_at": null,
+      "rights_holder": "All Ears English LLC and/or relevant licensors",
+      "legal_status": "under_review",
+      "public_content_allowed": false,
+      "allowed_uses": [],
+      "prohibited_or_unconfirmed_uses": ["transcript redistribution", "audio redistribution", "substantial quotation", "commercial reuse", "derivative publication"],
+      "permission_record": {"private_evidence_ref":"","reviewer":"","reviewed_at":"","notes":"Metadata only. No transcript, audio, or copied page content is stored. Reassess current terms and applicable law before any use."},
+      "attribution_required": true,
+      "commercial_use": "not_cleared",
+      "redistribution": "not_cleared",
+      "modification": "not_cleared",
+      "territories": [],
+      "expiry": null
+    },
+    {
+      "id": "ielts-official",
+      "name": "IELTS official website and materials",
+      "source_type": "official_website_and_test_materials",
+      "source_url": "https://ielts.org/",
+      "source_timestamp": null,
+      "last_verified_at": null,
+      "rights_holder": "Relevant IELTS Partners and third-party licensors",
+      "legal_status": "under_review",
+      "public_content_allowed": false,
+      "allowed_uses": [],
+      "prohibited_or_unconfirmed_uses": ["test material redistribution", "answer key redistribution", "commercial reuse", "derivative publication"],
+      "permission_record": {"private_evidence_ref":"","reviewer":"","reviewed_at":"","notes":"Metadata only. No official IELTS content is included. Check current copyright and trademark notices for each proposed use."},
+      "attribution_required": true,
+      "commercial_use": "not_cleared",
+      "redistribution": "not_cleared",
+      "modification": "not_cleared",
+      "territories": [],
+      "expiry": null
+    }
+  ]
+}

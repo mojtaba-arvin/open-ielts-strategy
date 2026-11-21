@@ -1,0 +1,19 @@
+name: Nightly validation
+on:
+  schedule:
+    - cron: "23 4 * * 1-5"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python scripts/validate_repo.py
+      - run: python scripts/evaluate.py --skill ielts-writing-feedback
+      - run: python scripts/check_source_drift.py
+      - run: python -m unittest discover -s tests -v
