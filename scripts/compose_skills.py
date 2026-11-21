@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Resolve explicitly selected skills; this is not an automatic semantic router."""
-import argparse, json
+import argparse, json, sys
 from pathlib import Path
-from open_ielts_strategy.composition import resolve_dependencies
-
 ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from open_ielts_strategy.composition import resolve_dependencies
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
