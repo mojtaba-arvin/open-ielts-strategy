@@ -15,10 +15,17 @@ Python 3.11+:
 ```bash
 python scripts/validate_repo.py
 python scripts/evaluate.py --skill ielts-writing-feedback
+python scripts/check_source_drift.py
 python -m unittest discover -s tests -v
 ```
 
-These checks are deterministic, offline, and do not call an LLM.
+These checks are deterministic, offline, and do not call an LLM. To compare externally generated pass/fail results, supply paired JSON arrays with exactly the same case IDs:
+
+```bash
+python scripts/evaluate.py --skill ielts-writing-feedback --without-skill baseline.json --with-skill enabled.json
+```
+
+The comparison reports resolution rates and skill lift; it does not generate model outputs or judge them.
 
 ## Principles
 
