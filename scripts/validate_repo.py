@@ -38,7 +38,11 @@ def main():
         if not sid or sid in source_ids: errors.append(f"missing/duplicate source id: {sid}"); continue
         source_ids.add(sid)
         if src.get("legal_status") not in {"pending","cleared","licensed","restricted","blocked","expired","under_review"}: errors.append(f"{sid}: invalid legal_status")
-        if src.get("public_content_allowed") is not False: errors.append(f"{sid}: public content must default to false")
+        if src.get("public_content_allowed") not in (False, True): errors.append(f"{sid}: public_content_allowed must be boolean")
+        if src.get("public_content_allowed") is True:
+            record=src.get("permission_record") or {}
+            if src.get("legal_status") not in {"cleared","licensed"} or not record.get("private_evidence_ref") or not src.get("allowed_uses"):
+                errors.append(f"{sid}: public content requires cleared/licensed status, private evidence, and explicit allowed_uses")
     if errors:
         print("VALIDATION FAILED\n"+"\n".join("- "+e for e in errors)); return 1
     print(f"VALIDATION PASSED: {len(names)} skill(s), {len(source_ids)} source record(s)"); return 0
