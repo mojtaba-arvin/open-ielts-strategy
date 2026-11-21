@@ -14,6 +14,7 @@ def main():
         stamp=source.get("last_verified_at")
         if not stamp: issues.append((source["id"],"missing last_verified_at",source.get("legal_status"))); continue
         verified=datetime.fromisoformat(stamp.replace("Z","+00:00"))
+        if verified.tzinfo is None: verified=verified.replace(tzinfo=timezone.utc)
         age=(now-verified).days
         if age>a.max_age_days: issues.append((source["id"],f"verification is {age} days old",source.get("legal_status")))
     if not issues: print("SOURCE METADATA FRESH"); return 0
