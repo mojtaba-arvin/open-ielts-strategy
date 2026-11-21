@@ -1,0 +1,13 @@
+{
+  "lockfile_version": 1,
+  "skills": [
+    {
+      "name": "ielts-writing-feedback",
+      "version": "0.1.0",
+      "path": "skills/ielts-writing-feedback/SKILL.md",
+      "evals": "skills/ielts-writing-feedback/evals/cases.json",
+      "content_origin": "original",
+      "source_ids": []
+    }
+  ]
+}
