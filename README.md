@@ -16,6 +16,7 @@ Python 3.11+:
 python scripts/validate_repo.py
 python scripts/evaluate.py --skill ielts-writing-feedback
 python scripts/check_source_drift.py
+python scripts/compose_skills.py --select ielts-writing-feedback
 python -m unittest discover -s tests -v
 ```
 
