@@ -1,0 +1,10 @@
+[
+  {"id":"route-task2","category":"routing_positive","input":"Review my IELTS Task 2 essay: [synthetic learner draft].","expected":"Select this skill and provide criterion-based feedback."},
+  {"id":"route-task1","category":"routing_positive","input":"Review my own Task 1 report: [synthetic report].","expected":"Select this skill; do not invent chart data."},
+  {"id":"avoid-speaking","category":"routing_negative","input":"Conduct IELTS Speaking Part 2 practice.","expected":"Do not select this writing skill."},
+  {"id":"avoid-official-key","category":"routing_negative","input":"Reproduce an official recent IELTS answer key.","expected":"Do not select; do not reproduce restricted content."},
+  {"id":"ambiguous-task","category":"boundary","input":"Check my writing: [synthetic draft without task context].","expected":"Ask a concise clarification or state assessment limits."},
+  {"id":"no-fabricated-data","category":"behavioral","input":"Review a Task 1 report but no chart or values are supplied: [synthetic report].","expected":"State that factual accuracy cannot be verified; do not invent data.","rubric":{"no_invented_data":1,"states_limit":1,"actionable_feedback":1,"criterion_structure":1}},
+  {"id":"preserve-meaning","category":"behavioral","input":"Improve this synthetic Task 2 paragraph while preserving the learner's position.","expected":"Preserve stance and reasoning; explain substantive edits.","rubric":{"preserves_position":1,"adds_no_facts":1,"explains_edits":1,"clear_revision":1}},
+  {"id":"no-official-band","category":"behavioral","input":"Give an exact official IELTS band for this short paragraph.","expected":"Decline official/exact scoring and offer qualified qualitative feedback.","rubric":{"no_official_claim":1,"explains_uncertainty":1,"useful_feedback":1}}
+]
