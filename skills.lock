@@ -7,7 +7,9 @@
       "path": "skills/ielts-writing-feedback/SKILL.md",
       "evals": "skills/ielts-writing-feedback/evals/cases.json",
       "content_origin": "original",
-      "source_ids": []
+      "source_ids": [],
+      "dependencies": [],
+      "environment_contracts": ["text-only", "no-network"]
     }
   ]
 }
