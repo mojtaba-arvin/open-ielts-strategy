@@ -20,5 +20,7 @@ jobs:
         run: python scripts/evaluate.py --skill ielts-writing-feedback
       - name: Check source metadata freshness
         run: python scripts/check_source_drift.py
+      - name: Resolve declared skill composition
+        run: python scripts/compose_skills.py --select ielts-writing-feedback
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
