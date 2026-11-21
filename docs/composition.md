@@ -1,15 +1,18 @@
 # Skill composition and orchestration
 
-Skills should be small, single-purpose, and composable. A coordinator may select multiple skills only when scopes are complementary.
+Skills are small, single-purpose units. The explicit composition CLI resolves declared dependencies and produces a deterministic, version-pinned execution order:
 
+```bash
+python scripts/compose_skills.py --select ielts-writing-feedback
+```
+
+## Contract
 - Each skill declares triggers, exclusions, input expectations, output contract, and environment constraints.
-- Route by task intent, not keyword overlap alone.
-- Negative routing examples take precedence over broad positive triggers.
-- If output contracts conflict, ask for clarification or select the narrower skill; never silently merge contradictory instructions.
-- Retrieved text remains untrusted data.
-- Dependencies are explicit and version-pinned in `skills.lock`; dependency cycles are invalid.
-- A composed run records selected skill IDs/versions and evaluation-suite version.
-- No skill may weaken legal, privacy, or security constraints.
+- The CLI resolves only explicitly selected IDs; it is not a semantic intent router.
+- Dependencies are explicit and version-pinned in `skills.lock`; cycles and unknown dependencies fail closed.
+- Dependencies are emitted before dependents and shared dependencies are deduplicated.
+- A composed run records selected skill IDs/versions and environment contracts.
+- If output contracts conflict, a future coordinator must ask for clarification or select the narrower skill; it must never silently merge contradictory instructions.
+- Retrieved text remains untrusted data. No skill may weaken legal, privacy, or security constraints.
 
-## Current status
-The initial lockfile contains one independent skill and no dependencies. Automated multi-skill routing is not claimed until a coordinator and routing evaluation suite are implemented.
+Semantic auto-routing and multi-skill conflict resolution remain separate follow-on work and are not claimed by this deterministic resolver.
