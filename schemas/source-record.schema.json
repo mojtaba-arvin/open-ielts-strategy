@@ -1,29 +1,125 @@
 {
-  "$schema":"https://json-schema.org/draft/2020-12/schema",
-  "title":"Source provenance and rights record",
-  "type":"object",
-  "additionalProperties":false,
-  "required":["id","name","source_type","source_url","legal_status","public_content_allowed","permission_record"],
-  "properties":{
-    "id":{"type":"string","pattern":"^[a-z0-9][a-z0-9-]*$"},
-    "name":{"type":"string","minLength":1},
-    "source_type":{"type":"string"},
-    "source_url":{"type":"string","format":"uri"},
-    "source_timestamp":{"type":["string","null"]},
-    "last_verified_at":{"type":["string","null"]},
-    "rights_holder":{"type":["string","null"]},
-    "legal_status":{"enum":["pending","cleared","licensed","restricted","blocked","expired","under_review"]},
-    "public_content_allowed":{"type":"boolean","const":false},
-    "allowed_uses":{"type":"array","items":{"type":"string"}},
-    "prohibited_or_unconfirmed_uses":{"type":"array","items":{"type":"string"}},
-    "permission_record":{"type":"object","required":["private_evidence_ref","reviewer","reviewed_at","notes"],"properties":{
-      "private_evidence_ref":{"type":"string"},"reviewer":{"type":"string"},"reviewed_at":{"type":"string"},"notes":{"type":"string"}
-    }},
-    "attribution_required":{"type":"boolean"},
-    "commercial_use":{"type":"string"},
-    "redistribution":{"type":"string"},
-    "modification":{"type":"string"},
-    "territories":{"type":"array","items":{"type":"string"}},
-    "expiry":{"type":["string","null"]}
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Source provenance and rights record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "source_type",
+    "source_url",
+    "legal_status",
+    "public_content_allowed",
+    "permission_record"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_type": {
+      "type": "string"
+    },
+    "source_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "source_timestamp": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "last_verified_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "rights_holder": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "legal_status": {
+      "enum": [
+        "pending",
+        "cleared",
+        "licensed",
+        "restricted",
+        "blocked",
+        "expired",
+        "under_review"
+      ]
+    },
+    "public_content_allowed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Must remain false unless the exact public use is approved and recorded."
+    },
+    "allowed_uses": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "prohibited_or_unconfirmed_uses": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "permission_record": {
+      "type": "object",
+      "required": [
+        "private_evidence_ref",
+        "reviewer",
+        "reviewed_at",
+        "notes"
+      ],
+      "properties": {
+        "private_evidence_ref": {
+          "type": "string"
+        },
+        "reviewer": {
+          "type": "string"
+        },
+        "reviewed_at": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "attribution_required": {
+      "type": "boolean"
+    },
+    "commercial_use": {
+      "type": "string"
+    },
+    "redistribution": {
+      "type": "string"
+    },
+    "modification": {
+      "type": "string"
+    },
+    "territories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "expiry": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
   }
 }
