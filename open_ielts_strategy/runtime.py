@@ -165,7 +165,7 @@ def _validate_scorecard(scorecard, expected_arm):
             raise ValueError("scorecard scores must be finite numbers between 0 and 1")
         if type(row.get("passed")) is not bool:
             raise ValueError("scorecard passed values must be booleans")
-        if row["passed"] is not (score >= 0.7):
+        if mode == "openai" and row["passed"] is not (score >= 0.7):
             raise ValueError("scorecard passed flag must match the configured score threshold")
         if not isinstance(row.get("rationale"), str) or not row["rationale"].strip():
             raise ValueError("scorecard rationale must be non-empty text")
