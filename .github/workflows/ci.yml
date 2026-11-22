@@ -24,6 +24,8 @@ jobs:
           cache: pip
       - name: Validate repository metadata
         run: python scripts/validate_repo.py
+      - name: Verify package build/install contract
+        run: python -m pip install --no-deps .
       - name: Validate evaluation cases
         run: |
           python scripts/evaluate.py --skill ielts-writing-feedback

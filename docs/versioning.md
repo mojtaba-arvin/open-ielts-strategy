@@ -12,3 +12,8 @@ Track source last-verified timestamps, skill/eval changes, failing cases, routin
 
 ## Rollback
 Keep the last known-good skill version and evaluation suite. Revert skill and lockfile together. If rights status changes, stop using affected content and remove it from future releases; investigate repository history and distribution obligations with counsel.
+
+
+## Python dependency contract
+
+The runtime package intentionally has no third-party runtime dependencies. The project supports Python 3.11 and later. The PEP 517 build backend is setuptools constrained to the supported major-version window (`>=68,<82`) so a future incompatible major release cannot silently alter the build. CI installs the package with `--no-deps` to verify packaging without adding runtime packages. GitHub Actions are pinned to full commit SHAs, and Agent Skill versions remain explicit SemVer entries in `skills.lock`.
