@@ -15,4 +15,5 @@ def resolve_conflicts(candidates):
  for c in candidates:
   if not required.issubset(c): raise ValueError("candidate missing conflict metadata")
   if not 0<=float(c["confidence"])<=1: raise ValueError("confidence must be between 0 and 1")
- return sorted(candidates,key=lambda c:(-int(c["priority"]),-float(c["confidence"]),-str(c["validated_at"]),str(c["skill_id"])))[0]
+ top=max((int(c["priority"]),float(c["confidence"]),str(c["validated_at"])) for c in candidates)
+ return min((c for c in candidates if (int(c["priority"]),float(c["confidence"]),str(c["validated_at"]))==top),key=lambda c:str(c["skill_id"]))
