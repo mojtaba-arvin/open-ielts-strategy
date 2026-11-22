@@ -2,7 +2,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main, "implementation/**"]
+    branches: [main]
   workflow_dispatch:
   schedule:
     - cron: "31 4 * * 1"
