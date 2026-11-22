@@ -2,11 +2,11 @@
 
 An evaluation-first collection of original Agent Skills for IELTS preparation. The project prioritizes task routing, reproducible evaluation, source provenance, and conservative content-rights handling.
 
-> **Content policy:** no third-party transcripts, audio/video, official IELTS questions, answer keys, or substantial excerpts are published here by default. Initial examples are original or synthetic. A public URL is provenance, not permission.
+> **Content policy:** no third-party transcripts, audio/video, official IELTS questions, answer keys, or substantial excerpts are published here by default. Examples are original or synthetic. A public URL is provenance, not permission.
 
 ## Status
 
-Repository foundation and first original writing-feedback skill. No third-party source content is bundled.
+Repository foundation with original Writing-feedback and Speaking-transcript-feedback skills. Speaking feedback is text-only and does not assess pronunciation or audio delivery. No third-party source content is bundled.
 
 ## Quick start
 
@@ -15,8 +15,10 @@ Python 3.11+:
 ```bash
 python scripts/validate_repo.py
 python scripts/evaluate.py --skill ielts-writing-feedback
+python scripts/evaluate.py --skill ielts-speaking-transcript-feedback
 python scripts/check_source_drift.py
 python scripts/compose_skills.py --select ielts-writing-feedback
+python scripts/compose_skills.py --select ielts-speaking-transcript-feedback
 python -m unittest discover -s tests -v
 ```
 
@@ -26,7 +28,7 @@ These checks are deterministic, offline, and do not call an LLM. To compare exte
 python scripts/evaluate.py --skill ielts-writing-feedback --without-skill baseline.json --with-skill enabled.json
 ```
 
-The comparison reports resolution rates and skill lift; it does not generate model outputs or judge them.
+The comparison reports resolution rates and skill lift; it does not generate model outputs or judge them. External result files are not authenticated by schema validation.
 
 ## Principles
 
