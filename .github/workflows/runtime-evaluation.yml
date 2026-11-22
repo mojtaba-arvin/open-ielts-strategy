@@ -26,7 +26,6 @@ jobs:
     timeout-minutes: 10
     outputs:
       skill_matrix: ${{ steps.matrix.outputs.skills }}
-    outputs:
       mode: ${{ steps.mode.outputs.value }}
       arm_budget: ${{ steps.mode.outputs.budget }}
     steps:
