@@ -25,3 +25,8 @@ Default repository checks do not call a model. The judge is a separate, opt-in e
 Keep live runs opt-in and budget-bounded. Do not send third-party IELTS questions, official test material, candidate answers belonging to others, copyrighted passages, recordings, transcripts, paid-preparation content, or confidential learner data to a model. Use only independently authored synthetic inputs or learner-provided material for which the user has authority to request processing. Do not add source content to the repository. Never claim legal clearance, official band prediction, guaranteed score improvement, or examiner equivalence from judge output.
 
 For any release-blocking educational conclusion, require qualified human review and independently documented evidence. Human calibration remains a separate gate, not something synthetic fixtures can replace.
+
+
+## Judge-to-judge disagreement
+
+The optional pure-Python helper `open_ielts_strategy.judge_analysis.analyze_judge_disagreement` compares two or more independently produced judge scorecards. It intersects item IDs, reports exact agreement, mean absolute score difference, and maximum difference separately for each rubric dimension and model pair, and rejects malformed/duplicate records. It does not call a model, infer which judge is correct, or treat agreement as accuracy. Use it only with scorecards produced under documented model and prompt versions; it is descriptive analysis, not human calibration.
