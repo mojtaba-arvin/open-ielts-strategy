@@ -14,10 +14,15 @@ on:
         type: number
         default: 5
       calibration_issue_number:
-        description: Issue or PR number containing owner-submitted ratings
+        description: Issue or PR number containing trusted human ratings
         required: true
         type: number
         default: 5
+      trusted_rater:
+        description: Exact GitHub login of the trusted human rater (owner, member, or collaborator)
+        required: false
+        type: string
+        default: ""
   schedule:
     - cron: "41 5 1 * *"
 permissions:
@@ -34,6 +39,7 @@ jobs:
       live: ${{ steps.gate.outputs.live }}
       budget: ${{ steps.gate.outputs.budget }}
       issue_number: ${{ steps.gate.outputs.issue_number }}
+      trusted_rater: ${{ steps.gate.outputs.trusted_rater }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
@@ -49,7 +55,9 @@ jobs:
             [[ -n "$JUDGE_API_KEY" ]] || { echo "JUDGE_API_KEY is required for live judge"; exit 1; }
             b="${{ inputs.budget }}"; [[ "$b" =~ ^[1-9][0-9]*$ ]] && (( b <= 20 )) || { echo "budget must be between 1 and 20"; exit 1; }
             issue="${{ inputs.calibration_issue_number }}"; [[ "$issue" =~ ^[1-9][0-9]*$ ]] || { echo "calibration_issue_number must be positive"; exit 1; }
-            echo "live=true" >> "$GITHUB_OUTPUT"; echo "budget=$b" >> "$GITHUB_OUTPUT"; echo "issue_number=$issue" >> "$GITHUB_OUTPUT"
+            rater="${{ inputs.trusted_rater }}"
+            [[ "$rater" =~ ^[A-Za-z0-9-]+$ ]] || { echo "trusted_rater must be an explicit GitHub login"; exit 1; }
+            echo "live=true" >> "$GITHUB_OUTPUT"; echo "budget=$b" >> "$GITHUB_OUTPUT"; echo "issue_number=$issue" >> "$GITHUB_OUTPUT"; echo "trusted_rater=$rater" >> "$GITHUB_OUTPUT"
           else
             echo "live=false" >> "$GITHUB_OUTPUT"; echo "budget=0" >> "$GITHUB_OUTPUT"
           fi
@@ -71,7 +79,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [[ "${{ needs.calibration_validation.outputs.live }}" == "true" ]]; then
-            python scripts/judge_calibrate.py --budget "${{ needs.calibration_validation.outputs.budget }}" --issue-number "${{ needs.calibration_validation.outputs.issue_number }}" --trusted-rater "${{ github.repository_owner }}" --output judge-scorecard.json
+            python scripts/judge_calibrate.py --budget "${{ needs.calibration_validation.outputs.budget }}" --issue-number "${{ needs.calibration_validation.outputs.issue_number }}" --trusted-rater "${{ needs.calibration_validation.outputs.trusted_rater }}" --output judge-scorecard.json
           else
             python scripts/judge_calibrate.py --dry-run --output judge-scorecard.json
           fi
