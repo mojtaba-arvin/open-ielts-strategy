@@ -14,6 +14,14 @@ DIMENSIONS = (
 
 
 def judge(essay, task, rubric, api_key=None):
+    if not isinstance(essay, str) or not essay.strip():
+        raise ValueError("essay must be non-empty text")
+    if not isinstance(task, str) or not task.strip():
+        raise ValueError("task must be non-empty text")
+    if not isinstance(rubric, dict):
+        raise ValueError("rubric must be an object")
+    if any(not isinstance(key, str) or not key.strip() for key in rubric):
+        raise ValueError("rubric keys must be non-empty text")
     key = api_key or os.getenv("JUDGE_API_KEY")
     if not key:
         raise RuntimeError("JUDGE_API_KEY is required for live judging")

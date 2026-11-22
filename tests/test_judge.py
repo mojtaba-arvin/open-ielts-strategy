@@ -21,6 +21,18 @@ def judge_response(rationale=None):
 
 
 class JudgeTests(unittest.TestCase):
+    def test_judge_rejects_invalid_input_before_network_access(self):
+        invalid = [
+            ("", "Task 2", {}),
+            ("essay", " ", {}),
+            ("essay", "Task 2", []),
+            ("essay", "Task 2", {1: "invalid"}),
+        ]
+        for essay, task, rubric in invalid:
+            with self.subTest(essay=essay, task=task, rubric=rubric):
+                with self.assertRaises(ValueError):
+                    judge(essay, task, rubric, api_key="test")
+
     @patch("open_ielts_strategy.judge.urllib.request.urlopen")
     def test_structured_scores_and_dimension_rationales(self, urlopen):
         class Response:
