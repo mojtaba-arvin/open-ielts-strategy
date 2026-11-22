@@ -48,7 +48,13 @@ def resolve_conflicts(candidates):
             raise ValueError("priority must be an integer")
 
         confidence = candidate["confidence"]
-        if type(confidence) not in (int, float) or not math.isfinite(confidence):
+        if type(confidence) not in (int, float):
+            raise ValueError("confidence must be a finite number between 0 and 1")
+        try:
+            finite_confidence = math.isfinite(confidence)
+        except OverflowError:
+            finite_confidence = False
+        if not finite_confidence:
             raise ValueError("confidence must be a finite number between 0 and 1")
         if not 0 <= confidence <= 1:
             raise ValueError("confidence must be a finite number between 0 and 1")
