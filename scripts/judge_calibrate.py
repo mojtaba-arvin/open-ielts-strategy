@@ -67,7 +67,7 @@ def select_calibration_items(items, budget):
 
 
 def collect_human_ratings(comments, item_ids, trusted_rater):
-    """Accept one unambiguous rating per item, only from the repository owner."""
+    """Accept one unambiguous rating per item from the explicitly trusted account."""
     accepted = {}
     duplicates = set()
     valid_ids = set(item_ids)
@@ -111,7 +111,7 @@ def main():
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--budget", type=int, default=0)
     parser.add_argument("--issue-number", type=int, default=0)
-    parser.add_argument("--trusted-rater", default=os.getenv("GITHUB_REPOSITORY_OWNER", ""))
+    parser.add_argument("--trusted-rater", default="")
     parser.add_argument("--output", default="judge-scorecard.json")
     args = parser.parse_args()
 
@@ -192,7 +192,7 @@ def main():
         "trusted_rating_source": {
             "issue_number": args.issue_number,
             "author": args.trusted_rater,
-            "author_association": "OWNER",
+            "accepted_author_associations": ["OWNER", "MEMBER", "COLLABORATOR"],
         },
         "judge_model": scored[0]["model"] if scored else None,
         "reliability": {},
