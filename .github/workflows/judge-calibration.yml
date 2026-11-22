@@ -27,7 +27,7 @@ on:
         type: number
         default: 5
       trusted_rater:
-        description: Exact GitHub login of the trusted human rater (owner, member, or collaborator)
+        description: Comma-separated exact GitHub logins of trusted human raters (owner, member, or collaborator)
         required: false
         type: string
         default: ""
@@ -65,7 +65,7 @@ jobs:
             b="${{ inputs.budget }}"; [[ "$b" =~ ^[1-9][0-9]*$ ]] && (( b <= 20 )) || { echo "budget must be between 1 and 20"; exit 1; }
             issue="${{ inputs.calibration_issue_number }}"; [[ "$issue" =~ ^[1-9][0-9]*$ ]] || { echo "calibration_issue_number must be positive"; exit 1; }
             rater="$TRUSTED_RATER"
-            [[ "$rater" =~ ^[A-Za-z0-9-]+$ ]] || { echo "trusted_rater must be an explicit GitHub login"; exit 1; }
+            [[ "$rater" =~ ^[A-Za-z0-9-]+(,[A-Za-z0-9-]+)*$ ]] || { echo "trusted_rater must be a comma-separated list of explicit GitHub logins"; exit 1; }
             echo "live=true" >> "$GITHUB_OUTPUT"; echo "budget=$b" >> "$GITHUB_OUTPUT"; echo "issue_number=$issue" >> "$GITHUB_OUTPUT"; echo "trusted_rater=$rater" >> "$GITHUB_OUTPUT"
           else
             echo "live=false" >> "$GITHUB_OUTPUT"; echo "budget=0" >> "$GITHUB_OUTPUT"
