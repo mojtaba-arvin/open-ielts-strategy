@@ -38,7 +38,7 @@ def rho(x, y):
         sum((a - mean_x) * (b - mean_y) for a, b in zip(rank_x, rank_y))
         / denominator
         if denominator
-        else 0.0
+        else None
     )
 
 
@@ -210,7 +210,18 @@ def main():
             continue
 
         correlation = rho(human_scores, judge_scores)
+        if correlation is None:
+            report["reliability"][dimension] = {
+                "metric": "Spearman rho",
+                "n": len(human_scores),
+                "rho": None,
+                "confidence_interval_95": None,
+                "reason": "correlation is undefined when either score vector has no variance",
+            }
+            continue
+
         confidence_interval = None
+        valid_bootstrap_replicates = 0
         if len(human_scores) >= 10:
             import random
 
@@ -218,23 +229,31 @@ def main():
             samples = []
             for _ in range(1000):
                 indices = [rng.randrange(len(human_scores)) for _ in human_scores]
-                samples.append(
-                    rho(
-                        [human_scores[index] for index in indices],
-                        [judge_scores[index] for index in indices],
-                    )
+                estimate = rho(
+                    [human_scores[index] for index in indices],
+                    [judge_scores[index] for index in indices],
                 )
-            samples.sort()
-            confidence_interval = [
-                round(samples[int(0.025 * (len(samples) - 1))], 4),
-                round(samples[int(0.975 * (len(samples) - 1))], 4),
-            ]
+                if estimate is not None:
+                    samples.append(estimate)
+            valid_bootstrap_replicates = len(samples)
+            if valid_bootstrap_replicates >= 800:
+                samples.sort()
+                confidence_interval = [
+                    round(samples[int(0.025 * (len(samples) - 1))], 4),
+                    round(samples[int(0.975 * (len(samples) - 1))], 4),
+                ]
 
         report["reliability"][dimension] = {
             "metric": "Spearman rho",
             "n": len(human_scores),
             "rho": round(correlation, 4),
-            "confidence_interval_95": confidence_interval or "insufficient_sample_for_CI",
+            "confidence_interval_95": confidence_interval,
+            "bootstrap_valid_replicates": valid_bootstrap_replicates,
+            **(
+                {"confidence_interval_reason": "fewer than 800 valid bootstrap replicates"}
+                if len(human_scores) >= 10 and confidence_interval is None
+                else {}
+            ),
         }
 
     Path(args.output).write_text(
