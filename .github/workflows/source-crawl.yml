@@ -1,5 +1,6 @@
 name: Source metadata crawl
 on:
+  pull_request:
   workflow_dispatch:
   schedule:
     - cron: "13 6 1 * *"
