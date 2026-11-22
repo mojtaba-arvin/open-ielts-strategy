@@ -4,6 +4,7 @@ import json, re, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from open_ielts_strategy.composition import resolve_dependencies
+from open_ielts_strategy.evaluation import validate_case
 ROOT=Path(__file__).resolve().parents[1]
 SEMVER=re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
@@ -31,9 +32,23 @@ def main():
                     if field not in fm: errors.append(f"{sid}: frontmatter missing {field}")
                 if f"version: {version}" not in fm: errors.append(f"{sid}: version mismatch")
         if cases.is_file():
-            data=json.loads(cases.read_text())
-            ids=[c.get("id") for c in data]
-            if not data or len(ids)!=len(set(ids)): errors.append(f"{sid}: empty or duplicate eval IDs")
+            try:
+                data=json.loads(cases.read_text())
+            except json.JSONDecodeError as exc:
+                errors.append(f"{sid}: invalid evaluation JSON: {exc}")
+                data=None
+            if not isinstance(data,list) or not data:
+                errors.append(f"{sid}: evaluation cases must be a non-empty JSON array")
+            else:
+                ids=set()
+                for index, case in enumerate(data):
+                    for error in validate_case(case):
+                        errors.append(f"{sid}: case[{index}]: {error}")
+                    if isinstance(case,dict):
+                        case_id=case.get("id")
+                        if isinstance(case_id,str) and case_id.strip():
+                            if case_id in ids: errors.append(f"{sid}: duplicate eval ID: {case_id}")
+                            ids.add(case_id)
     try:
         resolve_dependencies(list(names), lock.get("skills", []))
     except ValueError as exc:
