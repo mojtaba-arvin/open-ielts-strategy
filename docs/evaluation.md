@@ -24,7 +24,7 @@ Each case has input, expected behavior, and explicit rubric. Evaluate correctnes
 Resolution rate is the proportion meeting a predefined pass threshold. Report numerator, denominator, and limitations. A small synthetic suite is not statistically representative. Never mix structural pass rate with behavioral resolution rate.
 
 ## LLM judge
-LLM-as-judge is optional and is not part of the offline baseline. When added, pin model/version, prompt, rubric, settings, and dataset version; retain cost metadata; calibrate against human-reviewed examples; periodically measure agreement. Scorecard aggregation rejects mismatched generation or judge models, incomplete output provenance, unsupported (including boolean) schema versions, non-canonical model identifiers, and call counts inconsistent with two calls per case. Model-generated labels are not ground truth without review.
+LLM-as-judge is optional and is not part of the offline baseline. When added, pin model/version, prompt, rubric, settings, and dataset version; retain cost metadata; calibrate against human-reviewed examples; periodically measure agreement. Scorecard aggregation rejects mismatched generation or judge models, incomplete output provenance, unsupported (including boolean) schema versions, and non-canonical model identifiers. It also enforces mode-specific call counts: zero in fixture-only `mock` mode and two per case in `openai` mode. Model-generated labels are not ground truth without review.
 
 ## Minimum coverage
 A new skill starts with at least five representative cases, including positive and negative routing and at least one behavioral case. Expand as failure modes emerge. Public fixtures must be original/synthetic unless specifically cleared.
