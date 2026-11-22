@@ -1,0 +1,71 @@
+name: Judge calibration
+on:
+  workflow_dispatch:
+    inputs:
+      live:
+        description: Run independent judge against calibration essays
+        required: true
+        type: boolean
+        default: false
+      budget:
+        description: Maximum number of essays to judge
+        required: true
+        type: number
+        default: 5
+  schedule:
+    - cron: "41 5 1 * *"
+permissions:
+  contents: read
+  issues: read
+concurrency:
+  group: judge-calibration-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      live: ${{ steps.gate.outputs.live }}
+      budget: ${{ steps.gate.outputs.budget }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.11"
+      - run: python -m py_compile open_ielts_strategy/judge.py scripts/judge_calibrate.py && python scripts/judge_calibrate.py --dry-run --output judge-fixture.json
+      - id: gate
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.live }}" == "true" ]]; then
+            [[ -n "${{ secrets.JUDGE_API_KEY }}" ]] || { echo "JUDGE_API_KEY is required for live judge"; exit 1; }
+            b="${{ inputs.budget }}"; [[ "$b" =~ ^[1-9][0-9]*$ ]] || { echo "budget must be positive"; exit 1; }
+            echo "live=true" >> "$GITHUB_OUTPUT"; echo "budget=$b" >> "$GITHUB_OUTPUT"
+          else
+            echo "live=false" >> "$GITHUB_OUTPUT"; echo "budget=0" >> "$GITHUB_OUTPUT"
+          fi
+  judge:
+    needs: validate
+    if: needs.validate.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.11"
+      - name: Run independent judge
+        env:
+          JUDGE_API_KEY: ${{ secrets.JUDGE_API_KEY }}
+          JUDGE_MODEL: ${{ vars.JUDGE_MODEL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ "${{ needs.validate.outputs.live }}" == "true" ]]; then
+            python scripts/judge_calibrate.py --budget "${{ needs.validate.outputs.budget }}" --output judge-scorecard.json
+          else
+            python scripts/judge_calibrate.py --dry-run --output judge-scorecard.json
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: judge-calibration-scorecard
+          path: judge-scorecard.json
+          retention-days: 14
