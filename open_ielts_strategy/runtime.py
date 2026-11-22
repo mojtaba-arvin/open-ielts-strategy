@@ -1,6 +1,7 @@
 """Reproducible baseline/skill runtime with a separately identified judge."""
 import hashlib
 import json
+import math
 import os
 import urllib.request
 from pathlib import Path
@@ -127,13 +128,56 @@ def run_arm(arm, cases, mode, budget=0):
     }
 
 
+def _validate_scorecard(scorecard, expected_arm):
+    if not isinstance(scorecard, dict):
+        raise ValueError("scorecard must be an object")
+    case_ids = scorecard.get("case_ids")
+    results = scorecard.get("results")
+    mode = scorecard.get("mode")
+    if not isinstance(case_ids, list) or not case_ids:
+        raise ValueError("cannot aggregate empty or invalid evaluation case IDs")
+    if any(not isinstance(case_id, str) or not case_id for case_id in case_ids):
+        raise ValueError("case IDs must be non-empty strings")
+    if len(case_ids) != len(set(case_ids)):
+        raise ValueError("scorecard case IDs must be unique")
+    if not isinstance(results, list) or len(results) != len(case_ids):
+        raise ValueError("scorecard result count must match case IDs")
+    if mode not in {"mock", "openai"}:
+        raise ValueError("scorecard mode must be mock or openai")
+    if scorecard.get("arm") != expected_arm:
+        raise ValueError(f"scorecard arm must be {expected_arm}")
+    for expected_id, row in zip(case_ids, results):
+        if not isinstance(row, dict) or row.get("case_id") != expected_id:
+            raise ValueError("scorecard result case IDs must match declared order")
+        if row.get("arm") != expected_arm or row.get("mode") != mode:
+            raise ValueError("scorecard result arm/mode metadata is inconsistent")
+        digest = row.get("input_sha256")
+        if not isinstance(digest, str) or len(digest) != 64 or any(
+            char not in "0123456789abcdef" for char in digest
+        ):
+            raise ValueError("scorecard input_sha256 must be a lowercase SHA-256 digest")
+        score = row.get("score")
+        if type(score) not in (int, float) or not math.isfinite(score) or not 0 <= score <= 1:
+            raise ValueError("scorecard scores must be finite numbers between 0 and 1")
+        if type(row.get("passed")) is not bool:
+            raise ValueError("scorecard passed values must be booleans")
+        if not isinstance(row.get("rationale"), str) or not row["rationale"].strip():
+            raise ValueError("scorecard rationale must be non-empty text")
+
+
 def aggregate(base, skill):
+    if not isinstance(base, dict) or not isinstance(skill, dict):
+        raise ValueError("scorecards must be objects")
+    if base.get("mode") != skill.get("mode"):
+        raise ValueError("arm modes differ")
+    if not base.get("case_ids") or not skill.get("case_ids"):
+        raise ValueError("cannot aggregate empty evaluation results")
+    _validate_scorecard(base, "baseline")
+    _validate_scorecard(skill, "skill")
     if base["case_ids"] != skill["case_ids"] or [
         row["input_sha256"] for row in base["results"]
     ] != [row["input_sha256"] for row in skill["results"]]:
         raise ValueError("arms did not receive identical inputs")
-    if base["mode"] != skill["mode"]:
-        raise ValueError("arm modes differ")
     if base["mode"] == "mock":
         return {
             "schema_version": 1,
@@ -142,12 +186,6 @@ def aggregate(base, skill):
             "case_count": len(base["case_ids"]),
             "note": "Fixture output is not a model judgment; no Skill Lift is claimed.",
         }
-    if [row["case_id"] for row in base["results"]] != [
-        row["case_id"] for row in skill["results"]
-    ]:
-        raise ValueError("scorecard case IDs differ")
-    if not base["results"]:
-        raise ValueError("cannot aggregate empty evaluation results")
     if base.get("judge_model") != skill.get("judge_model"):
         raise ValueError("arms were scored by different judge models")
     baseline_mean = sum(row["score"] for row in base["results"]) / len(base["results"])
