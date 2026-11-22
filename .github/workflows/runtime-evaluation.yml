@@ -1,6 +1,13 @@
 name: Runtime evaluation
 on:
   pull_request:
+    paths:
+      - "open_ielts_strategy/runtime.py"
+      - "scripts/runtime_eval.py"
+      - "scripts/aggregate_runtime.py"
+      - "tests/test_runtime.py"
+      - "skills/**"
+      - ".github/workflows/runtime-evaluation.yml"
   workflow_dispatch:
   schedule:
     - cron: "17 5 1 * *"
@@ -26,7 +33,7 @@ jobs:
       - id: mode
         shell: bash
         run: |
-          # GitHub Actions is deliberately fixture-only. Live model calls are not
+          # All GitHub Actions triggers are fixture-only; live model calls are not
           # exposed through pull_request, workflow_dispatch, or scheduled runs.
           echo "value=mock" >> "$GITHUB_OUTPUT"
           echo "budget=0" >> "$GITHUB_OUTPUT"
