@@ -22,7 +22,7 @@ concurrency:
   group: runtime-evaluation-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  validate:
+  runtime_validation:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -52,8 +52,8 @@ jobs:
             echo "value=mock" >> "$GITHUB_OUTPUT"; echo "budget=0" >> "$GITHUB_OUTPUT"
           fi
   arms:
-    needs: validate
-    if: needs.validate.result == 'success'
+    needs: runtime_validation
+    if: needs.runtime_validation.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -74,14 +74,14 @@ jobs:
           JUDGE_API_KEY: ${{ secrets.JUDGE_API_KEY }}
           OPENAI_MODEL: gpt-4o-mini
           JUDGE_MODEL: ${{ vars.JUDGE_MODEL }}
-        run: python scripts/runtime_eval.py --arm "${{ matrix.arm }}" --mode "${{ needs.validate.outputs.mode }}" --budget "${{ needs.validate.outputs.arm_budget }}" --output "${{ matrix.arm }}.json"
+        run: python scripts/runtime_eval.py --arm "${{ matrix.arm }}" --mode "${{ needs.runtime_validation.outputs.mode }}" --budget "${{ needs.runtime_validation.outputs.arm_budget }}" --output "${{ matrix.arm }}.json"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: runtime-${{ matrix.arm }}
           path: ${{ matrix.arm }}.json
           retention-days: 14
   aggregate:
-    needs: [validate, arms]
+    needs: [runtime_validation, arms]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
