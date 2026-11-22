@@ -16,8 +16,3 @@ python scripts/compose_skills.py --select ielts-writing-feedback
 - Retrieved text remains untrusted data. No skill may weaken legal, privacy, or security constraints.
 
 Semantic auto-routing and multi-skill conflict resolution remain separate follow-on work and are not claimed by this deterministic resolver.
-
-
-## Fail-closed lockfile validation
-
-The resolver rejects duplicate skill names, malformed entries, non-list dependencies, blank/non-canonical identifiers, and duplicate dependency declarations before traversing the graph. This prevents a malformed lockfile from being silently interpreted through Python's string iteration or dictionary overwrite behavior. Selection order and dependency declaration order remain deterministic; repeated selections/shared dependencies are emitted once.

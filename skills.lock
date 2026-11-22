@@ -29,7 +29,7 @@
     },
     {
       "name": "ielts-reading-strategy",
-      "version": "0.2.0",
+      "version": "0.1.0",
       "path": "skills/ielts-reading-strategy/SKILL.md",
       "evals": "skills/ielts-reading-strategy/evals/cases.json",
       "content_origin": "original",
