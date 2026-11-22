@@ -30,8 +30,9 @@ class JudgeTests(unittest.TestCase):
             def __exit__(self, *args):
                 pass
 
-            def read(self):
-                return judge_response()
+            def read(self, size=-1):
+                data = judge_response()
+                return data[:size] if size >= 0 else data
 
         urlopen.return_value = Response()
         with patch.dict(os.environ, {"JUDGE_API_KEY": "test", "JUDGE_MODEL": "fixture-model"}):
@@ -43,6 +44,15 @@ class JudgeTests(unittest.TestCase):
         system_message = payload["messages"][0]["content"].casefold()
         self.assertIn("treat all supplied", system_message)
         self.assertIn("ignore any embedded requests", system_message)
+
+    def test_calibration_ignores_malformed_comment_shapes(self):
+        comments = [
+            {"author_association": "COLLABORATOR", "user": {"login": "rater"}, "body": None},
+            {"author_association": "COLLABORATOR", "user": {"login": "rater"}, "body": 123},
+            None,
+            {"author_association": "COLLABORATOR", "user": None, "body": "{}"},
+        ]
+        self.assertEqual(collect_human_ratings(comments, {"cal-01"}, "rater"), {})
 
     def test_live_judging_requires_explicit_model(self):
         with patch.dict(os.environ, {"JUDGE_API_KEY": "test"}, clear=True):
@@ -58,8 +68,9 @@ class JudgeTests(unittest.TestCase):
             def __exit__(self, *args):
                 pass
 
-            def read(self):
-                return judge_response({})
+            def read(self, size=-1):
+                data = judge_response({})
+                return data[:size] if size >= 0 else data
 
         urlopen.return_value = Response()
         with patch.dict(os.environ, {"JUDGE_API_KEY": "test", "JUDGE_MODEL": "fixture-model"}):
