@@ -9,6 +9,14 @@ CASES = [{"id": "x", "input": "same input", "expected": "do not invent facts"}]
 
 
 class RuntimeTests(unittest.TestCase):
+    def test_runtime_preserves_case_category_in_scorecard(self):
+        cases = [
+            {"id": "route", "category": "routing_positive", "input": "same", "expected": "ok"},
+            {"id": "behavior", "category": "behavioral", "input": "same", "expected": "ok"},
+        ]
+        result = run_arm("baseline", cases, "mock")
+        self.assertEqual([row["category"] for row in result["results"]], ["routing_positive", "behavioral"])
+
     def test_mock_arms_use_identical_inputs(self):
         baseline = run_arm("baseline", CASES, "mock")
         skill = run_arm("skill", CASES, "mock")
