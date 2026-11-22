@@ -72,8 +72,13 @@ def resolve_conflicts(candidates):
         if validated_at.tzinfo is None or validated_at.utcoffset() is None:
             raise ValueError("validated_at must be timezone-aware ISO-8601")
 
+        try:
+            validated_at_utc = validated_at.astimezone(timezone.utc)
+        except OverflowError as exc:
+            raise ValueError("validated_at cannot be normalized to UTC") from exc
+
         ranked.append((
-            (candidate["priority"], confidence, validated_at.astimezone(timezone.utc)),
+            (candidate["priority"], confidence, validated_at_utc),
             candidate,
         ))
 
