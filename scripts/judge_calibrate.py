@@ -42,6 +42,30 @@ def rho(x, y):
     )
 
 
+def select_calibration_items(items, budget):
+    """Select a deterministic, task-stratified sample without exhausting one task first."""
+    if budget < 0 or budget > len(items):
+        raise ValueError("budget must be between zero and the number of items")
+    groups = {}
+    for item in items:
+        groups.setdefault(item["task"], []).append(item)
+
+    selected = []
+    offsets = {task: 0 for task in groups}
+    task_order = list(groups)
+    while len(selected) < budget:
+        progressed = False
+        for task in task_order:
+            index = offsets[task]
+            if index < len(groups[task]) and len(selected) < budget:
+                selected.append(groups[task][index])
+                offsets[task] += 1
+                progressed = True
+        if not progressed:
+            break
+    return selected
+
+
 def collect_human_ratings(comments, item_ids, trusted_rater):
     """Accept one unambiguous rating per item, only from the repository owner."""
     accepted = {}
@@ -146,7 +170,8 @@ def main():
     )
 
     scored = []
-    for item in items[: args.budget]:
+    selected_items = select_calibration_items(items, args.budget)
+    for item in selected_items:
         scored.append(
             {
                 "item_id": item["id"],
