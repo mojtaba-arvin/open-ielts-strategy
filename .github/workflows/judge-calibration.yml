@@ -34,10 +34,12 @@ jobs:
           python-version: "3.11"
       - run: python -m py_compile open_ielts_strategy/judge.py scripts/judge_calibrate.py && python scripts/judge_calibrate.py --dry-run --output judge-fixture.json
       - id: gate
+        env:
+          JUDGE_API_KEY: ${{ secrets.JUDGE_API_KEY }}
         shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.live }}" == "true" ]]; then
-            [[ -n "${{ secrets.JUDGE_API_KEY }}" ]] || { echo "JUDGE_API_KEY is required for live judge"; exit 1; }
+            [[ -n "$JUDGE_API_KEY" ]] || { echo "JUDGE_API_KEY is required for live judge"; exit 1; }
             b="${{ inputs.budget }}"; [[ "$b" =~ ^[1-9][0-9]*$ ]] || { echo "budget must be positive"; exit 1; }
             echo "live=true" >> "$GITHUB_OUTPUT"; echo "budget=$b" >> "$GITHUB_OUTPUT"
           else
@@ -58,6 +60,7 @@ jobs:
           JUDGE_API_KEY: ${{ secrets.JUDGE_API_KEY }}
           JUDGE_MODEL: ${{ vars.JUDGE_MODEL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [[ "${{ needs.validate.outputs.live }}" == "true" ]]; then
             python scripts/judge_calibrate.py --budget "${{ needs.validate.outputs.budget }}" --output judge-scorecard.json
