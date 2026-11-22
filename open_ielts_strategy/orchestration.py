@@ -1,5 +1,6 @@
 """Deterministic MVP semantic routing and conflict resolution."""
 import re
+from datetime import datetime
 WRITING="ielts-writing-feedback"
 def route(text):
  s=text.lower()
@@ -14,6 +15,9 @@ def resolve_conflicts(candidates):
  required={"skill_id","priority","confidence","validated_at"}
  for c in candidates:
   if not required.issubset(c): raise ValueError("candidate missing conflict metadata")
+  if type(c["priority"])!=int: raise ValueError("priority must be an integer")
   if not 0<=float(c["confidence"])<=1: raise ValueError("confidence must be between 0 and 1")
+  try: datetime.fromisoformat(str(c["validated_at"]).replace("Z","+00:00"))
+  except ValueError as exc: raise ValueError("validated_at must be ISO-8601") from exc
  top=max((int(c["priority"]),float(c["confidence"]),str(c["validated_at"])) for c in candidates)
  return min((c for c in candidates if (int(c["priority"]),float(c["confidence"]),str(c["validated_at"]))==top),key=lambda c:str(c["skill_id"]))
