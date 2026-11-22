@@ -117,6 +117,17 @@ class JudgeTests(unittest.TestCase):
         )
         self.assertTrue(all(item["human_scores"] is None for item in items))
 
+    def test_spearman_rejects_unpaired_or_invalid_ratings(self):
+        with self.assertRaisesRegex(ValueError, "equal lengths"):
+            rho([5, 6], [5])
+        with self.assertRaisesRegex(ValueError, "integers from 1 to 9"):
+            rho([5, True], [5, 6])
+        with self.assertRaisesRegex(ValueError, "integers from 1 to 9"):
+            rho([0, 6], [5, 6])
+
+    def test_spearman_returns_none_for_single_pair(self):
+        self.assertIsNone(rho([6], [7]))
+
     def test_spearman_is_undefined_for_constant_score_vectors(self):
         self.assertIsNone(rho([6, 6, 6], [5, 6, 7]))
         self.assertIsNone(rho([5, 6, 7], [6, 6, 6]))
