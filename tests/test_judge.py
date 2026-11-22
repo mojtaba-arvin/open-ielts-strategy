@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from open_ielts_strategy.judge import judge, DIMENSIONS
-from scripts.judge_calibrate import collect_human_ratings
+from scripts.judge_calibrate import collect_human_ratings, select_calibration_items
 
 
 def judge_response(rationale=None):
@@ -72,6 +72,18 @@ class JudgeTests(unittest.TestCase):
             {"IELTS Writing Task 1", "IELTS Writing Task 2"},
         )
         self.assertTrue(all(item["human_scores"] is None for item in items))
+
+    def test_calibration_budget_selects_both_tasks_deterministically(self):
+        path = Path(__file__).resolve().parents[1] / "data/calibration/items.json"
+        items = json.loads(path.read_text())["items"]
+        first = select_calibration_items(items, 5)
+        second = select_calibration_items(items, 5)
+        self.assertEqual([item["id"] for item in first], [item["id"] for item in second])
+        self.assertEqual(
+            {item["task"] for item in first},
+            {"IELTS Writing Task 1", "IELTS Writing Task 2"},
+        )
+        self.assertEqual(len(first), 5)
 
     def test_calibration_ratings_require_owner_and_unique_item_comment(self):
         valid = {
