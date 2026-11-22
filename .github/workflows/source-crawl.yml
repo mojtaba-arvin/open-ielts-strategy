@@ -1,0 +1,50 @@
+name: Source metadata crawl
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "13 6 1 * *"
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: source-crawl-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.ids.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - id: ids
+        run: echo "matrix=$(python scripts/list_source_ids.py)" >> "$GITHUB_OUTPUT"
+  crawl:
+    needs: discover
+    if: needs.discover.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        source_id: ${{ fromJson(needs.discover.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.11"
+      - uses: actions/cache@v4
+        with:
+          path: .crawl-state
+          key: crawl-${{ matrix.source_id }}-${{ github.run_id }}
+          restore-keys: crawl-${{ matrix.source_id }}-
+      - name: Crawl metadata and compare hash
+        run: |
+          mkdir -p .crawl-state
+          python scripts/crawl_source.py --source-id "${{ matrix.source_id }}" --previous ".crawl-state/${{ matrix.source_id }}.json" --output "crawl-${{ matrix.source_id }}.json"
+          cp "crawl-${{ matrix.source_id }}.json" ".crawl-state/${{ matrix.source_id }}.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: crawl-${{ matrix.source_id }}
+          path: crawl-${{ matrix.source_id }}.json
+          retention-days: 14
