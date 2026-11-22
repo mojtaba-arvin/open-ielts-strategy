@@ -3,6 +3,8 @@ import json
 import os
 import urllib.request
 
+from open_ielts_strategy.http_utils import read_limited_response
+
 DIMENSIONS = (
     "task_response",
     "coherence_cohesion",
@@ -61,9 +63,17 @@ def judge(essay, task, rubric, api_key=None):
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
     )
     with urllib.request.urlopen(request, timeout=90) as response:
-        data = json.loads(response.read())
+        data = json.loads(read_limited_response(response))
 
-    output = json.loads(data["choices"][0]["message"]["content"])
+    if not isinstance(data, dict):
+        raise ValueError("judge API response must be a JSON object")
+    try:
+        content = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise ValueError("judge API response is missing message content") from exc
+    output = json.loads(content)
+    if not isinstance(output, dict):
+        raise ValueError("judge output must be a JSON object")
     scores = output.get("scores")
     rationale = output.get("rationale")
     if not isinstance(scores, dict) or set(scores) != set(DIMENSIONS):
