@@ -6,6 +6,8 @@ import os
 import urllib.request
 from pathlib import Path
 
+from open_ielts_strategy.http_utils import read_limited_response
+
 ROOT = Path(__file__).resolve().parents[1]
 MAX_REQUESTS_PER_ARM = 16
 
@@ -20,7 +22,7 @@ def _chat(messages, model, key, base, json_mode=False):
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
     )
     with urllib.request.urlopen(request, timeout=90) as response:
-        return json.loads(response.read())["choices"][0]["message"]["content"]
+        return json.loads(read_limited_response(response))["choices"][0]["message"]["content"]
 
 
 def run_arm(arm, cases, mode, budget=0):
@@ -93,10 +95,12 @@ def run_arm(arm, cases, mode, budget=0):
             )
             calls += 1
             judged = json.loads(raw)
+            if not isinstance(judged, dict):
+                raise ValueError("judge response must be a JSON object")
             if type(judged.get("score")) not in (int, float):
                 raise ValueError("judge score must be a JSON number")
             score = float(judged["score"])
-            if not 0 <= score <= 1:
+            if not math.isfinite(score) or not 0 <= score <= 1:
                 raise ValueError("judge score must be between 0 and 1")
             if not isinstance(judged.get("rationale"), str) or not judged["rationale"].strip():
                 raise ValueError("judge rationale must be a non-empty string")
