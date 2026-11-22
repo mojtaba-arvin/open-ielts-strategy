@@ -120,86 +120,6 @@ def collect_human_ratings(comments, item_ids, trusted_rater):
     return accepted
 
 
-
-def collect_human_ratings_by_rater(comments, item_ids, trusted_raters):
-    """Collect independent ratings from an explicit allowlist of GitHub logins."""
-    if not isinstance(trusted_raters, (list, tuple)) or not trusted_raters:
-        raise ValueError("trusted_raters must be a non-empty list")
-    normalized = []
-    for login in trusted_raters:
-        if not isinstance(login, str) or not login.strip():
-            raise ValueError("trusted rater logins must be non-empty strings")
-        canonical = login.strip()
-        if canonical.casefold() in {item.casefold() for item in normalized}:
-            raise ValueError("trusted rater logins must be unique")
-        normalized.append(canonical)
-    return {
-        login: collect_human_ratings(comments, item_ids, login)
-        for login in normalized
-    }
-
-
-def weighted_cohen_kappa(left, right):
-    """Quadratically weighted Cohen kappa for paired integer ratings on a 1..9 scale."""
-    if not isinstance(left, (list, tuple)) or not isinstance(right, (list, tuple)):
-        raise ValueError("rating vectors must be lists or tuples")
-    if len(left) != len(right):
-        raise ValueError("rating vectors must have equal lengths")
-    if len(left) < 2:
-        raise ValueError("at least two paired ratings are required")
-    for vector in (left, right):
-        if any(type(value) is not int or not 1 <= value <= 9 for value in vector):
-            raise ValueError("ratings must be integers from 1 to 9")
-    n = len(left)
-    observed = sum(((a - b) / 8) ** 2 for a, b in zip(left, right)) / n
-    left_counts = {score: left.count(score) / n for score in range(1, 10)}
-    right_counts = {score: right.count(score) / n for score in range(1, 10)}
-    expected = sum(
-        left_counts[a] * right_counts[b] * ((a - b) / 8) ** 2
-        for a in range(1, 10)
-        for b in range(1, 10)
-    )
-    return None if expected == 0 else 1 - observed / expected
-
-
-def inter_rater_reliability(ratings_by_rater, dimensions=DIMENSIONS):
-    """Summarize pairwise quadratic weighted kappa; no synthetic or judge scores enter."""
-    if not isinstance(ratings_by_rater, dict) or len(ratings_by_rater) < 2:
-        raise ValueError("at least two independently trusted raters are required")
-    if any(not isinstance(rows, dict) for rows in ratings_by_rater.values()):
-        raise ValueError("each rater must map item IDs to rating objects")
-    report = {}
-    raters = list(ratings_by_rater)
-    for dimension in dimensions:
-        pairs = []
-        for index, left_rater in enumerate(raters):
-            for right_rater in raters[index + 1:]:
-                left_rows = ratings_by_rater[left_rater]
-                right_rows = ratings_by_rater[right_rater]
-                common = sorted(set(left_rows) & set(right_rows))
-                values_left = [left_rows[item].get(dimension) for item in common]
-                values_right = [right_rows[item].get(dimension) for item in common]
-                if len(common) < 2:
-                    continue
-                kappa = weighted_cohen_kappa(values_left, values_right)
-                pairs.append({
-                    "rater_a": left_rater,
-                    "rater_b": right_rater,
-                    "n": len(common),
-                    "weighted_kappa": round(kappa, 4) if kappa is not None else None,
-                    "defined": kappa is not None,
-                })
-        defined = [pair["weighted_kappa"] for pair in pairs if pair["defined"]]
-        report[dimension] = {
-            "metric": "pairwise quadratic weighted Cohen kappa",
-            "pairs": pairs,
-            "defined_pair_count": len(defined),
-            "mean_pairwise_kappa": round(sum(defined) / len(defined), 4) if defined else None,
-            "note": "Pairwise summary; not a substitute for a fully crossed multi-rater model.",
-        }
-    return report
-
-
 def fetch_issue_comments(repo, issue_number):
     """Fetch at most 500 comments; fail closed rather than silently truncate ratings."""
     comments = []
@@ -230,7 +150,7 @@ def main():
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--budget", type=int, default=0)
     parser.add_argument("--issue-number", type=int, default=0)
-    parser.add_argument("--trusted-rater", default="", help="Comma-separated exact GitHub logins explicitly trusted for human ratings")
+    parser.add_argument("--trusted-rater", default="")
     parser.add_argument("--output", default="judge-scorecard.json")
     args = parser.parse_args()
 
@@ -262,20 +182,16 @@ def main():
         raise RuntimeError(f"budget cannot exceed the {len(items)} available items")
     if args.issue_number < 1:
         raise RuntimeError("live judging requires a positive --issue-number")
-    if not args.trusted_rater.strip():
+    if not args.trusted_rater:
         raise RuntimeError("live judging requires --trusted-rater")
     if not os.getenv("GITHUB_TOKEN"):
         raise RuntimeError("GITHUB_TOKEN required to read human issue ratings")
 
     repo = os.getenv("GITHUB_REPOSITORY", "mojtaba-arvin/open-ielts-strategy")
     comments = fetch_issue_comments(repo, args.issue_number)
-    trusted_raters = [login.strip() for login in args.trusted_rater.split(",") if login.strip()]
-    if not trusted_raters or len({login.casefold() for login in trusted_raters}) != len(trusted_raters):
-        raise RuntimeError("--trusted-rater must contain unique comma-separated GitHub logins")
-    human_by_rater = collect_human_ratings_by_rater(
-        comments, [item["id"] for item in items], trusted_raters
+    human = collect_human_ratings(
+        comments, [item["id"] for item in items], args.trusted_rater
     )
-    human = human_by_rater[trusted_raters[0]] if len(trusted_raters) == 1 else {}
 
     scored = []
     selected_items = select_calibration_items(items, args.budget)
@@ -289,7 +205,6 @@ def main():
                     {"dimensions": list(DIMENSIONS)},
                 ),
                 "human": human.get(item["id"]),
-                "human_ratings": {rater: rows[item["id"]] for rater, rows in human_by_rater.items() if item["id"] in rows},
             }
         )
 
@@ -300,22 +215,13 @@ def main():
         "human_rated_n": len(paired),
         "trusted_rating_source": {
             "issue_number": args.issue_number,
-            "authors": trusted_raters,
+            "author": args.trusted_rater,
             "accepted_author_associations": ["OWNER", "MEMBER", "COLLABORATOR"],
         },
         "judge_model": scored[0]["model"] if scored else None,
         "reliability": {},
-        "inter_rater_reliability": (
-            inter_rater_reliability(human_by_rater) if len(trusted_raters) >= 2 else None
-        ),
     }
     for dimension in DIMENSIONS:
-        if len(trusted_raters) > 1:
-            report["reliability"][dimension] = {
-                "status": "not-computed",
-                "reason": "judge-to-human correlation is reported only for a single explicitly selected rater; inter-rater agreement is reported separately",
-            }
-            continue
         human_scores = [item["human"][dimension] for item in paired]
         judge_scores = [item["scores"][dimension] for item in paired]
         if len(human_scores) < 3:
