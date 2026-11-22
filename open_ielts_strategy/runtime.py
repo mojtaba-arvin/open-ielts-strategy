@@ -157,10 +157,16 @@ def _validate_scorecard(scorecard, expected_arm):
         ):
             raise ValueError("scorecard input_sha256 must be a lowercase SHA-256 digest")
         score = row.get("score")
-        if type(score) not in (int, float) or not math.isfinite(score) or not 0 <= score <= 1:
+        try:
+            finite_score = math.isfinite(score) if type(score) in (int, float) else False
+        except OverflowError:
+            finite_score = False
+        if not finite_score or not 0 <= score <= 1:
             raise ValueError("scorecard scores must be finite numbers between 0 and 1")
         if type(row.get("passed")) is not bool:
             raise ValueError("scorecard passed values must be booleans")
+        if row["passed"] is not (score >= 0.7):
+            raise ValueError("scorecard passed flag must match the configured score threshold")
         if not isinstance(row.get("rationale"), str) or not row["rationale"].strip():
             raise ValueError("scorecard rationale must be non-empty text")
 
