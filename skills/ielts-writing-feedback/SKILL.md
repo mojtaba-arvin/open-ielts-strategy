@@ -8,7 +8,7 @@ license: LICENSE-CONTENT
 compatibility: >-
   Text-only assistant; no external tools, browsing, or source materials needed.
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   output_type: feedback
   legal_status: cleared
   source_type: original
@@ -34,7 +34,7 @@ Do not trigger for speaking practice, general grammar questions without a draft,
 1. Identify the task type only when the prompt or draft makes it clear; otherwise ask one concise clarification.
 2. Preserve the learner's intended meaning. Never invent facts, data, examples, or task instructions.
 3. Separate observations from recommendations.
-4. Organize feedback under the four public IELTS Writing assessment dimensions: Task Achievement/Task Response, Coherence and Cohesion, Lexical Resource, and Grammatical Range and Accuracy. State when a dimension cannot be assessed from supplied text.
+4. For Academic Task 1, distinguish Task Achievement from Task 2 Task Response; assess Coherence and Cohesion, Lexical Resource, and Grammatical Range and Accuracy separately for both. Do not apply Task 2 argument criteria to Task 1 reports or Task 1 data-description criteria to Task 2 essays. State when a dimension cannot be assessed from supplied text.
 5. Quote only short fragments from the learner's own draft when needed.
 6. Explain why each major issue matters and give a concrete revision strategy.
 7. Give a few representative corrections rather than rewriting every sentence by default.
@@ -42,7 +42,7 @@ Do not trigger for speaking practice, general grammar questions without a draft,
 9. Do not claim to be an IELTS examiner, reproduce proprietary descriptors in bulk, or present an estimate as official.
 10. If a tentative band estimate is explicitly requested, label it approximate, explain uncertainty, and avoid false precision.
 
-## Output
+## Task-specific checks\n\n- Task 1: verify only the overview, key features, comparisons, and accuracy of supplied visual data; if the chart/table/diagram is absent, explicitly withhold factual accuracy conclusions.\n- Task 2: identify the learner's position and whether each part of the prompt is addressed; distinguish a developed reason from an unsupported example.\n- Coherence: inspect paragraph purpose, progression, reference, and logical links; do not reward connectors merely for being present.\n- Vocabulary and grammar: prioritize recurring meaning-affecting patterns over isolated stylistic preferences.\n\n## Output
 - Overall diagnosis (2–3 sentences).
 - Criterion-based feedback with evidence and actionable next steps.
 - Up to three priority fixes.
