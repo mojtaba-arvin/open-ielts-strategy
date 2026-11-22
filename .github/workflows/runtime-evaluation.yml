@@ -7,6 +7,9 @@ on:
       - "scripts/aggregate_runtime.py"
       - "tests/test_runtime.py"
       - "skills/**"
+      - "scripts/changed_skill_matrix.py"
+      - "tests/test_runtime_matrix.py"
+      - "skills.lock"
       - ".github/workflows/runtime-evaluation.yml"
   workflow_dispatch:
   schedule:
@@ -16,16 +19,20 @@ permissions:
   actions: read
 concurrency:
   group: runtime-evaluation-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   runtime_validation:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
+      skill_matrix: ${{ steps.matrix.outputs.skills }}
+    outputs:
       mode: ${{ steps.mode.outputs.value }}
       arm_budget: ${{ steps.mode.outputs.budget }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: "3.11"
@@ -37,6 +44,20 @@ jobs:
           # exposed through pull_request, workflow_dispatch, or scheduled runs.
           echo "value=mock" >> "$GITHUB_OUTPUT"
           echo "budget=0" >> "$GITHUB_OUTPUT"
+      - id: matrix
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            skills="$(python scripts/changed_skill_matrix.py --base "$BASE_SHA" --head "$HEAD_SHA")"
+          else
+            skills="$(python scripts/changed_skill_matrix.py)"
+          fi
+          echo "skills=$skills" >> "$GITHUB_OUTPUT"
   arms:
     needs: runtime_validation
     if: needs.runtime_validation.result == 'success'
@@ -45,11 +66,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        skill_id:
-          - ielts-writing-feedback
-          - ielts-speaking-transcript-feedback
-          - ielts-reading-strategy
-          - ielts-listening-strategy
+        skill_id: ${{ fromJson(needs.runtime_validation.outputs.skill_matrix) }}
         arm: [baseline, skill]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
@@ -71,21 +88,22 @@ jobs:
     needs: [runtime_validation, arms]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        skill_id: ${{ fromJson(needs.runtime_validation.outputs.skill_matrix) }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
         with:
-          pattern: runtime-*
+          pattern: runtime-${{ matrix.skill_id }}-*
           merge-multiple: true
-      - name: Aggregate each skill independently
-        shell: bash
-        run: |
-          set -euo pipefail
-          for skill_id in ielts-writing-feedback ielts-speaking-transcript-feedback ielts-reading-strategy ielts-listening-strategy; do
-            python scripts/aggregate_runtime.py --baseline "$skill_id-baseline.json" --skill "$skill_id-skill.json" --output "runtime-scorecard-$skill_id.json"
-          done
+      - name: Aggregate this skill independently
+        env:
+          SKILL_ID: ${{ matrix.skill_id }}
+        run: python scripts/aggregate_runtime.py --baseline "$SKILL_ID-baseline.json" --skill "$SKILL_ID-skill.json" --output "runtime-scorecard-$SKILL_ID.json"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: runtime-aggregate
-          path: runtime-scorecard-*.json
+          name: runtime-aggregate-${{ matrix.skill_id }}
+          path: runtime-scorecard-${{ matrix.skill_id }}.json
           retention-days: 14

@@ -19,3 +19,8 @@ The pull-request path is offline and deterministic. No model API key is exposed 
 ## Branch protection
 
 The exact required context is `validate`. Repository ruleset administration is separate from workflow code; do not claim the check is required until the ruleset confirms it. Keep nightly, runtime scorecards, and judge calibration supplemental.
+
+
+## Selective runtime matrix
+
+Pull requests that change only one skill run the baseline and skill-enabled arms for that skill only. Changes to the shared runtime, aggregation code, lockfile, matrix selector, or runtime workflow run all four skills. Manual and scheduled runs always cover all four. Each skill is aggregated in its own matrix job and artifact namespace. Runtime jobs are deterministic fixture-only, so a newer commit may cancel an obsolete run on the same branch; different PR refs remain isolated. This reduces redundant matrix work without weakening the full scheduled validation.
