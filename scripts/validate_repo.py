@@ -5,6 +5,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from open_ielts_strategy.composition import resolve_dependencies
 from open_ielts_strategy.evaluation import validate_case
+from open_ielts_strategy.provenance import validate_source_record
 ROOT=Path(__file__).resolve().parents[1]
 SEMVER=re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 
@@ -55,15 +56,10 @@ def main():
         errors.append(f"skills.lock dependency graph: {exc}")
     source_ids=set()
     for src in registry.get("sources",[]):
-        sid=src.get("id")
+        sid=src.get("id") if isinstance(src, dict) else None
         if not sid or sid in source_ids: errors.append(f"missing/duplicate source id: {sid}"); continue
         source_ids.add(sid)
-        if src.get("legal_status") not in {"pending","cleared","licensed","restricted","blocked","expired","under_review"}: errors.append(f"{sid}: invalid legal_status")
-        if src.get("public_content_allowed") not in (False, True): errors.append(f"{sid}: public_content_allowed must be boolean")
-        if src.get("public_content_allowed") is True:
-            record=src.get("permission_record") or {}
-            if src.get("legal_status") not in {"cleared","licensed"} or not record.get("private_evidence_ref") or not src.get("allowed_uses"):
-                errors.append(f"{sid}: public content requires cleared/licensed status, private evidence, and explicit allowed_uses")
+        errors.extend(f"{sid}: {error}" for error in validate_source_record(src))
     if errors:
         print("VALIDATION FAILED\n"+"\n".join("- "+e for e in errors)); return 1
     print(f"VALIDATION PASSED: {len(names)} skill(s), {len(source_ids)} source record(s)"); return 0
