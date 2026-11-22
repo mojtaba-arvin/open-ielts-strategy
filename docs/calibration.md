@@ -8,4 +8,6 @@ Submit one issue comment per rated item on the dedicated calibration issue or pu
 
 For a live run, dispatch the **Judge calibration** workflow with the exact issue or pull-request number containing the ratings, the repository owner as the trusted rater, and an item-call budget from 1 to 20. The workflow reads comments only from that one issue or pull request. The script accepts ratings only when both the GitHub author association is `OWNER` and the comment author's login matches the repository owner. Comments from other accounts, malformed scores, unknown item IDs, and duplicate valid ratings for an item are excluded; duplicate ratings make that item ambiguous and therefore unusable.
 
+The live sample is selected deterministically by round-robin task stratification, so a budget of at least two includes both Task 1 and Task 2 when both groups are available; the previous corpus-order bias is removed. A budget of one cannot represent both task types.
+
 The workflow requires explicit live-run dispatch and a bounded item-call budget. The judge uses JUDGE_API_KEY and JUDGE_MODEL independently from the agent model. Spearman correlation is reported only with at least three matched human ratings; a deterministic bootstrap 95% interval is emitted at n >= 10. Small samples are descriptive, not validation of examiner equivalence.
