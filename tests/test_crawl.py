@@ -11,7 +11,7 @@ from scripts import crawl_source
 
 class CrawlRobotsTests(unittest.TestCase):
     def test_disallow_all_blocks_source_fetch(self):
-        robots = b"User-agent: *\\nDisallow: /\\n"
+        robots = b"User-agent: *\nDisallow: /\n"
         response = BytesIO(robots)
         response.status = 200
         with patch.object(crawl_source.urllib.request, "urlopen", return_value=response) as urlopen:
