@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from open_ielts_strategy.judge import judge, DIMENSIONS
-from scripts.judge_calibrate import collect_human_ratings, select_calibration_items
+from scripts.judge_calibrate import collect_human_ratings, select_calibration_items, rho
 
 
 def judge_response(rationale=None):
@@ -72,6 +72,11 @@ class JudgeTests(unittest.TestCase):
             {"IELTS Writing Task 1", "IELTS Writing Task 2"},
         )
         self.assertTrue(all(item["human_scores"] is None for item in items))
+
+    def test_spearman_is_undefined_for_constant_score_vectors(self):
+        self.assertIsNone(rho([6, 6, 6], [5, 6, 7]))
+        self.assertIsNone(rho([5, 6, 7], [6, 6, 6]))
+        self.assertIsNone(rho([6, 6, 6], [6, 6, 6]))
 
     def test_calibration_budget_selects_both_tasks_deterministically(self):
         path = Path(__file__).resolve().parents[1] / "data/calibration/items.json"
