@@ -86,6 +86,16 @@ class RuntimeTests(unittest.TestCase):
         self.assertIn("Award a score of 1", supplied_data["expected_behavior"])
 
 
+    @patch.dict(os.environ, {
+        "OPENAI_API_KEY": "test", "JUDGE_API_KEY": "test",
+        "OPENAI_MODEL": "generator", "JUDGE_MODEL": "independent-judge",
+    })
+    @patch("open_ielts_strategy.runtime._chat")
+    def test_runtime_rejects_non_object_judge_json(self, chat):
+        chat.side_effect = ["feedback", "[]"]
+        with self.assertRaisesRegex(ValueError, "JSON object"):
+            run_arm("baseline", CASES, "openai", 2)
+
     def _paid_scorecards(self):
         baseline = run_arm("baseline", CASES, "mock")
         skill = run_arm("skill", CASES, "mock")
