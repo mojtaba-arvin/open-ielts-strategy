@@ -38,10 +38,13 @@ jobs:
           key: crawl-${{ matrix.source_id }}-${{ github.run_id }}
           restore-keys: crawl-${{ matrix.source_id }}-
       - name: Crawl metadata and compare hash
+        env:
+          SOURCE_ID: ${{ matrix.source_id }}
         run: |
+          set -euo pipefail
           mkdir -p .crawl-state
-          python scripts/crawl_source.py --source-id "${{ matrix.source_id }}" --previous ".crawl-state/${{ matrix.source_id }}.json" --output "crawl-${{ matrix.source_id }}.json"
-          cp "crawl-${{ matrix.source_id }}.json" ".crawl-state/${{ matrix.source_id }}.json"
+          python scripts/crawl_source.py --source-id "$SOURCE_ID" --previous ".crawl-state/$SOURCE_ID.json" --output "crawl-$SOURCE_ID.json"
+          cp "crawl-$SOURCE_ID.json" ".crawl-state/$SOURCE_ID.json"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: crawl-${{ matrix.source_id }}

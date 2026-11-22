@@ -19,3 +19,8 @@ Prompt injection embedded in source/user text; malicious links or scripts; secre
 
 ## Incident response
 For suspected rights/privacy incidents, stop publication, preserve minimal incident metadata, restrict affected artifacts, notify maintainers, and seek legal guidance. For credential exposure, revoke/rotate immediately and inspect logs/artifacts.
+
+
+## Workflow input and injection boundaries
+
+All third-party actions are pinned to full commit SHAs. Workflows must declare explicit least-privilege permissions and must not use `pull_request_target` to execute untrusted pull-request code. Third-party source crawling remains manual-only. Values originating from a matrix, dispatch input, issue, or repository metadata must be passed through step environment variables and quoted as shell variables; do not interpolate untrusted values directly into a `run:` script. Regression tests enforce these invariants for the current workflow set.
