@@ -18,6 +18,11 @@ Each case has input, expected behavior, and explicit rubric. Evaluate correctnes
 4. Run the same cases with the skill.
 5. Review regressions and false positives before release.
 
+## External result-file contract
+The comparison CLI accepts one JSON object per case with a non-empty unique string `case_id`, a boolean `passed`, an optional finite numeric `score` in the inclusive range [0, 1], and optional string `notes` no longer than 4,096 characters. If omitted, score defaults to 1 for a pass and 0 for a failure. Boolean values are not numeric scores. Invalid or non-finite values are rejected instead of being silently coerced.
+
+The CLI verifies that both result files cover exactly the evaluation suite's case IDs. This validates file shape and pairing only: externally supplied results are not authenticated, and their provenance or correctness is not established by passing these checks. Human review remains necessary before interpreting a skill-lift result.
+
 ## Skill lift
 `skill_lift = resolution_rate_with_skill - resolution_rate_without_skill`
 
