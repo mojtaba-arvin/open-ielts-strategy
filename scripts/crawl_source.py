@@ -23,6 +23,7 @@ def main():
   report["license_metadata"]={"link_fields":links[:10],"meta_fields":metas[:10],"cleared":False}
   old=json.loads(Path(a.previous).read_text()).get("content_sha256") if a.previous and Path(a.previous).is_file() else None
   report["previous_hash"]=old; report["changed"]=bool(old and old!=report["content_sha256"])
+  report["hash_diff"]={"before":old,"after":report["content_sha256"]} if report["changed"] else None
   report["change_tag"]="CONTENT_HASH_CHANGED" if report["changed"] else ("FIRST_SEEN" if not old else "UNCHANGED")
  except Exception as e: report.update(fetch_error=f"{type(e).__name__}: {e}",changed=None,change_tag="FETCH_FAILED")
  Path(a.output).write_text(json.dumps(report,indent=2)+"\n"); print(json.dumps(report,indent=2))
