@@ -247,6 +247,25 @@ class RuntimeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "distinct configured model metadata"):
             aggregate(baseline, skill)
 
+
+    def test_aggregate_rejects_boolean_schema_version(self):
+        baseline, skill = self._paid_scorecards()
+        baseline["schema_version"] = True
+        with self.assertRaisesRegex(ValueError, "schema_version"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_non_canonical_generation_model(self):
+        baseline, skill = self._paid_scorecards()
+        skill["model"] = " generator "
+        with self.assertRaisesRegex(ValueError, "canonical"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_non_canonical_judge_model(self):
+        baseline, skill = self._paid_scorecards()
+        skill["judge_model"] = " independent-judge "
+        with self.assertRaisesRegex(ValueError, "canonical"):
+            aggregate(baseline, skill)
+
     def test_scorecards_record_case_and_skill_fingerprints(self):
         baseline = run_arm("baseline", CASES, "mock")
         skill = run_arm("skill", CASES, "mock")

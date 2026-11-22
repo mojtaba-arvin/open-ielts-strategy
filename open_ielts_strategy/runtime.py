@@ -175,7 +175,7 @@ def run_arm(arm, cases, mode, budget=0, skill_id="ielts-writing-feedback"):
 def _validate_scorecard(scorecard, expected_arm):
     if not isinstance(scorecard, dict):
         raise ValueError("scorecard must be an object")
-    if scorecard.get("schema_version") != 1:
+    if type(scorecard.get("schema_version")) is not int or scorecard["schema_version"] != 1:
         raise ValueError("unsupported scorecard schema_version")
     case_ids = scorecard.get("case_ids")
     results = scorecard.get("results")
@@ -209,10 +209,10 @@ def _validate_scorecard(scorecard, expected_arm):
     model = scorecard.get("model")
     judge_model = scorecard.get("judge_model")
     calls = scorecard.get("calls")
-    if not isinstance(model, str) or not model.strip():
-        raise ValueError("scorecard model must be non-empty text")
-    if not isinstance(judge_model, str) or not judge_model.strip():
-        raise ValueError("scorecard judge_model must be non-empty text")
+    if not isinstance(model, str) or not model.strip() or model != model.strip():
+        raise ValueError("scorecard model must be non-empty canonical text")
+    if not isinstance(judge_model, str) or not judge_model.strip() or judge_model != judge_model.strip():
+        raise ValueError("scorecard judge_model must be non-empty canonical text")
     if type(calls) is not int or calls < 0:
         raise ValueError("scorecard calls must be a non-negative integer")
     expected_calls = 0 if mode == "mock" else 2 * len(case_ids)
