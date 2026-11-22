@@ -16,7 +16,9 @@ class RuntimeTests(unittest.TestCase):
             baseline["results"][0]["input_sha256"],
             skill["results"][0]["input_sha256"],
         )
-        self.assertIsNone(aggregate(baseline, skill)["real_skill_lift"])
+        aggregate_result = aggregate(baseline, skill)
+        self.assertIsNone(aggregate_result["real_skill_lift"])
+        self.assertEqual(aggregate_result["skill_id"], "ielts-writing-feedback")
 
     def test_paid_budget_requires_two_calls_per_case(self):
         with self.assertRaisesRegex(RuntimeError, "two calls per case"):
@@ -103,6 +105,7 @@ class RuntimeTests(unittest.TestCase):
             scorecard["mode"] = "openai"
             scorecard["judge_model"] = "independent-judge"
             scorecard["model"] = "generator"
+            scorecard["calls"] = 2
             for row in scorecard["results"]:
                 row["mode"] = "openai"
                 row["score"] = 0.8
@@ -163,6 +166,119 @@ class RuntimeTests(unittest.TestCase):
         baseline["results"] = baseline["results"] * 2
         with self.assertRaisesRegex(ValueError, "must be unique"):
             aggregate(baseline, skill)
+
+    def test_runtime_selects_each_skill_and_records_skill_identity(self):
+        skill_ids = (
+            "ielts-writing-feedback",
+            "ielts-speaking-transcript-feedback",
+            "ielts-reading-strategy",
+            "ielts-listening-strategy",
+        )
+        for skill_id in skill_ids:
+            cases = [{
+                "id": f"{skill_id}-fixture",
+                "input": "Synthetic learner-authored input.",
+                "expected": "Give bounded, evidence-based strategy feedback.",
+            }]
+            result = run_arm("skill", cases, "mock", skill_id=skill_id)
+            self.assertEqual(result["skill_id"], skill_id)
+            self.assertEqual(result["results"][0]["skill_id"], skill_id)
+            self.assertEqual(result["calls"], 0)
+
+    def test_runtime_rejects_unknown_skill_id(self):
+        with self.assertRaisesRegex(ValueError, "unsupported skill_id"):
+            run_arm("baseline", CASES, "mock", skill_id="unregistered-skill")
+
+    def test_aggregate_rejects_different_skill_ids(self):
+        baseline = run_arm("baseline", CASES, "mock", skill_id="ielts-reading-strategy")
+        skill = run_arm("skill", CASES, "mock", skill_id="ielts-listening-strategy")
+        with self.assertRaisesRegex(ValueError, "different skills"):
+            aggregate(baseline, skill)
+
+    def test_runtime_rejects_empty_or_malformed_cases(self):
+        for cases in ([], {}, [None], [{"id": "x", "input": "text"}],
+                      [{"id": " ", "input": "text", "expected": "ok"}],
+                      [{"id": "x", "input": " ", "expected": "ok"}],
+                      [{"id": "x", "input": "text", "expected": " "}],
+                      [{"id": "x", "input": "text", "expected": "ok", "rubric": []}]):
+            with self.subTest(cases=cases), self.assertRaises(ValueError):
+                run_arm("baseline", cases, "mock")
+
+    def test_runtime_rejects_duplicate_case_ids(self):
+        duplicated = [dict(CASES[0]), dict(CASES[0])]
+        with self.assertRaisesRegex(ValueError, "unique"):
+            run_arm("baseline", duplicated, "mock")
+
+    def test_runtime_rejects_unknown_mode_and_invalid_budget(self):
+        with self.assertRaisesRegex(ValueError, "mode must"):
+            run_arm("baseline", CASES, "unexpected")
+        for budget in (-1, True, 1.5, "2"):
+            with self.subTest(budget=budget), self.assertRaisesRegex(ValueError, "non-negative integer"):
+                run_arm("baseline", CASES, "mock", budget)
+
+    def test_aggregate_rejects_unsupported_schema_version(self):
+        baseline, skill = self._paid_scorecards()
+        baseline["schema_version"] = 2
+        with self.assertRaisesRegex(ValueError, "schema_version"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_incorrect_call_count(self):
+        baseline, skill = self._paid_scorecards()
+        skill["calls"] = 0
+        with self.assertRaisesRegex(ValueError, "calls do not match"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_generation_model_mismatch(self):
+        baseline, skill = self._paid_scorecards()
+        skill["model"] = "different-generator"
+        with self.assertRaisesRegex(ValueError, "different generation models"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_empty_model_output(self):
+        baseline, skill = self._paid_scorecards()
+        skill["results"][0]["output"] = " "
+        with self.assertRaisesRegex(ValueError, "output must be non-empty"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_mock_metadata_masquerading_as_paid(self):
+        baseline, skill = self._paid_scorecards()
+        baseline["model"] = "fixture"
+        skill["model"] = "fixture"
+        with self.assertRaisesRegex(ValueError, "distinct configured model metadata"):
+            aggregate(baseline, skill)
+
+    def test_scorecards_record_case_and_skill_fingerprints(self):
+        baseline = run_arm("baseline", CASES, "mock")
+        skill = run_arm("skill", CASES, "mock")
+        self.assertEqual(len(baseline["case_suite_sha256"]), 64)
+        self.assertEqual(len(baseline["skill_sha256"]), 64)
+        self.assertEqual(baseline["case_suite_sha256"], skill["case_suite_sha256"])
+        self.assertEqual(baseline["skill_sha256"], skill["skill_sha256"])
+
+    def test_runtime_rejects_non_json_case_values(self):
+        cases = [{"id": "x", "input": "input", "expected": "ok", "rubric": {"weight": float("nan")}}]
+        with self.assertRaisesRegex(ValueError, "JSON-compatible"):
+            run_arm("baseline", cases, "mock")
+
+    def test_aggregate_rejects_different_case_suite_fingerprints(self):
+        baseline, skill = self._paid_scorecards()
+        skill["case_suite_sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "different evaluation case suites"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_different_skill_fingerprints(self):
+        baseline, skill = self._paid_scorecards()
+        skill["skill_sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "different skill versions"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_malformed_fingerprints(self):
+        baseline, skill = self._paid_scorecards()
+        baseline["case_suite_sha256"] = "NOT-A-DIGEST"
+        skill["case_suite_sha256"] = "NOT-A-DIGEST"
+        with self.assertRaisesRegex(ValueError, "lowercase SHA-256"):
+            aggregate(baseline, skill)
+
 
 if __name__ == "__main__":
     unittest.main()

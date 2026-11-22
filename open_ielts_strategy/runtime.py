@@ -25,10 +25,47 @@ def _chat(messages, model, key, base, json_mode=False):
         return json.loads(read_limited_response(response))["choices"][0]["message"]["content"]
 
 
-def run_arm(arm, cases, mode, budget=0):
+def run_arm(arm, cases, mode, budget=0, skill_id="ielts-writing-feedback"):
+    skill_paths = {
+        "ielts-writing-feedback": "skills/ielts-writing-feedback/SKILL.md",
+        "ielts-speaking-transcript-feedback": "skills/ielts-speaking-transcript-feedback/SKILL.md",
+        "ielts-reading-strategy": "skills/ielts-reading-strategy/SKILL.md",
+        "ielts-listening-strategy": "skills/ielts-listening-strategy/SKILL.md",
+    }
     if arm not in {"baseline", "skill"}:
         raise ValueError("invalid arm")
-    skill = (ROOT / "skills/ielts-writing-feedback/SKILL.md").read_text() if arm == "skill" else ""
+    if mode not in {"mock", "openai"}:
+        raise ValueError("mode must be mock or openai")
+    if skill_id not in skill_paths:
+        raise ValueError("unsupported skill_id")
+    if not isinstance(cases, list) or not cases:
+        raise ValueError("cases must be a non-empty list")
+    seen_ids = set()
+    for index, case in enumerate(cases):
+        if not isinstance(case, dict):
+            raise ValueError(f"case {index} must be an object")
+        case_id = case.get("id")
+        if not isinstance(case_id, str) or not case_id.strip():
+            raise ValueError(f"case {index} id must be non-empty text")
+        if case_id in seen_ids:
+            raise ValueError("case IDs must be unique")
+        seen_ids.add(case_id)
+        for field in ("input", "expected"):
+            if not isinstance(case.get(field), str) or not case[field].strip():
+                raise ValueError(f"case {case_id} {field} must be non-empty text")
+        if "rubric" in case and not isinstance(case["rubric"], dict):
+            raise ValueError(f"case {case_id} rubric must be an object")
+    if type(budget) is not int or budget < 0:
+        raise ValueError("budget must be a non-negative integer")
+    try:
+        cases_fingerprint = hashlib.sha256(json.dumps(
+            cases, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+        ).encode("utf-8")).hexdigest()
+    except (TypeError, ValueError) as exc:
+        raise ValueError("cases must contain only finite JSON-compatible values") from exc
+    skill_content = (ROOT / skill_paths[skill_id]).read_text(encoding="utf-8")
+    skill_fingerprint = hashlib.sha256(skill_content.encode("utf-8")).hexdigest()
+    skill = skill_content if arm == "skill" else ""
     model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     judge_model = os.getenv("JUDGE_MODEL", "")
 
@@ -57,8 +94,8 @@ def run_arm(arm, cases, mode, budget=0):
             score = 0.5
             passed = True
             rationale = "Deterministic fixture; not a quality judgment."
-        elif mode == "openai":
-            system = "Give concise IELTS writing feedback; do not claim official scoring."
+        else:
+            system = f"Provide concise {skill_id.removeprefix('ielts-').replace('-', ' ')} support; do not claim official scoring."
             if skill:
                 system += "\n\nApply this skill:\n" + skill
             output = _chat(
@@ -106,9 +143,9 @@ def run_arm(arm, cases, mode, budget=0):
                 raise ValueError("judge rationale must be a non-empty string")
             passed = score >= 0.7
             rationale = judged["rationale"]
-        else:
-            raise ValueError("mode must be mock or openai")
 
+        if not isinstance(output, str) or not output.strip():
+            raise ValueError("model output must be non-empty text")
         rows.append({
             "case_id": case["id"],
             "input_sha256": hashlib.sha256(case["input"].encode()).hexdigest(),
@@ -117,11 +154,15 @@ def run_arm(arm, cases, mode, budget=0):
             "passed": passed,
             "rationale": rationale,
             "arm": arm,
+            "skill_id": skill_id,
             "mode": mode,
         })
 
     return {
         "schema_version": 1,
+        "skill_id": skill_id,
+        "case_suite_sha256": cases_fingerprint,
+        "skill_sha256": skill_fingerprint,
         "arm": arm,
         "mode": mode,
         "model": model if mode == "openai" else "fixture",
@@ -131,10 +172,11 @@ def run_arm(arm, cases, mode, budget=0):
         "results": rows,
     }
 
-
 def _validate_scorecard(scorecard, expected_arm):
     if not isinstance(scorecard, dict):
         raise ValueError("scorecard must be an object")
+    if scorecard.get("schema_version") != 1:
+        raise ValueError("unsupported scorecard schema_version")
     case_ids = scorecard.get("case_ids")
     results = scorecard.get("results")
     mode = scorecard.get("mode")
@@ -150,11 +192,45 @@ def _validate_scorecard(scorecard, expected_arm):
         raise ValueError("scorecard mode must be mock or openai")
     if scorecard.get("arm") != expected_arm:
         raise ValueError(f"scorecard arm must be {expected_arm}")
+    skill_id = scorecard.get("skill_id")
+    if skill_id not in {
+        "ielts-writing-feedback",
+        "ielts-speaking-transcript-feedback",
+        "ielts-reading-strategy",
+        "ielts-listening-strategy",
+    }:
+        raise ValueError("scorecard skill_id must be supported")
+    for fingerprint_field in ("case_suite_sha256", "skill_sha256"):
+        fingerprint = scorecard.get(fingerprint_field)
+        if not isinstance(fingerprint, str) or len(fingerprint) != 64 or any(
+            char not in "0123456789abcdef" for char in fingerprint
+        ):
+            raise ValueError(f"scorecard {fingerprint_field} must be a lowercase SHA-256 digest")
+    model = scorecard.get("model")
+    judge_model = scorecard.get("judge_model")
+    calls = scorecard.get("calls")
+    if not isinstance(model, str) or not model.strip():
+        raise ValueError("scorecard model must be non-empty text")
+    if not isinstance(judge_model, str) or not judge_model.strip():
+        raise ValueError("scorecard judge_model must be non-empty text")
+    if type(calls) is not int or calls < 0:
+        raise ValueError("scorecard calls must be a non-negative integer")
+    expected_calls = 0 if mode == "mock" else 2 * len(case_ids)
+    if calls != expected_calls:
+        raise ValueError("scorecard calls do not match evaluation mode and case count")
+    if mode == "mock" and (model != "fixture" or judge_model != "fixture"):
+        raise ValueError("mock scorecards must use fixture model metadata")
+    if mode == "openai" and (
+        model == "fixture" or judge_model == "fixture" or model.casefold() == judge_model.casefold()
+    ):
+        raise ValueError("paid scorecards require distinct configured model metadata")
     for expected_id, row in zip(case_ids, results):
         if not isinstance(row, dict) or row.get("case_id") != expected_id:
             raise ValueError("scorecard result case IDs must match declared order")
         if row.get("arm") != expected_arm or row.get("mode") != mode:
             raise ValueError("scorecard result arm/mode metadata is inconsistent")
+        if row.get("skill_id") != scorecard["skill_id"]:
+            raise ValueError("scorecard result skill_id metadata is inconsistent")
         digest = row.get("input_sha256")
         if not isinstance(digest, str) or len(digest) != 64 or any(
             char not in "0123456789abcdef" for char in digest
@@ -173,6 +249,8 @@ def _validate_scorecard(scorecard, expected_arm):
             raise ValueError("scorecard passed flag must match the configured score threshold")
         if not isinstance(row.get("rationale"), str) or not row["rationale"].strip():
             raise ValueError("scorecard rationale must be non-empty text")
+        if not isinstance(row.get("output"), str) or not row["output"].strip():
+            raise ValueError("scorecard output must be non-empty text")
 
 
 def aggregate(base, skill):
@@ -180,6 +258,14 @@ def aggregate(base, skill):
         raise ValueError("scorecards must be objects")
     if base.get("mode") != skill.get("mode"):
         raise ValueError("arm modes differ")
+    if base.get("skill_id") != skill.get("skill_id"):
+        raise ValueError("arms evaluated different skills")
+    if base.get("model") != skill.get("model"):
+        raise ValueError("arms used different generation models")
+    if base.get("case_suite_sha256") != skill.get("case_suite_sha256"):
+        raise ValueError("arms used different evaluation case suites")
+    if base.get("skill_sha256") != skill.get("skill_sha256"):
+        raise ValueError("arms used different skill versions")
     if not base.get("case_ids") or not skill.get("case_ids"):
         raise ValueError("cannot aggregate empty evaluation results")
     _validate_scorecard(base, "baseline")
@@ -192,6 +278,7 @@ def aggregate(base, skill):
         return {
             "schema_version": 1,
             "validation": "wiring-only",
+            "skill_id": base["skill_id"],
             "real_skill_lift": None,
             "case_count": len(base["case_ids"]),
             "note": "Fixture output is not a model judgment; no Skill Lift is claimed.",
@@ -203,6 +290,7 @@ def aggregate(base, skill):
     return {
         "schema_version": 1,
         "validation": "independently-judged",
+        "skill_id": base["skill_id"],
         "baseline_mean_score": round(baseline_mean, 4),
         "with_skill_mean_score": round(skill_mean, 4),
         "real_skill_lift": round(skill_mean - baseline_mean, 4),

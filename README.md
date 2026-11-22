@@ -6,7 +6,7 @@ An evaluation-first collection of original Agent Skills for IELTS preparation. T
 
 ## Status
 
-Repository foundation with original Writing-feedback, Speaking-transcript-feedback, and Reading-strategy skills. Speaking feedback is text-only and does not assess pronunciation or audio delivery. Reading guidance uses only learner-supplied material and original synthetic examples. No third-party source content is bundled.
+Repository foundation with original Writing-feedback, Speaking-transcript-feedback, Reading-strategy, and Listening-strategy skills. Speaking feedback is text-only and does not assess pronunciation or audio delivery. Reading guidance uses learner-supplied material and original synthetic examples. Listening guidance is text-only and reviews learner-authored notes; it does not process audio or transcripts. No third-party source content is bundled.
 
 ## Quick start
 
@@ -17,10 +17,12 @@ python scripts/validate_repo.py
 python scripts/evaluate.py --skill ielts-writing-feedback
 python scripts/evaluate.py --skill ielts-speaking-transcript-feedback
 python scripts/evaluate.py --skill ielts-reading-strategy
+python scripts/evaluate.py --skill ielts-listening-strategy
 python scripts/check_source_drift.py
 python scripts/compose_skills.py --select ielts-writing-feedback
 python scripts/compose_skills.py --select ielts-speaking-transcript-feedback
 python scripts/compose_skills.py --select ielts-reading-strategy
+python scripts/compose_skills.py --select ielts-listening-strategy
 python -m unittest discover -s tests -v
 ```
 
@@ -31,6 +33,8 @@ python scripts/evaluate.py --skill ielts-writing-feedback --without-skill baseli
 ```
 
 The comparison reports resolution rates and skill lift; it does not generate model outputs or judge them. External result files are not authenticated by schema validation.
+
+The Runtime Evaluation workflow now runs paired baseline/skill fixture arms independently for all four skills (Writing, Speaking, Reading, and Listening) and publishes one wiring-only scorecard per skill. Each arm records SHA-256 fingerprints for its canonical evaluation-case suite and exact skill file; aggregation rejects mismatched fingerprints. All GitHub Actions triggers (pull requests, manual dispatches, and scheduled runs) are fixture-only and make zero model calls; the workflow exposes no paid/live-model input. Fixture scores are wiring checks, not quality judgments, and do not establish educational effectiveness or Skill Lift.
 
 ## Principles
 

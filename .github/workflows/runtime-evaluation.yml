@@ -2,17 +2,6 @@ name: Runtime evaluation
 on:
   pull_request:
   workflow_dispatch:
-    inputs:
-      paid:
-        description: Run live model calls (otherwise deterministic fixture wiring only)
-        required: true
-        type: boolean
-        default: false
-      budget:
-        description: Maximum model requests per arm (hard cap 16)
-        required: true
-        type: number
-        default: 16
   schedule:
     - cron: "17 5 1 * *"
 permissions:
@@ -35,22 +24,12 @@ jobs:
           python-version: "3.11"
       - run: python scripts/validate_repo.py && python scripts/evaluate.py --skill ielts-writing-feedback && python -m unittest discover -s tests -v
       - id: mode
-        env:
-          OPENAI_API_KEY: ${{ github.event_name == 'workflow_dispatch' && inputs.paid == true && secrets.OPENAI_API_KEY || '' }}
-          JUDGE_API_KEY: ${{ github.event_name == 'workflow_dispatch' && inputs.paid == true && secrets.JUDGE_API_KEY || '' }}
-          JUDGE_MODEL: ${{ vars.JUDGE_MODEL }}
         shell: bash
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.paid }}" == "true" ]]; then
-            [[ -n "$OPENAI_API_KEY" ]] || { echo "OPENAI_API_KEY is required for paid mode"; exit 1; }
-            [[ -n "$JUDGE_API_KEY" ]] || { echo "JUDGE_API_KEY is required for paid scoring"; exit 1; }
-            [[ -n "$JUDGE_MODEL" ]] || { echo "JUDGE_MODEL repository variable must be configured for independent scoring"; exit 1; }
-            b="${{ inputs.budget }}"
-            [[ "$b" =~ ^[1-9][0-9]*$ ]] && (( b <= 16 )) || { echo "budget must be between 1 and 16"; exit 1; }
-            echo "value=openai" >> "$GITHUB_OUTPUT"; echo "budget=$b" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=mock" >> "$GITHUB_OUTPUT"; echo "budget=0" >> "$GITHUB_OUTPUT"
-          fi
+          # GitHub Actions is deliberately fixture-only. Live model calls are not
+          # exposed through pull_request, workflow_dispatch, or scheduled runs.
+          echo "value=mock" >> "$GITHUB_OUTPUT"
+          echo "budget=0" >> "$GITHUB_OUTPUT"
   arms:
     needs: runtime_validation
     if: needs.runtime_validation.result == 'success'
@@ -59,9 +38,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - arm: baseline
-          - arm: skill
+        skill_id:
+          - ielts-writing-feedback
+          - ielts-speaking-transcript-feedback
+          - ielts-reading-strategy
+          - ielts-listening-strategy
+        arm: [baseline, skill]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
@@ -70,15 +52,13 @@ jobs:
           cache: pip
       - name: Run evaluation arm
         env:
-          OPENAI_API_KEY: ${{ github.event_name == 'workflow_dispatch' && inputs.paid == true && secrets.OPENAI_API_KEY || '' }}
-          JUDGE_API_KEY: ${{ github.event_name == 'workflow_dispatch' && inputs.paid == true && secrets.JUDGE_API_KEY || '' }}
           OPENAI_MODEL: gpt-4o-mini
-          JUDGE_MODEL: ${{ vars.JUDGE_MODEL }}
-        run: python scripts/runtime_eval.py --arm "${{ matrix.arm }}" --mode "${{ needs.runtime_validation.outputs.mode }}" --budget "${{ needs.runtime_validation.outputs.arm_budget }}" --output "${{ matrix.arm }}.json"
+          JUDGE_MODEL: fixture
+        run: python scripts/runtime_eval.py --skill-id "${{ matrix.skill_id }}" --arm "${{ matrix.arm }}" --mode "${{ needs.runtime_validation.outputs.mode }}" --budget "${{ needs.runtime_validation.outputs.arm_budget }}" --output "${{ matrix.skill_id }}-${{ matrix.arm }}.json"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: runtime-${{ matrix.arm }}
-          path: ${{ matrix.arm }}.json
+          name: runtime-${{ matrix.skill_id }}-${{ matrix.arm }}
+          path: ${{ matrix.skill_id }}-${{ matrix.arm }}.json
           retention-days: 14
   aggregate:
     needs: [runtime_validation, arms]
@@ -90,9 +70,15 @@ jobs:
         with:
           pattern: runtime-*
           merge-multiple: true
-      - run: python scripts/aggregate_runtime.py --baseline baseline.json --skill skill.json --output runtime-scorecard.json
+      - name: Aggregate each skill independently
+        shell: bash
+        run: |
+          set -euo pipefail
+          for skill_id in ielts-writing-feedback ielts-speaking-transcript-feedback ielts-reading-strategy ielts-listening-strategy; do
+            python scripts/aggregate_runtime.py --baseline "$skill_id-baseline.json" --skill "$skill_id-skill.json" --output "runtime-scorecard-$skill_id.json"
+          done
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: runtime-aggregate
-          path: runtime-scorecard.json
+          path: runtime-scorecard-*.json
           retention-days: 14
