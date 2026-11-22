@@ -133,6 +133,19 @@ class RuntimeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "must be booleans"):
             aggregate(baseline, skill)
 
+    def test_aggregate_rejects_pass_flag_inconsistent_with_score(self):
+        baseline, skill = self._paid_scorecards()
+        skill["results"][0]["score"] = 0.9
+        skill["results"][0]["passed"] = False
+        with self.assertRaisesRegex(ValueError, "match the configured score threshold"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_extremely_large_integer_scores(self):
+        baseline, skill = self._paid_scorecards()
+        baseline["results"][0]["score"] = 10 ** 1000
+        with self.assertRaisesRegex(ValueError, "finite numbers"):
+            aggregate(baseline, skill)
+
     def test_aggregate_rejects_duplicate_case_ids(self):
         baseline, skill = self._paid_scorecards()
         baseline["case_ids"] = ["x", "x"]
