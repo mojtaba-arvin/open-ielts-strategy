@@ -30,6 +30,16 @@
       "source_ids": [],
       "dependencies": [],
       "environment_contracts": ["text-only", "no-network"]
+    },
+    {
+      "name": "ielts-listening-strategy",
+      "version": "0.1.0",
+      "path": "skills/ielts-listening-strategy/SKILL.md",
+      "evals": "skills/ielts-listening-strategy/evals/cases.json",
+      "content_origin": "original",
+      "source_ids": [],
+      "dependencies": [],
+      "environment_contracts": ["text-only", "no-network", "no-audio"]
     }
   ]
 }

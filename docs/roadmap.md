@@ -7,9 +7,9 @@ This roadmap distinguishes implemented repository mechanics from educational val
 - Repository structure, contributor/agent rules, and separate software/content license notices.
 - Metadata-only source registry and schema; third-party content permission defaults to false.
 - Conservative legal, source-ingestion, privacy, and trademark policy.
-- Original Writing-feedback, Speaking-transcript-feedback, and Reading-strategy Agent Skills with synthetic positive, negative, boundary, and behavioral cases. Speaking feedback is text-only and explicitly excludes pronunciation claims. Reading guidance uses learner-supplied material and original synthetic examples only.
+- Original Writing-feedback, Speaking-transcript-feedback, Reading-strategy, and Listening-strategy Agent Skills with synthetic positive, negative, boundary, and behavioral cases. Speaking feedback is text-only and explicitly excludes pronunciation claims. Reading guidance uses learner-supplied material and original synthetic examples only. Listening guidance is text-only, works with learner-authored notes, and does not process audio or transcripts.
 - Deterministic evaluation-case validation, external result-file comparison, and skill-lift calculation.
-- Live baseline/skill runtime adapter with identical case inputs and SHA-256 input checks; fixture mode remains the default for PR, scheduled, and ordinary manual runs.
+- Baseline/skill runtime adapter with identical case inputs and SHA-256 input checks, parameterized across all four skills; each scorecard also fingerprints the canonical case suite and exact skill file, and aggregation rejects version mismatches. All GitHub Actions triggers (pull requests, manual dispatches, and scheduled runs) execute deterministic fixture arms and publish one wiring-only scorecard per skill; no live-model or paid execution is exposed through the workflow.
 - Independent LLM judge execution with structured dimension scores, explicit model configuration, prompt-injection defenses, and bounded request budgets.
 - Synthetic calibration corpus (20 distinct responses); live human-rating ingestion and statistical calculations are implemented, but no human ratings or independent reliability result are currently established.
 - Deterministic Writing task routing and conflict resolution; dependency graph validation and explicit skill composition.
@@ -21,7 +21,7 @@ This roadmap distinguishes implemented repository mechanics from educational val
 
 1. **Real educational effectiveness:** no independently reviewed benchmark currently demonstrates positive skill lift. Fixture-mode results are not evidence of effectiveness.
 2. **Independent human calibration:** no qualified independent human ratings have been collected; inter-rater reliability and examiner agreement are therefore unestablished.
-3. **Broader skill coverage:** Listening is not implemented. Reading support is limited to evidence-based strategy using learner-supplied text or original synthetic examples; it does not provide official or third-party passages, questions, or answer keys.
+3. **Broader skill coverage:** the four text-based skill modules cover Writing feedback, Speaking transcript feedback, Reading strategy, and Listening strategy. Runtime fixture wiring now covers each skill independently, but fixture scores are not model-quality measurements. Listening is limited to learner-authored notes and synthetic scenarios; audio processing, transcription, and third-party listening materials are intentionally out of scope.
 4. **Semantic routing:** routing is deterministic lexical logic, not a calibrated semantic or model-based classifier.
 5. **Repository governance:** the active `Protect main` ruleset does not yet require the exact `validate` status context. Issue #4 tracks this administrative configuration; no ruleset change was made.
 6. **Rights clearance for third-party materials:** no blanket rights clearance exists. Source ingestion remains disabled; metadata, public availability, attribution, and a passing check do not grant copyright permission.
@@ -39,7 +39,7 @@ New learning skills may be developed only from original explanations and synthet
 2. Reconcile documentation with implementation and keep legal restrictions explicit.
 3. Expand automated tests using original synthetic cases only.
 4. Improve the existing skills' output-contract and safety tests without importing third-party IELTS content.
-5. Develop Listening support only from independently authored explanations and synthetic examples.
+5. Keep fixture-backed runtime validation offline and deterministic; extend malformed-input and provenance tests whenever the scorecard contract changes.
 6. Resolve required-check governance through repository administration, preserving existing protections.
 7. Collect independent human evaluation only through a separately approved process; do not manufacture or infer ratings.
 
