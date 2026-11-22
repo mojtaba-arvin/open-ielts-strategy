@@ -28,12 +28,14 @@ jobs:
         run: |
           python scripts/evaluate.py --skill ielts-writing-feedback
           python scripts/evaluate.py --skill ielts-speaking-transcript-feedback
+          python scripts/evaluate.py --skill ielts-reading-strategy
       - name: Check source metadata freshness
         run: python scripts/check_source_drift.py
       - name: Resolve declared skill composition
         run: |
           python scripts/compose_skills.py --select ielts-writing-feedback
           python scripts/compose_skills.py --select ielts-speaking-transcript-feedback
+          python scripts/compose_skills.py --select ielts-reading-strategy
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
       - name: Record main branch protection and rulesets (read-only)
