@@ -9,7 +9,6 @@ on:
 permissions:
   contents: read
   actions: read
-  administration: read
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
