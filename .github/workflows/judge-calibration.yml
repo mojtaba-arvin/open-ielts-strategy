@@ -48,7 +48,7 @@ jobs:
       - run: python -m py_compile open_ielts_strategy/judge.py scripts/judge_calibrate.py && python scripts/judge_calibrate.py --dry-run --output judge-fixture.json
       - id: gate
         env:
-          JUDGE_API_KEY: ${{ secrets.JUDGE_API_KEY }}
+          JUDGE_API_KEY: ${{ github.event_name == 'workflow_dispatch' && inputs.live == true && secrets.JUDGE_API_KEY || '' }}
           TRUSTED_RATER: ${{ inputs.trusted_rater }}
         shell: bash
         run: |
@@ -74,10 +74,10 @@ jobs:
           python-version: "3.11"
       - name: Run independent judge
         env:
-          JUDGE_API_KEY: ${{ secrets.JUDGE_API_KEY }}
+          JUDGE_API_KEY: ${{ github.event_name == 'workflow_dispatch' && needs.calibration_validation.outputs.live == 'true' && secrets.JUDGE_API_KEY || '' }}
           JUDGE_MODEL: ${{ vars.JUDGE_MODEL }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.event_name == 'workflow_dispatch' && needs.calibration_validation.outputs.live == 'true' && secrets.GITHUB_TOKEN || '' }}
+          GH_TOKEN: ${{ github.event_name == 'workflow_dispatch' && needs.calibration_validation.outputs.live == 'true' && secrets.GITHUB_TOKEN || '' }}
         run: |
           if [[ "${{ needs.calibration_validation.outputs.live }}" == "true" ]]; then
             python scripts/judge_calibrate.py --budget "${{ needs.calibration_validation.outputs.budget }}" --issue-number "${{ needs.calibration_validation.outputs.issue_number }}" --trusted-rater "${{ needs.calibration_validation.outputs.trusted_rater }}" --output judge-scorecard.json
