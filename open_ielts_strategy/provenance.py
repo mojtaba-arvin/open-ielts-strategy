@@ -18,11 +18,15 @@ def validate_source_record(source):
             errors.append(f"{field} must be non-empty text")
     url = source.get("source_url")
     if isinstance(url, str) and url.strip():
-        parsed = urlparse(url)
-        if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+        try:
+            parsed = urlparse(url)
+            safe_url = parsed.scheme == "https" and bool(parsed.hostname) and not parsed.username and not parsed.password
+        except ValueError:
+            safe_url = False
+        if not safe_url:
             errors.append("source_url must be HTTPS without embedded credentials")
     status = source.get("legal_status")
-    if status not in LEGAL_STATUSES:
+    if not isinstance(status, str) or status not in LEGAL_STATUSES:
         errors.append("invalid legal_status")
     allowed = source.get("public_content_allowed")
     if type(allowed) is not bool:

@@ -59,6 +59,12 @@ class ProvenanceTests(unittest.TestCase):
         self.assertIn("source_url must be HTTPS without embedded credentials", errors)
         self.assertIn("allowed_uses must not contain duplicates", errors)
 
+    def test_malformed_status_and_url_fail_without_crashing(self):
+        for status, url in [([], "https://example.org"), ("under_review", "https://[invalid")]:
+            with self.subTest(status=status, url=url):
+                errors = validate_source_record(sample_source(legal_status=status, source_url=url))
+                self.assertTrue(errors)
+
     def test_invalid_expiry_is_rejected(self):
         self.assertIn("expiry must be null or ISO-8601", validate_source_record(sample_source(expiry="later")))
 
