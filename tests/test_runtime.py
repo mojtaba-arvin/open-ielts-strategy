@@ -86,5 +86,73 @@ class RuntimeTests(unittest.TestCase):
         self.assertIn("Award a score of 1", supplied_data["expected_behavior"])
 
 
+    def _paid_scorecards(self):
+        baseline = run_arm("baseline", CASES, "mock")
+        skill = run_arm("skill", CASES, "mock")
+        for scorecard in (baseline, skill):
+            scorecard["mode"] = "openai"
+            scorecard["judge_model"] = "independent-judge"
+            scorecard["model"] = "generator"
+            for row in scorecard["results"]:
+                row["mode"] = "openai"
+                row["score"] = 0.8
+        return baseline, skill
+
+    def test_aggregate_rejects_non_finite_scores(self):
+        baseline, skill = self._paid_scorecards()
+        baseline["results"][0]["score"] = float("nan")
+        with self.assertRaisesRegex(ValueError, "finite numbers"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_boolean_scores(self):
+        baseline, skill = self._paid_scorecards()
+        baseline["results"][0]["score"] = True
+        with self.assertRaisesRegex(ValueError, "finite numbers"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_scores_outside_range(self):
+        baseline, skill = self._paid_scorecards()
+        skill["results"][0]["score"] = 1.01
+        with self.assertRaisesRegex(ValueError, "finite numbers"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_result_case_id_mismatch(self):
+        baseline, skill = self._paid_scorecards()
+        baseline["results"][0]["case_id"] = "different-case"
+        with self.assertRaisesRegex(ValueError, "match declared order"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_wrong_arm_metadata(self):
+        baseline, skill = self._paid_scorecards()
+        skill["results"][0]["arm"] = "baseline"
+        with self.assertRaisesRegex(ValueError, "metadata is inconsistent"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_non_boolean_pass_flags(self):
+        baseline, skill = self._paid_scorecards()
+        skill["results"][0]["passed"] = 1
+        with self.assertRaisesRegex(ValueError, "must be booleans"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_pass_flag_inconsistent_with_score(self):
+        baseline, skill = self._paid_scorecards()
+        skill["results"][0]["score"] = 0.9
+        skill["results"][0]["passed"] = False
+        with self.assertRaisesRegex(ValueError, "match the configured score threshold"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_extremely_large_integer_scores(self):
+        baseline, skill = self._paid_scorecards()
+        baseline["results"][0]["score"] = 10 ** 1000
+        with self.assertRaisesRegex(ValueError, "finite numbers"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_duplicate_case_ids(self):
+        baseline, skill = self._paid_scorecards()
+        baseline["case_ids"] = ["x", "x"]
+        baseline["results"] = baseline["results"] * 2
+        with self.assertRaisesRegex(ValueError, "must be unique"):
+            aggregate(baseline, skill)
+
 if __name__ == "__main__":
     unittest.main()
