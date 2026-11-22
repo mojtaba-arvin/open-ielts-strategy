@@ -12,9 +12,10 @@ def run_arm(arm,cases,mode,budget=0):
  skill=(ROOT/"skills/ielts-writing-feedback/SKILL.md").read_text() if arm=="skill" else ""
  model=os.getenv("OPENAI_MODEL","gpt-4o-mini"); judge_model=os.getenv("JUDGE_MODEL") or "gpt-4o-mini"
  if mode=="openai":
+  if budget < 2*len(cases): raise RuntimeError(f"budget must cover two calls per case; need at least {2*len(cases)}")
   if not os.getenv("OPENAI_API_KEY"): raise RuntimeError("OPENAI_API_KEY is required")
   if not os.getenv("JUDGE_API_KEY"): raise RuntimeError("JUDGE_API_KEY is required for independent scoring")
-  if budget < 2*len(cases): raise RuntimeError(f"budget must cover two calls per case; need at least {2*len(cases)}")
+  if not os.getenv("JUDGE_MODEL"): print("WARNING: JUDGE_MODEL unset; using low-cost default gpt-4o-mini.")
  rows=[]; calls=0
  for c in cases:
   if mode=="mock":
