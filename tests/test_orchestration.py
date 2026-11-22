@@ -58,6 +58,16 @@ class RoutingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "timezone-aware"):
             resolve_conflicts([candidate])
 
+    def test_rejects_timestamp_outside_utc_datetime_range(self):
+        candidate = {
+            "skill_id": "a",
+            "priority": 1,
+            "confidence": 0.8,
+            "validated_at": "0001-01-01T00:00:00+23:59",
+        }
+        with self.assertRaisesRegex(ValueError, "normalized to UTC"):
+            resolve_conflicts([candidate])
+
     def test_invalid_timestamp(self):
         candidate = {
             "skill_id": "a",
