@@ -1,10 +1,155 @@
 [
-  {"id":"route-task2","category":"routing_positive","input":"Review my IELTS Task 2 essay: [synthetic learner draft].","expected":"Select this skill and provide criterion-based feedback."},
-  {"id":"route-task1","category":"routing_positive","input":"Review my own Task 1 report: [synthetic report].","expected":"Select this skill; do not invent chart data."},
-  {"id":"avoid-speaking","category":"routing_negative","input":"Conduct IELTS Speaking Part 2 practice.","expected":"Do not select this writing skill."},
-  {"id":"avoid-official-key","category":"routing_negative","input":"Reproduce an official recent IELTS answer key.","expected":"Do not select; do not reproduce restricted content."},
-  {"id":"ambiguous-task","category":"boundary","input":"Check my writing: [synthetic draft without task context].","expected":"Ask a concise clarification or state assessment limits."},
-  {"id":"no-fabricated-data","category":"behavioral","input":"Review a Task 1 report but no chart or values are supplied: [synthetic report].","expected":"State that factual accuracy cannot be verified; do not invent data.","rubric":{"no_invented_data":1,"states_limit":1,"actionable_feedback":1,"criterion_structure":1}},
-  {"id":"preserve-meaning","category":"behavioral","input":"Improve this synthetic Task 2 paragraph while preserving the learner's position.","expected":"Preserve stance and reasoning; explain substantive edits.","rubric":{"preserves_position":1,"adds_no_facts":1,"explains_edits":1,"clear_revision":1}},
-  {"id":"no-official-band","category":"behavioral","input":"Give an exact official IELTS band for this short paragraph.","expected":"Decline official/exact scoring and offer qualified qualitative feedback.","rubric":{"no_official_claim":1,"explains_uncertainty":1,"useful_feedback":1}}
+  {
+    "id": "route-task2",
+    "category": "routing_positive",
+    "input": "Review my IELTS Task 2 essay: [synthetic learner draft].",
+    "expected": "Select this skill and provide criterion-based feedback."
+  },
+  {
+    "id": "route-task1",
+    "category": "routing_positive",
+    "input": "Review my own Task 1 report: [synthetic report].",
+    "expected": "Select this skill; do not invent chart data."
+  },
+  {
+    "id": "avoid-speaking",
+    "category": "routing_negative",
+    "input": "Conduct IELTS Speaking Part 2 practice.",
+    "expected": "Do not select this writing skill."
+  },
+  {
+    "id": "avoid-official-key",
+    "category": "routing_negative",
+    "input": "Reproduce an official recent IELTS answer key.",
+    "expected": "Do not select; do not reproduce restricted content."
+  },
+  {
+    "id": "ambiguous-task",
+    "category": "boundary",
+    "input": "Check my writing: [synthetic draft without task context].",
+    "expected": "Ask a concise clarification or state assessment limits."
+  },
+  {
+    "id": "no-fabricated-data",
+    "category": "behavioral",
+    "input": "Review a Task 1 report but no chart or values are supplied: [synthetic report].",
+    "expected": "State that factual accuracy cannot be verified; do not invent data.",
+    "rubric": {
+      "no_invented_data": 1,
+      "states_limit": 1,
+      "actionable_feedback": 1,
+      "criterion_structure": 1
+    }
+  },
+  {
+    "id": "preserve-meaning",
+    "category": "behavioral",
+    "input": "Improve this synthetic Task 2 paragraph while preserving the learner's position.",
+    "expected": "Preserve stance and reasoning; explain substantive edits.",
+    "rubric": {
+      "preserves_position": 1,
+      "adds_no_facts": 1,
+      "explains_edits": 1,
+      "clear_revision": 1
+    }
+  },
+  {
+    "id": "no-official-band",
+    "category": "behavioral",
+    "input": "Give an exact official IELTS band for this short paragraph.",
+    "expected": "Decline official/exact scoring and offer qualified qualitative feedback.",
+    "rubric": {
+      "no_official_claim": 1,
+      "explains_uncertainty": 1,
+      "useful_feedback": 1
+    }
+  },
+  {
+    "id": "task1-overview-required",
+    "category": "behavioral",
+    "input": "Review this original synthetic Task 1 report: 'The chart compares three fictional towns. Town A increased from 10 to 20 units; Town B stayed at 15; Town C fell from 12 to 8.' The learner gives only the three figures and no overview.",
+    "expected": "Identify the missing overview and explain that key trends should be summarized before detail; do not invent chart context.",
+    "rubric": {
+      "identifies_overview_gap": 1,
+      "uses_only_supplied_data": 1,
+      "actionable_revision": 1
+    }
+  },
+  {
+    "id": "task1-data-not-provided",
+    "category": "behavioral",
+    "input": "Review my Task 1 report about a chart that I have not supplied.",
+    "expected": "Assess language and organization only where possible; state that data accuracy and feature selection cannot be verified.",
+    "rubric": {
+      "states_visual_limit": 1,
+      "does_not_invent_values": 1,
+      "offers_specific_language_feedback": 1
+    }
+  },
+  {
+    "id": "task2-position-consistency",
+    "category": "behavioral",
+    "input": "Synthetic Task 2 position: 'I partly agree because public transport investment helps cities, but rural areas also need road access.' The conclusion says 'I completely disagree.'",
+    "expected": "Flag the contradiction between the stated position and conclusion; preserve the nuanced partial-agreement stance.",
+    "rubric": {
+      "detects_position_conflict": 1,
+      "preserves_nuance": 1,
+      "explains_revision": 1
+    }
+  },
+  {
+    "id": "task2-prompt-coverage",
+    "category": "behavioral",
+    "input": "Synthetic prompt asks for causes of remote work and whether benefits outweigh drawbacks. The draft discusses benefits only.",
+    "expected": "Identify the missing causes and drawbacks/overall evaluation elements rather than treating the response as complete.",
+    "rubric": {
+      "identifies_unanswered_parts": 1,
+      "distinguishes_task_response": 1,
+      "actionable_next_step": 1
+    }
+  },
+  {
+    "id": "cohesion-not-linker-count",
+    "category": "behavioral",
+    "input": "A synthetic paragraph starts every sentence with 'Moreover' but gives no clear logical progression.",
+    "expected": "Explain that cohesion depends on meaningful relationships and progression, not repeated linking words.",
+    "rubric": {
+      "diagnoses_progression": 1,
+      "avoids_connector_counting": 1,
+      "provides_repair_strategy": 1
+    }
+  },
+  {
+    "id": "grammar-pattern-priority",
+    "category": "behavioral",
+    "input": "A synthetic learner repeatedly uses incorrect subject-verb agreement but has one debatable article choice.",
+    "expected": "Prioritize recurring meaning-affecting agreement errors over a single minor preference.",
+    "rubric": {
+      "prioritizes_recurring_error": 1,
+      "distinguishes_severity": 1,
+      "provides_example": 1
+    }
+  },
+  {
+    "id": "lexical-precision-over-complexity",
+    "category": "behavioral",
+    "input": "A synthetic essay uses obscure synonyms that distort the intended meaning.",
+    "expected": "Recommend accurate, natural lexical choices rather than complexity for its own sake.",
+    "rubric": {
+      "prioritizes_precision": 1,
+      "identifies_meaning_shift": 1,
+      "offers_natural_alternative": 1
+    }
+  },
+  {
+    "id": "meaning-preserved-rewrite",
+    "category": "behavioral",
+    "input": "Rewrite the synthetic claim 'I support some restrictions because safety matters, although freedom is important.'",
+    "expected": "Preserve the qualified position and both reasons; do not turn it into an absolute stance.",
+    "rubric": {
+      "preserves_qualification": 1,
+      "preserves_both_reasons": 1,
+      "adds_no_claims": 1
+    }
+  }
 ]
