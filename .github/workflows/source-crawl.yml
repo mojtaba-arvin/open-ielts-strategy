@@ -1,9 +1,7 @@
 name: Source metadata crawl
 on:
-  pull_request:
+  # Deliberately manual: do not contact third-party sites on PRs or on a schedule.
   workflow_dispatch:
-  schedule:
-    - cron: "13 6 1 * *"
 permissions:
   contents: read
   actions: read
