@@ -9,17 +9,23 @@
       "content_origin": "original",
       "source_ids": [],
       "dependencies": [],
-      "environment_contracts": ["text-only", "no-network"]
+      "environment_contracts": [
+        "text-only",
+        "no-network"
+      ]
     },
     {
       "name": "ielts-speaking-transcript-feedback",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "path": "skills/ielts-speaking-transcript-feedback/SKILL.md",
       "evals": "skills/ielts-speaking-transcript-feedback/evals/cases.json",
       "content_origin": "original",
       "source_ids": [],
       "dependencies": [],
-      "environment_contracts": ["text-only", "no-network"]
+      "environment_contracts": [
+        "text-only",
+        "no-network"
+      ]
     },
     {
       "name": "ielts-reading-strategy",
@@ -29,7 +35,10 @@
       "content_origin": "original",
       "source_ids": [],
       "dependencies": [],
-      "environment_contracts": ["text-only", "no-network"]
+      "environment_contracts": [
+        "text-only",
+        "no-network"
+      ]
     },
     {
       "name": "ielts-listening-strategy",
@@ -39,7 +48,11 @@
       "content_origin": "original",
       "source_ids": [],
       "dependencies": [],
-      "environment_contracts": ["text-only", "no-network", "no-audio"]
+      "environment_contracts": [
+        "text-only",
+        "no-network",
+        "no-audio"
+      ]
     }
   ]
 }
