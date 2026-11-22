@@ -12,6 +12,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from open_ielts_strategy.judge import DIMENSIONS, judge
 
+MAX_RATING_COMMENT_PAGES = 5
+GITHUB_COMMENTS_PER_PAGE = 100
+MAX_RATING_COMMENT_BODY_CHARS = 4096
+
 
 def ranks(values):
     order = sorted(range(len(values)), key=lambda i: values[i])
@@ -87,7 +91,7 @@ def collect_human_ratings(comments, item_ids, trusted_rater):
             continue
 
         body = comment.get("body")
-        if not isinstance(body, str) or not body:
+        if not isinstance(body, str) or not body or len(body) > MAX_RATING_COMMENT_BODY_CHARS:
             continue
         match = re.search(
             r'\{\s*"item_id"\s*:\s*"cal-\d+".*?\}',
@@ -115,6 +119,31 @@ def collect_human_ratings(comments, item_ids, trusted_rater):
         accepted.pop(item_id, None)
     return accepted
 
+
+def fetch_issue_comments(repo, issue_number):
+    """Fetch at most 500 comments; fail closed rather than silently truncate ratings."""
+    comments = []
+    for page in range(1, MAX_RATING_COMMENT_PAGES + 1):
+        raw = subprocess.check_output([
+            "gh", "api",
+            f"repos/{repo}/issues/{issue_number}/comments?per_page={GITHUB_COMMENTS_PER_PAGE}&page={page}",
+        ], text=True)
+        batch = json.loads(raw)
+        if not isinstance(batch, list) or len(batch) > GITHUB_COMMENTS_PER_PAGE:
+            raise RuntimeError("GitHub returned an invalid issue-comment page")
+        comments.extend(batch)
+        if len(batch) < GITHUB_COMMENTS_PER_PAGE:
+            return comments
+    raw = subprocess.check_output([
+        "gh", "api",
+        f"repos/{repo}/issues/{issue_number}/comments?per_page={GITHUB_COMMENTS_PER_PAGE}&page={MAX_RATING_COMMENT_PAGES + 1}",
+    ], text=True)
+    next_batch = json.loads(raw)
+    if not isinstance(next_batch, list) or len(next_batch) > GITHUB_COMMENTS_PER_PAGE:
+        raise RuntimeError("GitHub returned an invalid issue-comment page")
+    if next_batch:
+        raise RuntimeError(f"issue has more than {MAX_RATING_COMMENT_PAGES * GITHUB_COMMENTS_PER_PAGE} comments; refusing unbounded calibration input")
+    return comments
 
 def main():
     parser = argparse.ArgumentParser()
@@ -159,22 +188,7 @@ def main():
         raise RuntimeError("GITHUB_TOKEN required to read human issue ratings")
 
     repo = os.getenv("GITHUB_REPOSITORY", "mojtaba-arvin/open-ielts-strategy")
-    raw = subprocess.check_output(
-        [
-            "gh",
-            "api",
-            f"repos/{repo}/issues/{args.issue_number}/comments",
-            "--paginate",
-            "--slurp",
-        ],
-        text=True,
-    )
-    pages = json.loads(raw)
-    comments = (
-        [comment for page in pages for comment in page]
-        if pages and isinstance(pages[0], list)
-        else pages
-    )
+    comments = fetch_issue_comments(repo, args.issue_number)
     human = collect_human_ratings(
         comments, [item["id"] for item in items], args.trusted_rater
     )
