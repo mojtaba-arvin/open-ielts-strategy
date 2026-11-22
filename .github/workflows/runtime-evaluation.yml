@@ -1,5 +1,6 @@
 name: Runtime evaluation
 on:
+  pull_request:
   workflow_dispatch:
     inputs:
       paid:
