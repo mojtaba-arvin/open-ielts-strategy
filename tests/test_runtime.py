@@ -95,6 +95,7 @@ class RuntimeTests(unittest.TestCase):
             scorecard["model"] = "generator"
             for row in scorecard["results"]:
                 row["mode"] = "openai"
+                row["score"] = 0.8
         return baseline, skill
 
     def test_aggregate_rejects_non_finite_scores(self):
