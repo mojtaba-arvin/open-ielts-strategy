@@ -7,15 +7,16 @@ This roadmap distinguishes implemented repository mechanics from educational val
 - Repository structure, contributor/agent rules, and separate software/content license notices.
 - Metadata-only source registry and schema; third-party content permission defaults to false.
 - Conservative legal, source-ingestion, privacy, and trademark policy.
-- Original Writing-feedback, Speaking-transcript-feedback, Reading-strategy, and Listening-strategy Agent Skills with synthetic positive, negative, boundary, and behavioral cases. Speaking feedback is text-only and explicitly excludes pronunciation claims. Reading guidance uses learner-supplied material and original synthetic examples only. Listening guidance is text-only, works with learner-authored notes, and does not process audio or transcripts.
+- Original Writing-feedback, Speaking-transcript-feedback, Reading-strategy, and Listening-strategy Agent Skills with synthetic positive, negative, boundary, and behavioral cases. Speaking feedback is text-only and explicitly excludes pronunciation claims. Reading guidance uses learner-supplied material and original synthetic examples only. Listening guidance is text-only, works with learner-authored notes and authorized learner-supplied transcripts for ephemeral private analysis; it does not process audio or create, fetch, store, or redistribute third-party transcripts.
 - Deterministic evaluation-case validation, external result-file comparison, and skill-lift calculation.
-- Baseline/skill runtime adapter with identical case inputs and SHA-256 input checks, parameterized across all four skills; each scorecard also fingerprints the canonical case suite and exact skill file, and aggregation rejects version mismatches. All GitHub Actions triggers (pull requests, manual dispatches, and scheduled runs) execute deterministic fixture arms and publish one wiring-only scorecard per skill; no live-model or paid execution is exposed through the workflow.
+- Baseline/skill runtime adapter with identical case inputs and SHA-256 input checks, parameterized across all four skills; each scorecard also fingerprints the canonical case suite and exact skill file, and aggregation rejects version mismatches. Pull requests run deterministic fixture arms only for affected skills; manual and scheduled runs cover all four skills. Fixture outputs are wiring checks, not quality judgments; no live-model or paid execution is exposed through the default workflow.
 - Independent LLM judge execution with structured dimension scores, explicit model configuration, prompt-injection defenses, and bounded request budgets.
 - Synthetic calibration corpus (20 distinct responses); live human-rating ingestion and statistical calculations are implemented, but no human ratings or independent reliability result are currently established.
 - Deterministic Writing task routing and conflict resolution; dependency graph validation and explicit skill composition.
 - Metadata/robots-policy source inspection tooling. It does not ingest source bodies, and metadata is not legal permission.
-- Unit tests and CI workflows. All currently inspected GitHub Actions references in the five repository workflows are pinned to full commit SHAs.
+- Unit tests and CI workflows. All currently inspected GitHub Actions references in the six repository workflows are pinned to full commit SHAs.
 - Security report generation and read-only branch/ruleset inspection.
+- A default-deny release-claim registry and tag/release CI gate; public band-score, examiner-equivalence, Skill Lift, educational-effectiveness, guaranteed-improvement, and third-party-clearance claims remain disabled until independently evidenced.
 
 ## Not yet established or implemented
 

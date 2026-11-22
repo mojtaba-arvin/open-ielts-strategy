@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "policy": "deny_public_claims_without_independent_evidence",
+  "claims": [
+    {
+      "id": "official-band-score-prediction",
+      "description": "The system predicts an official IELTS band score.",
+      "status": "not_established",
+      "public_claim_allowed": false,
+      "evidence_refs": []
+    },
+    {
+      "id": "examiner-equivalence",
+      "description": "Automated scoring agrees with qualified IELTS examiners.",
+      "status": "not_established",
+      "public_claim_allowed": false,
+      "evidence_refs": []
+    },
+    {
+      "id": "positive-skill-lift",
+      "description": "Skill-enabled outputs outperform the baseline in an independent evaluation.",
+      "status": "not_established",
+      "public_claim_allowed": false,
+      "evidence_refs": []
+    },
+    {
+      "id": "educational-effectiveness",
+      "description": "Learners improve their IELTS performance after using the system.",
+      "status": "not_established",
+      "public_claim_allowed": false,
+      "evidence_refs": []
+    },
+    {
+      "id": "guaranteed-score-improvement",
+      "description": "The system guarantees a score increase or a target band.",
+      "status": "retired",
+      "public_claim_allowed": false,
+      "evidence_refs": []
+    },
+    {
+      "id": "third-party-content-clearance",
+      "description": "Third-party IELTS or podcast content is cleared for redistribution.",
+      "status": "not_established",
+      "public_claim_allowed": false,
+      "evidence_refs": []
+    }
+  ]
+}

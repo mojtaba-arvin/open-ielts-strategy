@@ -1,0 +1,40 @@
+name: Release gate
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Candidate SemVer tag to validate before publishing a GitHub release
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: release-gate-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.11"
+      - name: Verify candidate tag
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo "release tag must be SemVer vMAJOR.MINOR.PATCH"; exit 1; }
+          actual_tag="$(git describe --tags --exact-match HEAD)"
+          [[ "$actual_tag" == "$RELEASE_TAG" ]] || { echo "checked-out tag does not match requested tag"; exit 1; }
+      - name: Validate repository and source rights
+        run: python scripts/validate_repo.py
+      - name: Validate release claims
+        run: python scripts/validate_release.py
+      - name: Run deterministic regression suite
+        run: python -m unittest discover -s tests -v
