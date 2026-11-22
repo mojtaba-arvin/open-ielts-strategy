@@ -49,13 +49,14 @@ jobs:
       - id: gate
         env:
           JUDGE_API_KEY: ${{ secrets.JUDGE_API_KEY }}
+          TRUSTED_RATER: ${{ inputs.trusted_rater }}
         shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.live }}" == "true" ]]; then
             [[ -n "$JUDGE_API_KEY" ]] || { echo "JUDGE_API_KEY is required for live judge"; exit 1; }
             b="${{ inputs.budget }}"; [[ "$b" =~ ^[1-9][0-9]*$ ]] && (( b <= 20 )) || { echo "budget must be between 1 and 20"; exit 1; }
             issue="${{ inputs.calibration_issue_number }}"; [[ "$issue" =~ ^[1-9][0-9]*$ ]] || { echo "calibration_issue_number must be positive"; exit 1; }
-            rater="${{ inputs.trusted_rater }}"
+            rater="$TRUSTED_RATER"
             [[ "$rater" =~ ^[A-Za-z0-9-]+$ ]] || { echo "trusted_rater must be an explicit GitHub login"; exit 1; }
             echo "live=true" >> "$GITHUB_OUTPUT"; echo "budget=$b" >> "$GITHUB_OUTPUT"; echo "issue_number=$issue" >> "$GITHUB_OUTPUT"; echo "trusted_rater=$rater" >> "$GITHUB_OUTPUT"
           else
