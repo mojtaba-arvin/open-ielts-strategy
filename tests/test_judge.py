@@ -6,7 +6,6 @@ from unittest.mock import patch
 
 from open_ielts_strategy.judge import judge, DIMENSIONS
 from scripts.judge_calibrate import collect_human_ratings, select_calibration_items, rho
-from open_ielts_strategy.http_utils import read_limited_response
 
 
 def judge_response(rationale=None):
