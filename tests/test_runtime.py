@@ -256,6 +256,7 @@ class RuntimeTests(unittest.TestCase):
 
     def test_aggregate_rejects_non_canonical_generation_model(self):
         baseline, skill = self._paid_scorecards()
+        baseline["model"] = " generator "
         skill["model"] = " generator "
         with self.assertRaisesRegex(ValueError, "canonical"):
             aggregate(baseline, skill)
