@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Run independent judge and compare issue-comment human scores."""
-import argparse,json,math,os,subprocess,re
+import argparse,json,math,os,subprocess,re,sys
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from open_ielts_strategy.judge import judge,DIMENSIONS
 def ranks(v):
  order=sorted(range(len(v)),key=lambda i:v[i]); out=[0.0]*len(v); i=0
