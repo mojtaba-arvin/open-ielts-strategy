@@ -9,7 +9,7 @@ on:
         type: boolean
         default: false
       budget:
-        description: Maximum model requests per arm (hard cap)
+        description: Maximum model requests per arm (hard cap 16)
         required: true
         type: number
         default: 16
@@ -38,13 +38,15 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           JUDGE_API_KEY: ${{ secrets.JUDGE_API_KEY }}
+          JUDGE_MODEL: ${{ vars.JUDGE_MODEL }}
         shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.paid }}" == "true" ]]; then
             [[ -n "$OPENAI_API_KEY" ]] || { echo "OPENAI_API_KEY is required for paid mode"; exit 1; }
             [[ -n "$JUDGE_API_KEY" ]] || { echo "JUDGE_API_KEY is required for paid scoring"; exit 1; }
+            [[ -n "$JUDGE_MODEL" ]] || { echo "JUDGE_MODEL repository variable must be configured for independent scoring"; exit 1; }
             b="${{ inputs.budget }}"
-            [[ "$b" =~ ^[1-9][0-9]*$ ]] || { echo "budget must be positive"; exit 1; }
+            [[ "$b" =~ ^[1-9][0-9]*$ ]] && (( b <= 16 )) || { echo "budget must be between 1 and 16"; exit 1; }
             echo "value=openai" >> "$GITHUB_OUTPUT"; echo "budget=$b" >> "$GITHUB_OUTPUT"
           else
             echo "value=mock" >> "$GITHUB_OUTPUT"; echo "budget=0" >> "$GITHUB_OUTPUT"
@@ -71,6 +73,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           JUDGE_API_KEY: ${{ secrets.JUDGE_API_KEY }}
           OPENAI_MODEL: gpt-4o-mini
+          JUDGE_MODEL: ${{ vars.JUDGE_MODEL }}
         run: python scripts/runtime_eval.py --arm "${{ matrix.arm }}" --mode "${{ needs.validate.outputs.mode }}" --budget "${{ needs.validate.outputs.arm_budget }}" --output "${{ matrix.arm }}.json"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
