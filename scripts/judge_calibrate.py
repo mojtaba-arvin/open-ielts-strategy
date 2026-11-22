@@ -82,7 +82,8 @@ def collect_human_ratings(comments, item_ids, trusted_rater):
             continue
         if comment.get("author_association") not in {"OWNER", "MEMBER", "COLLABORATOR"}:
             continue
-        if (user.get("login") or "").casefold() != trusted_rater.casefold():
+        login = user.get("login")
+        if not isinstance(login, str) or login.casefold() != trusted_rater.casefold():
             continue
 
         body = comment.get("body")
