@@ -27,7 +27,7 @@ concurrency:
   group: judge-calibration-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  validate:
+  calibration_validation:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -54,8 +54,8 @@ jobs:
             echo "live=false" >> "$GITHUB_OUTPUT"; echo "budget=0" >> "$GITHUB_OUTPUT"
           fi
   judge:
-    needs: validate
-    if: needs.validate.result == 'success'
+    needs: calibration_validation
+    if: needs.calibration_validation.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -70,8 +70,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [[ "${{ needs.validate.outputs.live }}" == "true" ]]; then
-            python scripts/judge_calibrate.py --budget "${{ needs.validate.outputs.budget }}" --issue-number "${{ needs.validate.outputs.issue_number }}" --trusted-rater "${{ github.repository_owner }}" --output judge-scorecard.json
+          if [[ "${{ needs.calibration_validation.outputs.live }}" == "true" ]]; then
+            python scripts/judge_calibrate.py --budget "${{ needs.calibration_validation.outputs.budget }}" --issue-number "${{ needs.calibration_validation.outputs.issue_number }}" --trusted-rater "${{ github.repository_owner }}" --output judge-scorecard.json
           else
             python scripts/judge_calibrate.py --dry-run --output judge-scorecard.json
           fi
