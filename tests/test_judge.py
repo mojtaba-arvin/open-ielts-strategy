@@ -95,54 +95,30 @@ class JudgeTests(unittest.TestCase):
         )
         self.assertEqual(len(first), 5)
 
-    def test_calibration_ratings_require_owner_and_unique_item_comment(self):
-        valid = {
-            "item_id": "cal-01",
-            "task_response": 6,
-            "coherence_cohesion": 6,
-            "lexical_resource": 5,
-            "grammar_accuracy": 6,
-        }
+    def test_calibration_ratings_require_explicit_trusted_rater_and_unique_item_comment(self):
+        def rating(item_id, score=6):
+            return {
+                "item_id": item_id,
+                "task_response": score,
+                "coherence_cohesion": score,
+                "lexical_resource": score,
+                "grammar_accuracy": score,
+            }
+
         comments = [
-            {"author_association": "OWNER", "user": {"login": "mojtaba-arvin"}, "body": json.dumps(valid)},
-            {
-                "author_association": "CONTRIBUTOR",
-                "user": {"login": "outsider"},
-                "body": json.dumps({
-                    "item_id": "cal-02", "task_response": 8,
-                    "coherence_cohesion": 8, "lexical_resource": 8, "grammar_accuracy": 8,
-                }),
-            },
-            {
-                "author_association": "OWNER",
-                "user": {"login": "mojtaba-arvin"},
-                "body": json.dumps({
-                    "item_id": "cal-03", "task_response": 8,
-                    "coherence_cohesion": 8, "lexical_resource": 8, "grammar_accuracy": 8,
-                }),
-            },
-            {
-                "author_association": "OWNER",
-                "user": {"login": "mojtaba-arvin"},
-                "body": json.dumps({
-                    "item_id": "cal-03", "task_response": 7,
-                    "coherence_cohesion": 7, "lexical_resource": 7, "grammar_accuracy": 7,
-                }),
-            },
-            {
-                "author_association": "OWNER",
-                "user": {"login": "someone-else"},
-                "body": json.dumps({
-                    "item_id": "cal-04", "task_response": 7,
-                    "coherence_cohesion": 7, "lexical_resource": 7, "grammar_accuracy": 7,
-                }),
-            },
+            {"author_association": "OWNER", "user": {"login": "mojtaba-arvin"}, "body": json.dumps(rating("cal-01"))},
+            {"author_association": "COLLABORATOR", "user": {"login": "independent-examiner"}, "body": json.dumps(rating("cal-02", 7))},
+            {"author_association": "CONTRIBUTOR", "user": {"login": "outsider"}, "body": json.dumps(rating("cal-03", 8))},
+            {"author_association": "COLLABORATOR", "user": {"login": "independent-examiner"}, "body": json.dumps(rating("cal-04", 8))},
+            {"author_association": "COLLABORATOR", "user": {"login": "independent-examiner"}, "body": json.dumps(rating("cal-04", 7))},
+            {"author_association": "OWNER", "user": {"login": "someone-else"}, "body": json.dumps(rating("cal-05", 9))},
         ]
-        ratings = collect_human_ratings(
-            comments, {"cal-01", "cal-02", "cal-03", "cal-04"}, "mojtaba-arvin"
-        )
-        self.assertEqual(set(ratings), {"cal-01"})
-        self.assertEqual(ratings["cal-01"], valid)
+        ids = {"cal-01", "cal-02", "cal-03", "cal-04", "cal-05"}
+        external = collect_human_ratings(comments, ids, "independent-examiner")
+        self.assertEqual(set(external), {"cal-02"})
+        self.assertEqual(external["cal-02"], rating("cal-02", 7))
+        owner = collect_human_ratings(comments, ids, "mojtaba-arvin")
+        self.assertEqual(set(owner), {"cal-01"})
 
 
 if __name__ == "__main__":
