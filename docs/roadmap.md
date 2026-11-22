@@ -16,6 +16,7 @@ This roadmap distinguishes implemented repository mechanics from educational val
 - Metadata/robots-policy source inspection tooling. It does not ingest source bodies, and metadata is not legal permission.
 - Unit tests and CI workflows. All currently inspected GitHub Actions references in the five repository workflows are pinned to full commit SHAs.
 - Security report generation and read-only branch/ruleset inspection.
+- A default-deny release-claim registry and tag/release CI gate; public band-score, examiner-equivalence, Skill Lift, educational-effectiveness, guaranteed-improvement, and third-party-clearance claims remain disabled until independently evidenced.
 
 ## Not yet established or implemented
 
