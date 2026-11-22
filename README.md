@@ -6,7 +6,7 @@ An evaluation-first collection of original Agent Skills for IELTS preparation. T
 
 ## Status
 
-Repository foundation with original Writing-feedback and Speaking-transcript-feedback skills. Speaking feedback is text-only and does not assess pronunciation or audio delivery. No third-party source content is bundled.
+Repository foundation with original Writing-feedback, Speaking-transcript-feedback, and Reading-strategy skills. Speaking feedback is text-only and does not assess pronunciation or audio delivery. Reading guidance uses only learner-supplied material and original synthetic examples. No third-party source content is bundled.
 
 ## Quick start
 
@@ -16,9 +16,11 @@ Python 3.11+:
 python scripts/validate_repo.py
 python scripts/evaluate.py --skill ielts-writing-feedback
 python scripts/evaluate.py --skill ielts-speaking-transcript-feedback
+python scripts/evaluate.py --skill ielts-reading-strategy
 python scripts/check_source_drift.py
 python scripts/compose_skills.py --select ielts-writing-feedback
 python scripts/compose_skills.py --select ielts-speaking-transcript-feedback
+python scripts/compose_skills.py --select ielts-reading-strategy
 python -m unittest discover -s tests -v
 ```
 
