@@ -12,5 +12,8 @@ class RoutingTests(unittest.TestCase):
  def test_confidence(self):
   a={"skill_id":"a","priority":1,"confidence":.8,"validated_at":"2026-01-01T00:00:00Z"}; b={"skill_id":"b","priority":1,"confidence":.9,"validated_at":"2025-01-01T00:00:00Z"}
   self.assertEqual(resolve_conflicts([a,b])["skill_id"],"b")
+ def test_invalid_timestamp(self):
+  a={"skill_id":"a","priority":1,"confidence":.8,"validated_at":"yesterday"}
+  with self.assertRaisesRegex(ValueError,"ISO-8601"): resolve_conflicts([a])
  def test_empty(self): self.assertIsNone(resolve_conflicts([]))
 if __name__=="__main__": unittest.main()
