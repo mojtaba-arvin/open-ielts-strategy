@@ -305,7 +305,9 @@ def main():
         },
         "judge_model": scored[0]["model"] if scored else None,
         "reliability": {},
-        "inter_rater_reliability": inter_rater_reliability(human_by_rater),
+        "inter_rater_reliability": (
+            inter_rater_reliability(human_by_rater) if len(trusted_raters) >= 2 else None
+        ),
     }
     for dimension in DIMENSIONS:
         if len(trusted_raters) > 1:
