@@ -16,7 +16,7 @@
     },
     {
       "name": "ielts-speaking-transcript-feedback",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "path": "skills/ielts-speaking-transcript-feedback/SKILL.md",
       "evals": "skills/ielts-speaking-transcript-feedback/evals/cases.json",
       "content_origin": "original",

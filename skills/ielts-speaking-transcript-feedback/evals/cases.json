@@ -67,5 +67,60 @@
       "does_not_award_unjustified_score": 1,
       "provides_evidence_based_feedback": 1
     }
+  },
+  {
+    "id": "part1-direct-answer",
+    "category": "behavioral",
+    "input": "Part 1 synthetic question: 'What do you enjoy about your neighbourhood?' Transcript: 'I like the parks because I can walk there after work.'",
+    "expected": "Recognize a relevant direct answer with a supporting reason; do not require an extended essay-like response.",
+    "rubric": {
+      "identifies_relevance": 1,
+      "recognizes_supporting_reason": 1,
+      "avoids_unnecessary_expansion": 1
+    }
+  },
+  {
+    "id": "part2-sequence",
+    "category": "behavioral",
+    "input": "Part 2 synthetic prompt supplied by learner: describe a skill learned recently. Transcript has a beginning, learning steps, difficulty, and outcome.",
+    "expected": "Comment on the response's sequence and development using only the supplied task and transcript.",
+    "rubric": {
+      "reviews_sequence": 1,
+      "uses_task_context": 1,
+      "does_not_invent_timing": 1
+    }
+  },
+  {
+    "id": "part3-qualified-position",
+    "category": "behavioral",
+    "input": "Part 3 synthetic question: 'Should cities fund public art?' Transcript gives a qualified position, one reason, and a counterpoint.",
+    "expected": "Evaluate clarity and development of the qualified argument without imposing a single preferred opinion.",
+    "rubric": {
+      "recognizes_qualification": 1,
+      "checks_reason_development": 1,
+      "avoids_opinion_bias": 1
+    }
+  },
+  {
+    "id": "transcript-fluency-boundary",
+    "category": "behavioral",
+    "input": "Transcript contains repeated 'um' and one self-correction. User asks whether they spoke too slowly.",
+    "expected": "Describe only visible fillers and self-correction; state that speaking speed cannot be inferred from transcript.",
+    "rubric": {
+      "identifies_visible_features": 1,
+      "states_speed_limit": 1,
+      "does_not_infer_audio": 1
+    }
+  },
+  {
+    "id": "task-question-relevance",
+    "category": "behavioral",
+    "input": "Learner supplies a Part 3 question and transcript that answers a different topic.",
+    "expected": "Identify the mismatch using the supplied question and text; do not invent a score.",
+    "rubric": {
+      "detects_topic_mismatch": 1,
+      "uses_supplied_question": 1,
+      "avoids_official_score": 1
+    }
   }
 ]
