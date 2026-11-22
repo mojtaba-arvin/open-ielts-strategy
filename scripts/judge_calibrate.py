@@ -74,7 +74,7 @@ def collect_human_ratings(comments, item_ids, trusted_rater):
 
     for comment in comments:
         user = comment.get("user") or {}
-        if comment.get("author_association") != "OWNER":
+        if comment.get("author_association") not in {"OWNER", "MEMBER", "COLLABORATOR"}:
             continue
         if (user.get("login") or "").casefold() != trusted_rater.casefold():
             continue
