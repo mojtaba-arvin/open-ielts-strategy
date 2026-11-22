@@ -72,16 +72,25 @@ def collect_human_ratings(comments, item_ids, trusted_rater):
     duplicates = set()
     valid_ids = set(item_ids)
 
+    if not isinstance(comments, list):
+        raise ValueError("comments must be a list")
     for comment in comments:
+        if not isinstance(comment, dict):
+            continue
         user = comment.get("user") or {}
+        if not isinstance(user, dict):
+            continue
         if comment.get("author_association") not in {"OWNER", "MEMBER", "COLLABORATOR"}:
             continue
         if (user.get("login") or "").casefold() != trusted_rater.casefold():
             continue
 
+        body = comment.get("body")
+        if not isinstance(body, str) or not body:
+            continue
         match = re.search(
             r'\{\s*"item_id"\s*:\s*"cal-\d+".*?\}',
-            comment.get("body", ""),
+            body,
             re.S,
         )
         if not match:
