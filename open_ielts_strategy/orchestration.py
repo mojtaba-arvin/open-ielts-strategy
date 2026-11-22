@@ -1,4 +1,5 @@
 """Deterministic MVP semantic routing and conflict resolution."""
+import math
 import re
 from datetime import datetime, timezone
 
@@ -39,31 +40,50 @@ def resolve_conflicts(candidates):
     required = {"skill_id", "priority", "confidence", "validated_at"}
     ranked = []
     for candidate in candidates:
-        if not required.issubset(candidate):
+        if not isinstance(candidate, dict) or not required.issubset(candidate):
             raise ValueError("candidate missing conflict metadata")
+        if not isinstance(candidate["skill_id"], str) or not candidate["skill_id"].strip():
+            raise ValueError("skill_id must be non-empty text")
         if type(candidate["priority"]) is not int:
             raise ValueError("priority must be an integer")
+
+        confidence = candidate["confidence"]
+        if type(confidence) not in (int, float):
+            raise ValueError("confidence must be a finite number between 0 and 1")
         try:
-            confidence = float(candidate["confidence"])
-        except (TypeError, ValueError) as exc:
-            raise ValueError("confidence must be between 0 and 1") from exc
+            finite_confidence = math.isfinite(confidence)
+        except OverflowError:
+            finite_confidence = False
+        if not finite_confidence:
+            raise ValueError("confidence must be a finite number between 0 and 1")
         if not 0 <= confidence <= 1:
-            raise ValueError("confidence must be between 0 and 1")
+            raise ValueError("confidence must be a finite number between 0 and 1")
+
+        timestamp = candidate["validated_at"]
+        if not isinstance(timestamp, str) or not timestamp:
+            raise ValueError("validated_at must be timezone-aware ISO-8601")
         try:
-            validated_at = datetime.fromisoformat(
-                str(candidate["validated_at"]).replace("Z", "+00:00")
+            normalized_timestamp = (
+                timestamp[:-1] + "+00:00" if timestamp.endswith("Z") else timestamp
             )
+            validated_at = datetime.fromisoformat(normalized_timestamp)
         except ValueError as exc:
             raise ValueError("validated_at must be timezone-aware ISO-8601") from exc
         if validated_at.tzinfo is None or validated_at.utcoffset() is None:
             raise ValueError("validated_at must be timezone-aware ISO-8601")
+
+        try:
+            validated_at_utc = validated_at.astimezone(timezone.utc)
+        except OverflowError as exc:
+            raise ValueError("validated_at cannot be normalized to UTC") from exc
+
         ranked.append((
-            (candidate["priority"], confidence, validated_at.astimezone(timezone.utc)),
+            (candidate["priority"], confidence, validated_at_utc),
             candidate,
         ))
 
     best_rank = max(rank for rank, _ in ranked)
     return min(
         (candidate for rank, candidate in ranked if rank == best_rank),
-        key=lambda candidate: str(candidate["skill_id"]),
+        key=lambda candidate: candidate["skill_id"],
     )

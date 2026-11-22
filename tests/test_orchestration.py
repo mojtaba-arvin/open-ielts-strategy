@@ -1,3 +1,4 @@
+import math
 import unittest
 
 from open_ielts_strategy.orchestration import route, resolve_conflicts, WRITING
@@ -57,6 +58,16 @@ class RoutingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "timezone-aware"):
             resolve_conflicts([candidate])
 
+    def test_rejects_timestamp_outside_utc_datetime_range(self):
+        candidate = {
+            "skill_id": "a",
+            "priority": 1,
+            "confidence": 0.8,
+            "validated_at": "0001-01-01T00:00:00+23:59",
+        }
+        with self.assertRaisesRegex(ValueError, "normalized to UTC"):
+            resolve_conflicts([candidate])
+
     def test_invalid_timestamp(self):
         candidate = {
             "skill_id": "a",
@@ -66,6 +77,70 @@ class RoutingTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(ValueError, "ISO-8601"):
             resolve_conflicts([candidate])
+
+    def test_rejects_boolean_confidence(self):
+        candidate = {
+            "skill_id": "a",
+            "priority": 1,
+            "confidence": True,
+            "validated_at": "2026-01-01T00:00:00Z",
+        }
+        with self.assertRaisesRegex(ValueError, "finite number"):
+            resolve_conflicts([candidate])
+
+    def test_rejects_nan_confidence(self):
+        candidate = {
+            "skill_id": "a",
+            "priority": 1,
+            "confidence": math.nan,
+            "validated_at": "2026-01-01T00:00:00Z",
+        }
+        with self.assertRaisesRegex(ValueError, "finite number"):
+            resolve_conflicts([candidate])
+
+    def test_rejects_infinite_confidence(self):
+        candidate = {
+            "skill_id": "a",
+            "priority": 1,
+            "confidence": math.inf,
+            "validated_at": "2026-01-01T00:00:00Z",
+        }
+        with self.assertRaisesRegex(ValueError, "finite number"):
+            resolve_conflicts([candidate])
+
+    def test_rejects_string_confidence(self):
+        candidate = {
+            "skill_id": "a",
+            "priority": 1,
+            "confidence": "0.8",
+            "validated_at": "2026-01-01T00:00:00Z",
+        }
+        with self.assertRaisesRegex(ValueError, "finite number"):
+            resolve_conflicts([candidate])
+
+    def test_rejects_oversized_integer_confidence(self):
+        candidate = {
+            "skill_id": "a",
+            "priority": 1,
+            "confidence": 10**1000,
+            "validated_at": "2026-01-01T00:00:00Z",
+        }
+        with self.assertRaisesRegex(ValueError, "finite number"):
+            resolve_conflicts([candidate])
+
+    def test_rejects_empty_skill_id(self):
+        candidate = {
+            "skill_id": " ",
+            "priority": 1,
+            "confidence": 0.8,
+            "validated_at": "2026-01-01T00:00:00Z",
+        }
+        with self.assertRaisesRegex(ValueError, "skill_id"):
+            resolve_conflicts([candidate])
+
+    def test_rejects_non_object_candidate(self):
+        with self.assertRaisesRegex(ValueError, "candidate missing"):
+            resolve_conflicts([None])
 
     def test_empty(self):
         self.assertIsNone(resolve_conflicts([]))
