@@ -108,6 +108,16 @@ class RoutingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "finite number"):
             resolve_conflicts([candidate])
 
+    def test_rejects_oversized_integer_confidence(self):
+        candidate = {
+            "skill_id": "a",
+            "priority": 1,
+            "confidence": 10**1000,
+            "validated_at": "2026-01-01T00:00:00Z",
+        }
+        with self.assertRaisesRegex(ValueError, "finite number"):
+            resolve_conflicts([candidate])
+
     def test_rejects_empty_skill_id(self):
         candidate = {
             "skill_id": " ",
