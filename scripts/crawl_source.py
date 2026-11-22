@@ -77,12 +77,12 @@ def main():
                               content_sha256=hashlib.sha256(body).hexdigest())
             html = body.decode("utf-8", "replace")
             links = re.findall(
-                r'<link[^>]+rel=["\\'][^"\\']*license[^"\\']*["\\'][^>]+href=["\\']([^"\\']+)',
+                r"""<link[^>]+rel=["'][^"']*license[^"']*["'][^>]+href=["']([^"']+)""",
                 html, re.I,
             )
             metas = re.findall(
-                r'<meta[^>]+(?:name|property)=["\\'](?:license|dc.rights)["\\']'
-                r'[^>]+content=["\\']([^"\\']+)', html, re.I,
+                r"""<meta[^>]+(?:name|property)=["'](?:license|dc.rights)["']"""
+                r"""[^>]+content=["']([^"']+)""", html, re.I,
             )
             report["license_metadata"] = {
                 "link_fields": links[:10], "meta_fields": metas[:10], "cleared": False,
@@ -99,7 +99,7 @@ def main():
             report.update(fetch_error=f"{type(exc).__name__}: {exc}",
                           crawl_status="fetch_failed", changed=None, change_tag="FETCH_FAILED")
 
-    Path(args.output).write_text(json.dumps(report, indent=2) + "\\n")
+    Path(args.output).write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))
     return 0
 
