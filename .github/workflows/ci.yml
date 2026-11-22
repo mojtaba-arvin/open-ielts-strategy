@@ -4,8 +4,11 @@ on:
   push:
     branches: [main, "implementation/**"]
   workflow_dispatch:
+  schedule:
+    - cron: "31 4 * * 1"
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -14,10 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: "3.11"
+          cache: pip
       - name: Validate repository metadata
         run: python scripts/validate_repo.py
       - name: Validate evaluation cases
@@ -28,3 +32,13 @@ jobs:
         run: python scripts/compose_skills.py --select ielts-writing-feedback
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
+      - name: Record main branch protection and rulesets (read-only)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/security_report.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: security-release-report
+          path: security-report.json
+          retention-days: 14
