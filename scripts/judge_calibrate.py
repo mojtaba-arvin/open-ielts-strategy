@@ -25,9 +25,10 @@ def main():
  token=os.getenv("GITHUB_TOKEN")
  if not token: raise RuntimeError("GITHUB_TOKEN required to read human issue ratings")
  repo=os.getenv("GITHUB_REPOSITORY","mojtaba-arvin/open-ielts-strategy")
- raw=subprocess.check_output(["gh","api",f"repos/{repo}/issues/comments","--paginate"],text=True)
+ raw=subprocess.check_output(["gh","api",f"repos/{repo}/issues/comments","--paginate","--slurp"],text=True)
  human={}
- for c in json.loads(raw):
+ pages=json.loads(raw); comments=[c for page in pages for c in page] if pages and isinstance(pages[0],list) else pages
+ for c in comments:
   m=re.search(r"\{\s*\"item_id\"\s*:\s*\"cal-\d+\".*?\}",c.get("body",""),re.S)
   if not m: continue
   try: row=json.loads(m.group())
