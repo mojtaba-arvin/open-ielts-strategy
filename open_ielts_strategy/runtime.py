@@ -153,6 +153,7 @@ def run_arm(arm, cases, mode, budget=0, skill_id="ielts-writing-feedback"):
             "score": score,
             "passed": passed,
             "rationale": rationale,
+            "category": case.get("category", "uncategorized"),
             "arm": arm,
             "skill_id": skill_id,
             "mode": mode,
@@ -287,9 +288,25 @@ def aggregate(base, skill):
         raise ValueError("arms were scored by different judge models")
     baseline_mean = sum(row["score"] for row in base["results"]) / len(base["results"])
     skill_mean = sum(row["score"] for row in skill["results"]) / len(skill["results"])
+    categories = {}
+    category_names = sorted({row.get("category", "uncategorized") for row in base["results"]})
+    for category in category_names:
+        base_rows = [row for row in base["results"] if row.get("category", "uncategorized") == category]
+        skill_rows = [row for row in skill["results"] if row.get("category", "uncategorized") == category]
+        base_mean = sum(row["score"] for row in base_rows) / len(base_rows)
+        skill_category_mean = sum(row["score"] for row in skill_rows) / len(skill_rows)
+        categories[category] = {
+            "case_count": len(base_rows),
+            "baseline_mean_score": round(base_mean, 4),
+            "with_skill_mean_score": round(skill_category_mean, 4),
+            "score_lift": round(skill_category_mean - base_mean, 4),
+            "baseline_resolution_rate": round(sum(row["passed"] for row in base_rows) / len(base_rows), 4),
+            "with_skill_resolution_rate": round(sum(row["passed"] for row in skill_rows) / len(skill_rows), 4),
+        }
     return {
         "schema_version": 1,
         "validation": "independently-judged",
+        "category_breakdown": categories,
         "skill_id": base["skill_id"],
         "baseline_mean_score": round(baseline_mean, 4),
         "with_skill_mean_score": round(skill_mean, 4),
