@@ -1,14 +1,27 @@
 # Optional LLM judge protocol
 
-Default repository checks do not call a model. A judge is a separate reproducible layer.
+Default repository checks do not call a model. The judge is a separate, opt-in execution layer.
 
-- Pin provider, model identifier/version, prompt hash, rubric version, decoding settings, and dataset revision.
-- Pair baseline and skill outputs by case ID; blind/randomize presentation where practical.
-- Score explicit rubric dimensions, not vague overall impressions.
-- Calibrate against human-reviewed gold examples before using scores for release decisions.
-- Track agreement, disagreement, false positives/negatives, tokens, latency, and estimated cost.
-- Keep judge inputs free of secrets and restricted source material.
-- Require human review for borderline and release-blocking results.
-- Never describe judge scores as official IELTS bands or ground truth.
+## Implemented mechanics
 
-Current status: rubric-bearing synthetic cases and comparison of externally generated result files exist. No LLM provider adapter, judge execution, or calibration is implemented yet.
+- Live runtime evaluation pairs baseline and skill outputs by case ID and verifies identical input hashes.
+- The judge scores explicit rubric dimensions and validates a structured response schema with evidence rationales.
+- Generation and judging require separately configured credentials and an explicitly configured judge model distinct from the generation model.
+- Live request budgets are bounded; fixture mode is the default for pull requests, schedules, and ordinary manual runs.
+- Judge prompts explicitly treat supplied task content, cases, rubrics, essays, and feedback as untrusted data. Prompt-injection regression tests cover the judge path.
+- Synthetic calibration data contains 20 distinct original responses across Writing Task 1 and Task 2. Human scores are null until actual trusted ratings are supplied.
+- Calibration tooling accepts ratings only from an explicitly selected trusted GitHub account with an eligible repository association, rejects ambiguous duplicate ratings, and reports undefined statistical cases honestly.
+
+## What these mechanics do not establish
+
+- Fixture-mode output is not a model evaluation and cannot establish Skill Lift.
+- A live model-judge score is not ground truth, an official IELTS band, an examiner score, or evidence of examiner equivalence.
+- No independent human calibration result exists until qualified independent ratings are actually collected.
+- A synthetic corpus is a software test fixture, not a representative sample of IELTS candidates or official test material.
+- Passing schema, security, and unit tests establishes implementation behavior only, not educational validity.
+
+## Safe operation
+
+Keep live runs opt-in and budget-bounded. Do not send third-party IELTS questions, official test material, candidate answers belonging to others, copyrighted passages, recordings, transcripts, paid-preparation content, or confidential learner data to a model. Use only independently authored synthetic inputs or learner-provided material for which the user has authority to request processing. Do not add source content to the repository. Never claim legal clearance, official band prediction, guaranteed score improvement, or examiner equivalence from judge output.
+
+For any release-blocking educational conclusion, require qualified human review and independently documented evidence. Human calibration remains a separate gate, not something synthetic fixtures can replace.
