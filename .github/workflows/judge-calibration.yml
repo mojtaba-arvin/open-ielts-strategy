@@ -9,7 +9,12 @@ on:
         type: boolean
         default: false
       budget:
-        description: Maximum number of essays to judge
+        description: Maximum number of essays to judge (1-20)
+        required: true
+        type: number
+        default: 5
+      calibration_issue_number:
+        description: Issue or PR number containing owner-submitted ratings
         required: true
         type: number
         default: 5
@@ -28,6 +33,7 @@ jobs:
     outputs:
       live: ${{ steps.gate.outputs.live }}
       budget: ${{ steps.gate.outputs.budget }}
+      issue_number: ${{ steps.gate.outputs.issue_number }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
@@ -41,8 +47,9 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.live }}" == "true" ]]; then
             [[ -n "$JUDGE_API_KEY" ]] || { echo "JUDGE_API_KEY is required for live judge"; exit 1; }
-            b="${{ inputs.budget }}"; [[ "$b" =~ ^[1-9][0-9]*$ ]] || { echo "budget must be positive"; exit 1; }
-            echo "live=true" >> "$GITHUB_OUTPUT"; echo "budget=$b" >> "$GITHUB_OUTPUT"
+            b="${{ inputs.budget }}"; [[ "$b" =~ ^[1-9][0-9]*$ ]] && (( b <= 20 )) || { echo "budget must be between 1 and 20"; exit 1; }
+            issue="${{ inputs.calibration_issue_number }}"; [[ "$issue" =~ ^[1-9][0-9]*$ ]] || { echo "calibration_issue_number must be positive"; exit 1; }
+            echo "live=true" >> "$GITHUB_OUTPUT"; echo "budget=$b" >> "$GITHUB_OUTPUT"; echo "issue_number=$issue" >> "$GITHUB_OUTPUT"
           else
             echo "live=false" >> "$GITHUB_OUTPUT"; echo "budget=0" >> "$GITHUB_OUTPUT"
           fi
@@ -64,7 +71,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [[ "${{ needs.validate.outputs.live }}" == "true" ]]; then
-            python scripts/judge_calibrate.py --budget "${{ needs.validate.outputs.budget }}" --output judge-scorecard.json
+            python scripts/judge_calibrate.py --budget "${{ needs.validate.outputs.budget }}" --issue-number "${{ needs.validate.outputs.issue_number }}" --trusted-rater "${{ github.repository_owner }}" --output judge-scorecard.json
           else
             python scripts/judge_calibrate.py --dry-run --output judge-scorecard.json
           fi
