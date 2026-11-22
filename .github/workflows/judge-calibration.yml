@@ -1,6 +1,14 @@
 name: Judge calibration
 on:
   pull_request:
+    paths:
+      - "open_ielts_strategy/judge.py"
+      - "scripts/judge_calibrate.py"
+      - "tests/test_judge.py"
+      - "data/calibration/**"
+      - "docs/calibration.md"
+      - "docs/llm-judge.md"
+      - ".github/workflows/judge-calibration.yml"
   workflow_dispatch:
     inputs:
       live:
