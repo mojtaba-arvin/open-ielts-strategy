@@ -32,6 +32,15 @@ def ranks(values):
 
 
 def rho(x, y):
+    """Return Spearman correlation, rejecting malformed paired observations."""
+    if not isinstance(x, (list, tuple)) or not isinstance(y, (list, tuple)):
+        raise ValueError("correlation inputs must be sequences")
+    if len(x) != len(y):
+        raise ValueError("correlation inputs must have equal lengths")
+    if any(type(value) is not int or not 1 <= value <= 9 for value in (*x, *y)):
+        raise ValueError("correlation ratings must be integers from 1 to 9")
+    if len(x) < 2:
+        return None
     rank_x, rank_y = ranks(x), ranks(y)
     mean_x, mean_y = sum(rank_x) / len(rank_x), sum(rank_y) / len(rank_y)
     denominator = math.sqrt(
