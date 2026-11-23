@@ -54,7 +54,7 @@ class RepositoryValidatorShapeTests(unittest.TestCase):
             skill_dir = root / "skills" / "sample-skill"
             (skill_dir / "evals").mkdir(parents=True)
             (skill_dir / "SKILL.md").write_text(
-                "---\\nname: sample-skill\\ndescription: Sample\\nlicense: LICENSE-CONTENT\\nversion: 1.0.0\\n---\\n",
+                "---\nname: sample-skill\ndescription: Sample\nlicense: LICENSE-CONTENT\nversion: 1.0.0\n---\n",
                 encoding="utf-8",
             )
             (skill_dir / "evals" / "cases.json").write_text(
