@@ -56,6 +56,22 @@ matches = pack.search_strategies("describe a memorable journey", skill="speaking
 
 No private database, network, extraction provider, embedding model, or LLM is imported by this API. Search is deterministic lexical matching in v1; hybrid retrieval and answer generation are separate layers.
 
+## Local pack build and publication gate
+
+After authoring strategy JSON drafts in private local storage, build a pack with explicit maintainer confirmation:
+
+```bash
+ielts-knowledge-publish \
+  --strategy .local/drafts/speaking.answer-development.json \
+  --destination ./knowledge \
+  --version 1.0.0 \
+  --confirm-human-review
+```
+
+For source-derived strategies, map each strategy to its private semantic item IDs with repeated `--source-item STRATEGY_ID=SITEM_ID` arguments. The command checks content approval, separate publication approval, and a matching rights basis in the private SQLite database. Private IDs, reviewer notes, and source text are not included in the generated pack. The builder writes a new directory only, verifies the staged pack, and refuses to overwrite an existing destination. It does not create a Git commit or push; review the resulting file diff separately.
+
+The `--confirm-human-review` flag is an explicit operator attestation, not an automated legal determination. Rights metadata and model-generated content are never treated as self-approving.
+
 ## Published Knowledge MCP (stdio)
 
 Install the optional MCP dependency and run the published-only adapter against a checked-out pack:
