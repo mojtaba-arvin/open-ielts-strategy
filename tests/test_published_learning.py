@@ -10,6 +10,7 @@ from open_ielts_strategy.published_learning import (
     explain_published_strategy, generate_published_strategy_example, get_published_example,
 )
 from open_ielts_strategy.text_generation import GenerationError
+from open_ielts_strategy.published_learning_cli import build_parser
 
 
 class FakeProvider:
@@ -137,6 +138,14 @@ class PublishedLearningTests(unittest.TestCase):
             result = get_published_example(pack, "speaking.example.direct-answer-01")
             self.assertEqual(result["strategy"]["id"], "speaking.answer-development")
             self.assertEqual(result["schema_version"], "1.1")
+
+    def test_learning_cli_parses_standalone_example_lookup(self):
+        args = build_parser().parse_args([
+            "get-example", "--pack", "./knowledge",
+            "--example-id", "speaking.example.direct-answer-01",
+        ])
+        self.assertEqual(args.command, "get-example")
+        self.assertEqual(args.example_id, "speaking.example.direct-answer-01")
 
     def test_study_plan_handles_missing_published_paths(self):
         with tempfile.TemporaryDirectory() as tmp:
