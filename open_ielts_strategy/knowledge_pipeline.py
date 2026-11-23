@@ -221,6 +221,17 @@ def _ensure_publication_schema(store):
     );
     CREATE INDEX IF NOT EXISTS idx_publication_reviews_status
         ON publication_reviews(publication_status);
+    CREATE TABLE IF NOT EXISTS publication_review_events (
+        event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        item_id TEXT NOT NULL,
+        publication_status TEXT NOT NULL,
+        rights_basis TEXT,
+        reviewer TEXT NOT NULL,
+        note TEXT NOT NULL DEFAULT '',
+        reviewed_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_publication_review_events_item
+        ON publication_review_events(item_id, event_id);
     """)
     store._connection.commit()
 
@@ -265,6 +276,12 @@ def review_publication_item(store, item_id: str, status: str, *,
                  reviewer=excluded.reviewer,
                  note=excluded.note,
                  reviewed_at=excluded.reviewed_at""",
+            (item_id, status, rights_basis, reviewer.strip(), note, reviewed_at),
+        )
+        store._connection.execute(
+            """INSERT INTO publication_review_events
+               (item_id, publication_status, rights_basis, reviewer, note, reviewed_at)
+               VALUES (?, ?, ?, ?, ?, ?)""",
             (item_id, status, rights_basis, reviewer.strip(), note, reviewed_at),
         )
     return {
@@ -317,3 +334,16 @@ def assert_items_publishable(store, item_ids: list[str]) -> list[dict]:
             raise ValueError(f"publishable rights basis is missing for semantic item: {item_id}")
         approved.append(dict(row))
     return approved
+
+
+def list_publication_review_history(store, item_id: str) -> list[dict]:
+    """Return the private append-only review history for one semantic item."""
+    _ensure_publication_schema(store)
+    rows = store._connection.execute(
+        """SELECT event_id, publication_status, rights_basis, reviewer, note, reviewed_at
+           FROM publication_review_events WHERE item_id=? ORDER BY event_id""",
+        (item_id,),
+    ).fetchall()
+    if not rows:
+        raise KeyError(f"no publication review history exists for semantic item: {item_id}")
+    return [dict(row) for row in rows]
