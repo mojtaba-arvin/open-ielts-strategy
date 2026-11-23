@@ -69,11 +69,11 @@ class AuthenticatedMCPMiddleware:
             return await self.app(scope, receive, send)
         headers = {key.lower(): value for key, value in scope.get("headers", [])}
         path = scope.get("path", "")
-        if path == "/healthz" and scope.get("method") == "GET":
-            return await self._respond(send, 200, "ok")
         host = headers.get(b"host", b"").decode("latin1").split(":", 1)[0].casefold()
         if host not in self.allowed_hosts:
             return await self._respond(send, 421, "host not allowed")
+        if path == "/healthz" and scope.get("method") == "GET":
+            return await self._respond(send, 200, "ok")
         origin = headers.get(b"origin")
         if origin and self.allowed_origins and origin.decode("latin1") not in self.allowed_origins:
             return await self._respond(send, 403, "origin not allowed")
@@ -94,16 +94,25 @@ class AuthenticatedMCPMiddleware:
                 return await self._respond(send, 400, "invalid content length")
 
         received = 0
+        exceeded = False
         async def limited_receive():
-            nonlocal received
+            nonlocal received, exceeded
             message = await receive()
             if message["type"] == "http.request":
                 received += len(message.get("body", b""))
                 if received > self.max_body_bytes:
+                    exceeded = True
                     return {"type": "http.disconnect"}
             return message
 
-        return await self.app(scope, limited_receive, send)
+        async def guarded_send(message):
+            if not exceeded:
+                await send(message)
+
+        await self.app(scope, limited_receive, guarded_send)
+        if exceeded:
+            await self._respond(send, 413, "request body too large")
+        return None
 
 
 def create_http_app(pack_path: str | Path, *, token: str,
