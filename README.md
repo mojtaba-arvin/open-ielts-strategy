@@ -6,7 +6,7 @@ An evaluation-first collection of original Agent Skills for IELTS preparation. T
 
 ## Status
 
-Repository foundation with original Writing-feedback, Speaking-transcript-feedback, Reading-strategy, and Listening-strategy skills. Speaking feedback is text-only and does not assess pronunciation or audio delivery. Reading guidance uses learner-supplied material and original synthetic examples. Listening guidance is text-only and reviews learner-authored notes; it does not process audio or transcripts. No third-party source content is bundled.
+Repository foundation with original Writing-feedback, Speaking-transcript-feedback, Reading-strategy, and Listening-strategy skills. Speaking feedback is text-only and does not assess pronunciation or audio delivery. Reading guidance uses learner-supplied material and original synthetic examples. Listening guidance is text-only and reviews learner-authored notes; it does not process audio or transcripts. A separate offline audio-validation foundation validates WAV/MP3 containers but does not transcribe speech or alter those skill contracts. No third-party source content is bundled.
 
 ## Quick start
 
@@ -36,6 +36,15 @@ The comparison reports resolution rates and skill lift; it does not generate mod
 
 The Runtime Evaluation workflow supports paired baseline/skill fixture arms for all four skills (Writing, Speaking, Reading, and Listening). Pull requests evaluate only affected skills; manual and scheduled runs cover all four. It publishes one wiring-only scorecard per evaluated skill. Each arm records SHA-256 fingerprints for its canonical evaluation-case suite and exact skill file; aggregation rejects mismatched fingerprints. All GitHub Actions triggers (pull requests, manual dispatches, and scheduled runs) are fixture-only and make zero model calls; the workflow exposes no paid/live-model input. Fixture scores are wiring checks, not quality judgments, and do not establish educational effectiveness or Skill Lift.
 
+## Free offline evaluation foundations
+
+- **Deterministic writing diagnostics:** `open_ielts_strategy.rule_judge.evaluate_writing` emits reproducible text-feature diagnostics. Its simulated heuristic indices are not IELTS bands, examiner judgments, or validated assessments. See [Rule-based Judge](docs/rule-based-judge.md).
+- **Audio input validation:** `open_ielts_strategy.audio.inspect_audio` validates in-memory WAV/MP3 structure, size, and duration without transcription, external dependencies, or network access. It does not prove ASR accuracy. See [Audio Processing](docs/audio-processing.md).
+- **Paired Skill Lift audit:** `open_ielts_strategy.skill_lift.compare_skill_lift` pairs Baseline/Skill results by case ID and reports overall/category deltas. Fixture outputs are explicitly simulated and never claim-eligible. See [Skill Lift](docs/skill-lift.md).
+- **Calibration audit:** `open_ielts_strategy.calibration_audit.audit_calibration` compares judge versions and produces a deterministic review queue. Optional reference comparisons are descriptive and do not authenticate reviewer qualifications. See [Calibration Audit](docs/calibration-audit.md).
+
+All four helpers are pure Python, offline, and API-key-free. CI tests validate implementation contracts only. Live model judgments, qualified human calibration, educational validity, and claims of learner improvement remain separate gates.
+
 ## Principles
 
 - Evaluation cases precede skill implementation.
@@ -53,6 +62,7 @@ The Runtime Evaluation workflow supports paired baseline/skill fixture arms for 
 - `registry/sources.json`: metadata-only source registry.
 - `schemas/`: machine-readable provenance schema.
 - `scripts/`: offline validators.
+- `open_ielts_strategy/`: deterministic evaluation, audio validation, and audit helpers.
 - `docs/`: legal, ingestion, evaluation, security, governance, and roadmap policies.
 - `.github/workflows/`: CI and scheduled checks.
 
