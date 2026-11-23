@@ -35,10 +35,14 @@ def _ensure_schema(store):
         end_char INTEGER NOT NULL,
         topic_tags_json TEXT NOT NULL,
         rationale TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'needs_review'
+        status TEXT NOT NULL DEFAULT 'needs_review',
+        review_note TEXT NOT NULL DEFAULT ''
     );
     CREATE INDEX IF NOT EXISTS idx_semantic_items_source ON semantic_items(source_id, start_char);
     """)
+    columns = {row["name"] for row in store._connection.execute("PRAGMA table_info(semantic_items)")}
+    if "review_note" not in columns:
+        store._connection.execute("ALTER TABLE semantic_items ADD COLUMN review_note TEXT NOT NULL DEFAULT ''")
     store._connection.commit()
 
 
@@ -133,8 +137,8 @@ def review_semantic_item(store, item_id: str, status: str, note: str = "") -> di
     _ensure_schema(store)
     with store._connection:
         cursor = store._connection.execute(
-            "UPDATE semantic_items SET status=?, rationale=CASE WHEN ?='' THEN rationale ELSE ? END WHERE item_id=?",
-            (status, note, note, item_id),
+            "UPDATE semantic_items SET status=?, review_note=? WHERE item_id=?",
+            (status, note, item_id),
         )
         if cursor.rowcount != 1:
             raise KeyError(f"unknown semantic item: {item_id}")
