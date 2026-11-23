@@ -21,9 +21,9 @@ Create secrets using the cluster's external secret manager; do not commit Kubern
 | redis-url | Required rediss URL to managed Redis on the approved TLS port; use certificate verification and a dedicated ACL identity |
 | openai-api-key | Omit unless the operator explicitly enables remote generation/embedding and has approved the data-egress boundary |
 
-The HTTP service has no built-in OIDC implementation. Configure OIDC at a trusted gateway and ensure it cannot be bypassed through a direct Service, NodePort, LoadBalancer, pod IP, or alternate ingress. Keep the application Service as ClusterIP. The Kubernetes NetworkPolicy allows ingress only from the ingress-controller namespace and Redis egress only on the TLS Redis port plus cluster DNS; adapt DNS labels and Redis destination policy to the selected CNI/cloud provider, without adding unrestricted egress.
+The HTTP service has no built-in OIDC implementation. Configure OIDC at a trusted gateway and ensure it cannot be bypassed through a direct Service, NodePort, LoadBalancer, pod IP, or alternate ingress. Keep the application Service as ClusterIP. The Kubernetes NetworkPolicy allows ingress only from the ingress-controller namespace and Redis egress only on the TLS Redis port plus cluster DNS. Replace the documentation-only Redis CIDR with the exact managed Redis destination range(s); adapt DNS labels and destination policy to the selected CNI/cloud provider, without adding unrestricted egress.
 
-The supplied Kubernetes file intentionally contains example image, hostname, certificate issuer, and claim names. Replace these values with an immutable image digest and real cluster values before applying. Do not deploy the template unchanged.
+The supplied Kubernetes file intentionally contains example image, hostname, certificate issuer, OIDC auth endpoint, and Redis egress CIDR (203.0.113.0/24 is documentation-only TEST-NET space). Replace these values with an immutable image digest, the real OIDC auth endpoint, the managed Redis destination CIDR(s), and real cluster values before applying. Do not deploy the template unchanged.
 
 ## Deployment sequence
 
