@@ -11,6 +11,7 @@ from .text_generation import build_consumption_provider
 from .published_retrieval import PublishedRetrievalEngine
 from .hybrid_retrieval import LocalSentenceTransformer
 from .published_index import PublishedIndexStore
+from .embedding_providers import OpenAICompatibleEmbeddingProvider
 from .enhanced_published_retrieval import (EnhancedPublishedRetrievalEngine, ModelQueryRewriter, LocalCrossEncoderReranker)
 
 
@@ -24,7 +25,11 @@ def build_parser():
     parser.add_argument("--endpoint")
     parser.add_argument("--api-key-env", default="OPENAI_API_KEY")
     parser.add_argument("--limit", type=int, default=6)
-    parser.add_argument("--embedding-model-path", help="Optional already-cached local sentence-transformer directory")
+    parser.add_argument("--embedding-provider", choices=("local", "openai-compatible"), help="Optional local or remote embedding backend")
+    parser.add_argument("--embedding-model-path", help="Already-cached local sentence-transformer directory")
+    parser.add_argument("--embedding-model-name", help="Embedding model name for the OpenAI-compatible provider")
+    parser.add_argument("--embedding-endpoint", default="https://api.openai.com/v1/embeddings")
+    parser.add_argument("--embedding-api-key-env", default="OPENAI_API_KEY")
     parser.add_argument("--index-db", help="Optional persistent public-only embedding cache SQLite path")
     parser.add_argument("--embedding-model-fingerprint", help="Required stable model/version fingerprint when --index-db is used")
     parser.add_argument("--query-rewriting", action="store_true", help="Opt in to model-assisted query expansion using the selected generation provider")
@@ -44,12 +49,32 @@ def main(argv=None):
             config["api_key_env"] = args.api_key_env
         provider = build_consumption_provider(args.provider, **config)
         retriever = None
-        if args.index_db and not args.embedding_model_path:
-            raise ValueError("--index-db requires --embedding-model-path")
+        embedding_kind = args.embedding_provider or ("local" if args.embedding_model_path else None)
+        embeddings = None
+        if embedding_kind == "local":
+            if not args.embedding_model_path:
+                raise ValueError("local embeddings require --embedding-model-path")
+            if args.embedding_model_name:
+                raise ValueError("--embedding-model-name is only used with the OpenAI-compatible provider")
+            embeddings = LocalSentenceTransformer(args.embedding_model_path)
+        elif embedding_kind == "openai-compatible":
+            if args.embedding_model_path:
+                raise ValueError("--embedding-model-path cannot be combined with a remote embedding provider")
+            if not args.embedding_model_name:
+                raise ValueError("remote embeddings require --embedding-model-name")
+            embeddings = OpenAICompatibleEmbeddingProvider(
+                model=args.embedding_model_name, endpoint=args.embedding_endpoint,
+                api_key_env=args.embedding_api_key_env,
+            )
+        elif args.embedding_model_name:
+            raise ValueError("--embedding-model-name requires --embedding-provider openai-compatible")
+        if args.index_db and embeddings is None:
+            raise ValueError("--index-db requires an embedding provider")
         if args.index_db and not args.embedding_model_fingerprint:
             raise ValueError("--index-db requires --embedding-model-fingerprint")
-        if args.embedding_model_path:
-            embeddings = LocalSentenceTransformer(args.embedding_model_path)
+        if args.embedding_model_fingerprint and not args.index_db:
+            raise ValueError("--embedding-model-fingerprint requires --index-db")
+        if embeddings is not None:
             if args.index_db:
                 index_store = PublishedIndexStore(args.index_db)
                 index_store.build(
