@@ -75,7 +75,7 @@ def validate_release_preflight(root: Path, release_tag: str | None = None) -> li
     if not isinstance(project, dict):
         return ["pyproject.toml must declare a [project] table"]
     version = project.get("version")
-    if not isinstance(version, str) or not re.fullmatch(r"(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)", version):
+    if not isinstance(version, str) or not re.fullmatch(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", version):
         errors.append("project.version must be canonical SemVer MAJOR.MINOR.PATCH")
         version = None
 
@@ -85,14 +85,14 @@ def validate_release_preflight(root: Path, release_tag: str | None = None) -> li
     except OSError as exc:
         errors.append(f"package __init__.py is missing or unreadable: {exc}")
     else:
-        match = re.search(r"^__version__\\s*=\\s*['\\\"]([^'\\\"]+)['\\\"]", init_text, re.MULTILINE)
+        match = re.search(r"^__version__\s*=\s*['\\"]([^'\\"]+)['\\"]", init_text, re.MULTILINE)
         if match is None:
             errors.append("package __init__.py must declare __version__")
         elif version is not None and match.group(1) != version:
             errors.append("package __version__ does not match project.version")
 
     if release_tag is not None:
-        if not isinstance(release_tag, str) or not re.fullmatch(r"v(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)", release_tag):
+        if not isinstance(release_tag, str) or not re.fullmatch(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", release_tag):
             errors.append("release tag must be canonical vMAJOR.MINOR.PATCH")
         elif version is not None and release_tag != f"v{version}":
             errors.append(f"release tag {release_tag} does not match project.version v{version}")
