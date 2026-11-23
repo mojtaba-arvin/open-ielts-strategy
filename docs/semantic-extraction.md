@@ -20,6 +20,20 @@ This explicitly invokes the local Ollama service at `127.0.0.1:11434`. The model
 - The persistence pipeline stores provider/model/prompt versions and maps segment-local offsets back to exact absolute offsets in the original source. Semantic items are separate from the original lexical cards.
 - The model may hallucinate offsets; failed span checks reject the item.
 
+## Explicit remote API provider
+
+The extraction CLI also supports an OpenAI-compatible Chat Completions endpoint. Remote processing is opt-in and sends the selected private source segment to that provider; use it only when the source may lawfully be disclosed to that service.
+
+```bash
+export OPENAI_API_KEY="..."
+python scripts/knowledge_extract.py --source-id src_ID \
+  --provider openai-compatible --model YOUR_API_MODEL
+```
+
+The adapter requires HTTPS, reads the credential only from the named environment variable, bounds source and response sizes, uses structured JSON output, retries only bounded transient failures, and runs the same exact source-span validation as the local adapter. It does not print or persist the API key. Override the endpoint with `--endpoint` only for a trusted HTTPS-compatible service. Configure another secret variable with `--api-key-env`.
+
+The default remains local Ollama. There is no implicit provider fallback: a selected provider failure is reported rather than silently sending private text to a different service.
+
 ## Python API
 
 ```python
