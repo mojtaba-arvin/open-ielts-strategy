@@ -90,3 +90,106 @@ class PublishedRetrievalTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+from open_ielts_strategy.published_index import PublishedIndexStore
+
+
+class CountingEmbeddings:
+    def __init__(self):
+        self.batch_sizes = []
+
+    def encode(self, texts):
+        self.batch_sizes.append(len(texts))
+        return [[float(len(text)), 1.0] for text in texts]
+
+
+def add_second_strategy(root):
+    source_path = root / "strategies/speaking/strategy.json"
+    strategy = json.loads(source_path.read_text(encoding="utf-8"))
+    second = dict(strategy)
+    second["id"] = "speaking.supporting-detail"
+    second["title"] = "Supporting Detail"
+    second["summary"] = "Add one relevant supporting detail."
+    second_path = root / "strategies/speaking/supporting-detail.json"
+    second_path.write_text(json.dumps(second, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+    manifest_path = root / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    payload = second_path.read_bytes()
+    manifest["files"].append({
+        "path": "strategies/speaking/supporting-detail.json",
+        "sha256": hashlib.sha256(payload).hexdigest(),
+    })
+    manifest["files"].sort(key=lambda item: item["path"])
+    manifest["pack_version"] = "3.2.0"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+
+def revise_first_strategy(root):
+    source_path = root / "strategies/speaking/strategy.json"
+    strategy = json.loads(source_path.read_text(encoding="utf-8"))
+    strategy["summary"] = "Develop a direct answer and support it with a precise relevant detail."
+    payload = json.dumps(strategy, sort_keys=True, separators=(",", ":")).encode()
+    source_path.write_bytes(payload)
+    manifest_path = root / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["pack_version"] = "3.3.0"
+    for item in manifest["files"]:
+        if item["path"] == "strategies/speaking/strategy.json":
+            item["sha256"] = hashlib.sha256(payload).hexdigest()
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+
+class PublishedIndexIncrementalTests(unittest.TestCase):
+    def test_only_changed_records_are_reembedded_after_pack_revision(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            make_pack(root)
+            add_second_strategy(root)
+            provider = CountingEmbeddings()
+            store = PublishedIndexStore(root / "index.sqlite")
+            try:
+                first_pack = load_knowledge_pack(root)
+                first = store.build(first_pack, model_fingerprint="fake-v1", embedding_provider=provider)
+                self.assertEqual(first["embedded_documents"], 2)
+                self.assertEqual(provider.batch_sizes, [2])
+
+                revise_first_strategy(root)
+                second_pack = load_knowledge_pack(root)
+                second = store.build(second_pack, model_fingerprint="fake-v1", embedding_provider=provider)
+                self.assertEqual(provider.batch_sizes, [2, 1])
+                self.assertEqual(second["reused_documents"], 1)
+                self.assertEqual(second["updated_documents"], 1)
+                self.assertEqual(second["embedded_documents"], 1)
+                self.assertEqual(second["removed_documents"], 0)
+                self.assertEqual(store.connection.execute(
+                    "SELECT COUNT(*) FROM indexed_documents"
+                ).fetchone()[0], 2)
+            finally:
+                store.close()
+
+    def test_embedding_failure_keeps_previous_index_and_metadata(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            make_pack(root)
+            store = PublishedIndexStore(root / "index.sqlite")
+            provider = CountingEmbeddings()
+            try:
+                first_pack = load_knowledge_pack(root)
+                store.build(first_pack, model_fingerprint="fake-v1", embedding_provider=provider)
+                old_identity = store.identity()
+                revise_first_strategy(root)
+                revised_pack = load_knowledge_pack(root)
+
+                class BrokenProvider:
+                    def encode(self, texts):
+                        raise RuntimeError("provider unavailable")
+
+                with self.assertRaises(RuntimeError):
+                    store.build(revised_pack, model_fingerprint="fake-v1", embedding_provider=BrokenProvider())
+                self.assertEqual(store.identity(), old_identity)
+                self.assertEqual(store.connection.execute(
+                    "SELECT COUNT(*) FROM indexed_documents"
+                ).fetchone()[0], 1)
+            finally:
+                store.close()
