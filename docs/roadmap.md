@@ -30,6 +30,8 @@ This roadmap distinguishes implemented repository mechanics from educational val
 
 - **Published Knowledge Pack v1 foundation (in progress):** a standard-library-only filesystem loader, checksum verification, strict strategy contract checks, separate content/publication approval enforcement, private-field rejection, deterministic strategy lookup, JSON Schemas, and architecture decisions are added on the feature branch. The loader currently supports strategy records only; pack building, full concept/relationship/learning-path loading, and publication automation remain outstanding.
 
+- **Separate publication-review gate (in progress):** private SQLite now records publication status, reviewer, timestamp, rights-basis declaration, and private review note independently from semantic content approval. The fail-closed eligibility helper requires both approvals and an explicit rights basis. Pack builder integration and leak scanning remain outstanding.
+
 ## Not yet established or implemented
 
 1. **Real educational effectiveness:** no independently reviewed benchmark currently demonstrates positive skill lift. Fixture-mode results are not evidence of effectiveness.
