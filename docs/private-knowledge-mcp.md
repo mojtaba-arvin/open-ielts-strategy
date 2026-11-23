@@ -11,6 +11,11 @@ python -m pip install -e '.[mcp]'
 python -m open_ielts_strategy.knowledge_mcp --db .local/knowledge.sqlite3
 ```
 
+If you use the ChatGPT desktop app's MCP settings, configure:
+- Command: `python`
+- Arguments: `-m open_ielts_strategy.knowledge_mcp --db /absolute/path/to/.local/knowledge.sqlite3`
+- Working directory: the repository checkout (or install the package into the selected Python environment).
+
 The process uses MCP stdio transport. It does not open a listening TCP port. The database path is fixed when the process starts and must already exist.
 
 ## Exposed read-only tools
@@ -22,7 +27,13 @@ The MCP server does not expose ingest, review, delete, backup, or arbitrary SQL 
 
 ## ChatGPT connection
 
-ChatGPT is an MCP client in this integration, not an MCP server. Where the ChatGPT desktop app offers local MCP configuration, add the stdio command above. For ChatGPT web custom MCP apps, the server must be reachable through a supported remote HTTPS endpoint or Secure MCP Tunnel; a loopback-only stdio process is not directly reachable from the web client. Availability depends on ChatGPT plan and workspace permissions. Check current OpenAI documentation before setup:
+ChatGPT is an MCP client in this integration, not an MCP server.
+
+- **ChatGPT desktop app:** current OpenAI documentation describes local STDIO MCP setup under Settings → MCP servers → Add server. Add the command and arguments from the next section, save, restart, then type `/mcp` in the composer to inspect connected tools. The desktop app shares MCP configuration with Codex.
+- **ChatGPT web:** it does not read local Codex configuration files. It connects to remote MCP tools through custom plugins/apps. A local-only server needs a supported Secure MCP Tunnel or a remote HTTPS host. OpenAI currently lists custom MCP server connections on ChatGPT web for Business and Enterprise/Edu; Pro has read/fetch-only access. Workspace permissions apply. Do not assume Free web access to custom MCP.
+- **Strictly private/local use:** if the client sends retrieved evidence to ChatGPT, those returned excerpts become part of the ChatGPT conversation context. The original full transcript need not be returned, but excerpts are still shared with the cloud model. Use local Ollama for a no-cloud path.
+
+Check current OpenAI documentation before setup:
 
 - https://learn.chatgpt.com/docs/extend/mcp
 - https://help.openai.com/en/articles/12584461-connecting-custom-mcp-servers-in-chatgpt
