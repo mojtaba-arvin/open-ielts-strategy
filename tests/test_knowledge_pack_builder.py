@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from open_ielts_strategy.knowledge_pack_builder import build_knowledge_pack
@@ -164,6 +165,20 @@ class KnowledgePackBuilderTests(unittest.TestCase):
             self.assertEqual(result["learning_path_count"], 1)
             pack = load_knowledge_pack(root / "complete-pack")
             self.assertEqual(pack.get_learning_path("speaking.foundations")["title"], "Speaking Foundations")
+
+    def test_optional_semantic_scan_is_a_blocking_build_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with patch(
+                "open_ielts_strategy.semantic_publication_scan.scan_semantic_publication_leaks",
+                return_value={"passed": False, "semantic_findings": [{"source_id": "private-source"}]},
+            ):
+                with self.assertRaisesRegex(KnowledgePackError, "semantic publication scan"):
+                    build_knowledge_pack(
+                        [strategy()], root / "blocked-pack", pack_version="1.0.0",
+                        human_confirmed=True, semantic_embedding_provider=object(),
+                    )
+            self.assertFalse((root / "blocked-pack").exists())
 
     def test_source_derived_pack_requires_private_publication_gate(self):
         with tempfile.TemporaryDirectory() as tmp:
