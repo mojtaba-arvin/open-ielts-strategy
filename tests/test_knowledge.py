@@ -200,6 +200,52 @@ class KnowledgeStoreTests(unittest.TestCase):
         finally:
             separate.close()
 
+    def test_relations_are_browsable_from_either_source(self):
+        first = self.store.ingest_text(
+            "For IELTS Writing Task 2, you should plan before drafting.",
+            title="First source", source_type="podcast_transcript"
+        )
+        second = self.store.ingest_text(
+            "For IELTS Writing Task 2, you should start drafting immediately.",
+            title="Second source", source_type="personal_notes"
+        )
+        first_card = self.store.get_source(first["source_id"])["segments"][0]["card_id"]
+        second_card = self.store.get_source(second["source_id"])["segments"][0]["card_id"]
+        relation = self.store.link_cards(first_card, second_card, "contradicts", "Reviewed difference.")
+        all_relations = self.store.list_relations()
+        self.assertEqual(len(all_relations), 1)
+        self.assertEqual(all_relations[0]["relation_id"], relation["relation_id"])
+        self.assertEqual(self.store.list_relations(source_id=first["source_id"])[0]["relation_id"], relation["relation_id"])
+        self.assertEqual(self.store.list_relations(source_id=second["source_id"])[0]["relation_id"], relation["relation_id"])
+        self.assertEqual(self.store.get_source(first["source_id"])["relations"][0]["relation_type"], "contradicts")
+        with self.assertRaises(KeyError):
+            self.store.list_relations(source_id="src_missing")
+        with self.assertRaises(ValueError):
+            self.store.list_relations(limit=0)
+
+    def test_source_deletion_cascades_to_cards_segments_and_relations(self):
+        first = self.store.ingest_text("For IELTS Writing Task 2, you should plan first.", title="First")
+        second = self.store.ingest_text("For IELTS Speaking, you should practice fluency.", title="Second")
+        first_card = self.store.get_source(first["source_id"])["segments"][0]["card_id"]
+        second_card = self.store.get_source(second["source_id"])["segments"][0]["card_id"]
+        self.store.link_cards(first_card, second_card, "related_to", "Cross-source link.")
+        self.assertEqual(self.store._connection.execute("PRAGMA secure_delete").fetchone()[0], 1)
+
+        deleted = self.store.delete_source(first["source_id"])
+        self.assertTrue(deleted["deleted"])
+        self.assertEqual(deleted["deleted_segments"], 1)
+        self.assertEqual(deleted["deleted_cards"], 1)
+        self.assertEqual(deleted["deleted_relations"], 1)
+        with self.assertRaises(KeyError):
+            self.store.get_source(first["source_id"])
+        survivor = self.store.get_source(second["source_id"])
+        self.assertEqual(len(survivor["segments"]), 1)
+        self.assertEqual(survivor["relations"], [])
+        self.assertEqual(self.store.list_relations(), [])
+        with self.assertRaises(KeyError):
+            self.store.delete_source("src_missing")
+
+
 
 if __name__ == "__main__":
     unittest.main()
