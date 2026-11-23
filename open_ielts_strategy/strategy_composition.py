@@ -8,6 +8,21 @@ from pathlib import Path
 PREFERENCE_KEYS = {"time_budget_minutes", "preferred_skills", "constraints", "practice_context"}
 
 
+def _validate_preferences(preferences: dict | None) -> dict:
+    prefs = _validate_preferences(preferences)
+    for key in ("preferred_skills", "constraints"):
+        if key in prefs and (
+            not isinstance(prefs[key], list) or len(prefs[key]) > 30
+            or any(not isinstance(value, str) or not value.strip() or len(value) > 300 for value in prefs[key])
+        ):
+            raise ValueError(f"{key} must be a list of at most 30 short strings")
+    if "practice_context" in prefs and (
+        not isinstance(prefs["practice_context"], str) or len(prefs["practice_context"]) > 1000
+    ):
+        raise ValueError("practice_context must be text no longer than 1000 characters")
+    return dict(prefs)
+
+
 def _validate_card(card: dict) -> None:
     required = {"card_id", "source_id", "source_title", "text", "start_char", "end_char", "status"}
     if not isinstance(card, dict) or not required.issubset(card):
@@ -91,12 +106,7 @@ def build_playbook(cards: list[dict], *, title: str,
 
 def save_preferences(path: str | Path, preferences: dict) -> Path:
     """Store learner constraints separately from source-derived claims."""
-    if not isinstance(preferences, dict) or set(preferences) - PREFERENCE_KEYS:
-        raise ValueError("preferences contain unsupported fields")
-    if "time_budget_minutes" in preferences and (
-        type(preferences["time_budget_minutes"]) is not int or not 1 <= preferences["time_budget_minutes"] <= 240
-    ):
-        raise ValueError("time_budget_minutes must be between 1 and 240")
+    preferences = _validate_preferences(preferences)
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     temp = destination.with_suffix(destination.suffix + ".tmp")
@@ -115,10 +125,4 @@ def save_preferences(path: str | Path, preferences: dict) -> Path:
 
 def load_preferences(path: str | Path) -> dict:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
-    if not isinstance(data, dict) or set(data) - PREFERENCE_KEYS:
-        raise ValueError("stored preferences contain unsupported fields")
-    if "time_budget_minutes" in data and (
-        type(data["time_budget_minutes"]) is not int or not 1 <= data["time_budget_minutes"] <= 240
-    ):
-        raise ValueError("stored time budget is invalid")
-    return data
+    return _validate_preferences(data)
