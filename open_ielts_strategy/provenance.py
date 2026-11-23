@@ -7,6 +7,16 @@ PERMITTED_PUBLIC_STATUSES = {"cleared", "licensed"}
 PERMISSION_FIELDS = ("private_evidence_ref", "reviewer", "reviewed_at", "notes")
 
 
+def _parse_timezone_aware(value):
+    """Parse an ISO-8601 timestamp only when it carries an explicit UTC offset."""
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("timestamp must be non-empty text")
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError("timestamp must include a timezone")
+    return parsed
+
+
 def validate_source_record(source):
     """Return validation errors; public availability is never treated as permission."""
     if not isinstance(source, dict):
@@ -49,17 +59,16 @@ def validate_source_record(source):
         for field in ("private_evidence_ref", "reviewer"):
             if not isinstance(permission.get(field), str) or not permission[field].strip():
                 errors.append(f"public content requires permission_record.{field}")
-        reviewed = permission.get("reviewed_at", "")
         try:
-            datetime.fromisoformat(reviewed.replace("Z", "+00:00"))
-        except (AttributeError, TypeError, ValueError):
-            errors.append("public content requires a valid permission review timestamp")
+            _parse_timezone_aware(permission.get("reviewed_at"))
+        except (TypeError, ValueError):
+            errors.append("public content requires a timezone-aware permission review timestamp")
         if not isinstance(uses, list) or not uses:
             errors.append("public content requires explicit allowed_uses")
     expiry = source.get("expiry")
     if expiry is not None:
         try:
-            datetime.fromisoformat(expiry.replace("Z", "+00:00"))
-        except (AttributeError, TypeError, ValueError):
-            errors.append("expiry must be null or ISO-8601")
+            _parse_timezone_aware(expiry)
+        except (TypeError, ValueError):
+            errors.append("expiry must be null or timezone-aware ISO-8601")
     return errors
