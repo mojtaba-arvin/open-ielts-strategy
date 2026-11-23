@@ -40,6 +40,10 @@ def _cosine(left, right):
 def scan_semantic_publication_leaks(payloads: list[str], private_sources: list[dict],
                                     embedding_provider, *, threshold: float = 0.93,
                                     max_chunks: int = 1000, batch_size: int = 64) -> dict:
+    if not isinstance(payloads, list) or any(not isinstance(value, str) for value in payloads):
+        raise ValueError("payloads must be a list of text values")
+    if not isinstance(private_sources, list) or any(not isinstance(value, dict) for value in private_sources):
+        raise ValueError("private_sources must be a list of source objects")
     if not 0.5 <= threshold <= 1.0:
         raise ValueError("threshold must be between 0.5 and 1.0")
     if type(max_chunks) is not int or not 1 <= max_chunks <= 5000:
