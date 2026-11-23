@@ -8,6 +8,8 @@ import sys
 from .knowledge_pack import load_knowledge_pack
 from .published_practice import generate_published_practice_answer
 from .text_generation import build_consumption_provider
+from .published_retrieval import PublishedRetrievalEngine
+from .hybrid_retrieval import LocalSentenceTransformer
 
 
 def build_parser():
@@ -20,6 +22,7 @@ def build_parser():
     parser.add_argument("--endpoint")
     parser.add_argument("--api-key-env", default="OPENAI_API_KEY")
     parser.add_argument("--limit", type=int, default=6)
+    parser.add_argument("--embedding-model-path", help="Optional already-cached local sentence-transformer directory")
     return parser
 
 
@@ -33,8 +36,13 @@ def main(argv=None):
         if args.provider == "openai-compatible":
             config["api_key_env"] = args.api_key_env
         provider = build_consumption_provider(args.provider, **config)
+        retriever = None
+        if args.embedding_model_path:
+            embeddings = LocalSentenceTransformer(args.embedding_model_path)
+            retriever = PublishedRetrievalEngine(pack, embedding_provider=embeddings)
         result = generate_published_practice_answer(
-            pack, args.question, skill=args.skill, provider=provider, limit=args.limit
+            pack, args.question, skill=args.skill, provider=provider,
+            limit=args.limit, retriever=retriever,
         )
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except (OSError, RuntimeError, ValueError, KeyError) as exc:
