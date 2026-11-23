@@ -19,6 +19,7 @@ If rights, terms, or legal basis are unclear, do not access or use the material.
 - Default database: .local/knowledge.sqlite3. The directory is ignored by Git and uses best-effort 0700 permissions; the database uses best-effort 0600 permissions.
 - These mode bits are not encryption at rest. Full-disk encryption and secure backups remain the user's responsibility.
 - Do not store third-party texts, personal learner records, or private excerpts in repository fixtures, GitHub issues, workflow logs, or artifacts.
+- Source deletion removes its segments, cards, and relations that touch those cards. SQLite secure_delete is enabled, but this is not a guarantee against filesystem snapshots, SSD wear-leveling, backups, or synchronized copies.
 - Treat local database backups and exports as sensitive copies with the same restrictions as the source.
 - Do not point the database to a shared/synchronized folder unless its privacy and retention properties have been reviewed.
 
