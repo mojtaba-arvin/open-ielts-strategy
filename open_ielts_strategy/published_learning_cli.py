@@ -13,7 +13,6 @@ from .published_learning import (
 from .text_generation import build_consumption_provider
 from .mentor_sessions import continue_mentor_session
 from .study_progression import build_study_progression
-from .learner_state import LearnerStateStore
 
 
 def build_parser():
@@ -74,6 +73,8 @@ def main(argv=None):
                 raise ValueError("--learner-id is required with --state-db")
             if args.complete_path and not args.state_db:
                 raise ValueError("--complete-path requires --state-db")
+            if args.state_db:
+                from .learner_state import LearnerStateStore
             state = LearnerStateStore(args.state_db) if args.state_db else None
             try:
                 known = {item["id"] for item in pack.learning_paths}
@@ -106,6 +107,8 @@ def main(argv=None):
             if args.command == "mentor-chat":
                 if args.state_db and not args.learner_id:
                     raise ValueError("--learner-id is required with --state-db")
+                if args.state_db:
+                    from .learner_state import LearnerStateStore
                 state = LearnerStateStore(args.state_db) if args.state_db else None
                 try:
                     try:
