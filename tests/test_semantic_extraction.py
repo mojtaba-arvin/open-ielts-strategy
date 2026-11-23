@@ -48,6 +48,11 @@ class SemanticExtractionTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             OllamaLocalProvider("qwen", "http://192.168.1.10:11434/api/generate")
 
+    def test_local_http_redirects_are_not_followed(self):
+        from open_ielts_strategy.semantic_extraction import _NoRedirect
+        handler = _NoRedirect()
+        self.assertIsNone(handler.redirect_request(None, None, 302, "Found", {}, "https://remote.example"))
+
     def test_empty_or_oversized_output_is_rejected(self):
         with self.assertRaises(ExtractionError):
             validate_extraction({"summary": "", "items": []}, "")

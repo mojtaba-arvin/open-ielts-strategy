@@ -10,6 +10,11 @@ from urllib.parse import urlparse
 
 from .orchestration import route as deterministic_route
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
 SKILL_IDS = {
     "ielts-writing-feedback",
     "ielts-speaking-transcript-feedback",
@@ -95,7 +100,7 @@ class OllamaRoutingProvider:
             self.endpoint, data=body, headers={"Content-Type": "application/json"}, method="POST"
         )
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
+            with urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect()).open(request, timeout=self.timeout_seconds) as response:
                 raw = response.read(20_001)
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise RuntimeError("local routing model request failed") from exc

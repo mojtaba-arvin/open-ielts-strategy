@@ -52,6 +52,11 @@ class SemanticRoutingTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_route({"skill_id": None, "confidence": 10 ** 1000, "reason": ""})
 
+    def test_local_http_redirects_are_not_followed(self):
+        from open_ielts_strategy.semantic_routing import _NoRedirect
+        handler = _NoRedirect()
+        self.assertIsNone(handler.redirect_request(None, None, 302, "Found", {}, "https://remote.example"))
+
     def test_remote_endpoint_is_rejected(self):
         with self.assertRaises(ValueError):
             OllamaRoutingProvider("qwen", "https://remote.example/api/generate")
