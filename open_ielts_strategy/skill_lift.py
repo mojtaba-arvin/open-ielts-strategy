@@ -57,7 +57,7 @@ def compare_skill_lift(baseline, with_skill, *, mode="fixture"):
             "baseline_mean_score": round(sum(base_scores) / len(base_scores), 4) if base_scores else None,
             "skill_mean_score": round(sum(skill_scores) / len(skill_scores), 4) if skill_scores else None,
             "score_delta": round(sum(skill_scores) / len(skill_scores) - sum(base_scores) / len(base_scores), 4)
-                if base_scores and skill_scores and len(base_scores) == len(skill_scores) else None,
+                if score_pairs else None,
         }
 
     categories = {}
