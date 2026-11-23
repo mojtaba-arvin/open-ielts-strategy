@@ -2,6 +2,16 @@
 
 The existing SQLite lexical search remains the no-dependency fallback. This module can optionally rerank all local cards using a caller-supplied embedding provider. `LocalSentenceTransformer` loads a model directory already present on disk and requests local-only loading; it does not download weights.
 
+## CLI
+
+```bash
+# Always available: lexical fallback
+python scripts/knowledge_search.py "Writing Task 2 planning"
+
+# Optional: use a model directory already installed on this machine
+python scripts/knowledge_search.py "essay preparation" --embedding-model-path /models/all-MiniLM-L6-v2
+```
+
 ## Usage
 
 ```python
