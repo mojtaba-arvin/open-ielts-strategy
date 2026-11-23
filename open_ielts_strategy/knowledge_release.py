@@ -208,6 +208,8 @@ def rollback_pack(repo_path: str | Path, commit_sha: str, *, branch: str,
     if confirm_rollback is not True:
         raise ValueError("rollback requires explicit --confirm-rollback")
     _validate_branch(branch)
+    if branch in {"main", "master"}:
+        raise ValueError("rollback a dedicated release branch and use a reviewed pull request for the protected default branch")
     if not re.fullmatch(r"[0-9a-f]{40,64}", commit_sha) or not re.fullmatch(r"[0-9a-f]{40,64}", expected_head):
         raise ValueError("commit and expected head must be full Git commit SHAs")
     repo = Path(repo_path).resolve()
@@ -268,8 +270,8 @@ def main(argv=None):
     rollback.add_argument("--confirm-rollback", action="store_true")
     args = parser.parse_args(argv)
     try:
-        key = _key_from_env(args.key_env)
         if args.command == "approve":
+            key = _key_from_env(args.key_env)
             diff, _ = _diff_identity(args.current, args.candidate)
             print(json.dumps(diff, ensure_ascii=False, indent=2))
             approval = create_approval(args.current, args.candidate, reviewer=args.reviewer,
@@ -292,6 +294,7 @@ def main(argv=None):
                 raise
             print(json.dumps({"approval_created": str(destination), "expires_at": approval["payload"]["expires_at"]}))
         elif args.command == "publish":
+            key = _key_from_env(args.key_env)
             print(json.dumps(publish_pack(args.repo, args.candidate, args.target,
                 approval_path=args.approval_file, branch=args.branch, expected_head=args.expected_head,
                 key=key, confirm_publish=args.confirm_publish), indent=2))
