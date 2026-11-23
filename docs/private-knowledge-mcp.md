@@ -20,6 +20,7 @@ The process uses MCP stdio transport. It does not open a listening TCP port. In 
 
 ## Exposed read-only tools
 
+- `list_ielts_semantic_items(source_id)`: list extracted candidate items, exact source offsets, model/prompt provenance, rationale, review state, and source-retention state without returning the full transcript.
 - `search_ielts_knowledge(query, limit, status, topic)`: local lexical/hybrid retrieval with source IDs, segment anchors, offsets, rights declarations, and review states.
 - `prepare_ielts_practice_context(question, skill, include_unreviewed, limit, topic)`: retrieve a compact evidence pack for a Speaking/Writing/Reading/Listening practice prompt. By default, only `user_approved` and `supported` items are eligible. Unreviewed items require explicit opt-in.
 
