@@ -335,6 +335,16 @@ def load_knowledge_pack(path: str | Path) -> KnowledgePack:
             learning_paths.append(_validate_learning_path(record, relative))
         else:
             raise KnowledgePackError(f"unsupported v1 pack file: {relative}")
+    actual_files = set()
+    for candidate in root.rglob("*"):
+        if candidate.is_symlink():
+            raise KnowledgePackError(f"symlink entries are not allowed: {candidate.relative_to(root).as_posix()}")
+        if candidate.is_file() and candidate.name != "manifest.json":
+            actual_files.add(candidate.relative_to(root).as_posix())
+    if actual_files != seen:
+        unlisted = sorted(actual_files - seen)
+        missing = sorted(seen - actual_files)
+        raise KnowledgePackError(f"manifest/file-set mismatch; unlisted={unlisted[:5]}, missing={missing[:5]}")
     if not strategies:
         raise KnowledgePackError("Knowledge Pack must contain at least one strategy")
     all_records = strategies + concepts + relationships + learning_paths
