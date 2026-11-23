@@ -48,7 +48,8 @@ class KnowledgePack:
             raise ValueError("query must be non-empty text")
         if type(limit) is not int or not 1 <= limit <= 100:
             raise ValueError("limit must be between 1 and 100")
-        terms = tuple(dict.fromkeys(re.findall(r"[a-z0-9]+", query.casefold())))
+        stopwords = {"a", "an", "and", "are", "as", "at", "be", "can", "do", "for", "from", "how", "i", "in", "is", "it", "of", "on", "or", "the", "this", "to", "what", "when", "where", "which", "who", "with", "you"}
+        terms = tuple(term for term in dict.fromkeys(re.findall(r"[a-z0-9]+", query.casefold())) if term not in stopwords)
         ranked = []
         for item in self.strategies:
             if skill is not None and item["skill"] != skill:
