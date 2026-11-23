@@ -11,7 +11,7 @@ from typing import Any
 
 from .knowledge_pack import (
     FORMAT, KnowledgePackError, _SEMVER, _validate_concept, _validate_learning_path,
-    _validate_relationship, _validate_strategy, load_knowledge_pack,
+    _validate_relationship, _validate_strategy, _validate_example, load_knowledge_pack,
 )
 
 
@@ -20,6 +20,7 @@ def build_knowledge_pack(strategies: list[dict[str, Any]], destination: str | Pa
                          concepts: list[dict[str, Any]] | None = None,
                          relationships: list[dict[str, Any]] | None = None,
                          learning_paths: list[dict[str, Any]] | None = None,
+                         examples: list[dict[str, Any]] | None = None,
                          store=None,
                          source_item_ids_by_strategy: dict[str, list[str]] | None = None,
                          semantic_embedding_provider=None) -> dict:
@@ -43,7 +44,8 @@ def build_knowledge_pack(strategies: list[dict[str, Any]], destination: str | Pa
     concepts = concepts or []
     relationships = relationships or []
     learning_paths = learning_paths or []
-    if any(not isinstance(value, list) for value in (concepts, relationships, learning_paths)):
+    examples = examples or []
+    if any(not isinstance(value, list) for value in (concepts, relationships, learning_paths, examples)):
         raise KnowledgePackError("concepts, relationships, and learning_paths must be arrays")
 
     validated_groups = {
@@ -51,6 +53,7 @@ def build_knowledge_pack(strategies: list[dict[str, Any]], destination: str | Pa
         "concepts": [_validate_concept(item, f"<concept:{index}>") for index, item in enumerate(concepts)],
         "relationships": [_validate_relationship(item, f"<relationship:{index}>") for index, item in enumerate(relationships)],
         "learning-paths": [_validate_learning_path(item, f"<learning-path:{index}>") for index, item in enumerate(learning_paths)],
+        "examples": [_validate_example(item, f"<example:{index}>") for index, item in enumerate(examples)],
     }
     all_records = [item for group in validated_groups.values() for item in group]
     identifiers = [item["id"] for item in all_records]
@@ -74,6 +77,13 @@ def build_knowledge_pack(strategies: list[dict[str, Any]], destination: str | Pa
         missing = sorted({step["strategy_id"] for step in item["steps"]} - strategy_ids)
         if missing:
             raise KnowledgePackError(f"{item['id']}: learning path references unknown strategies: {missing}")
+    strategies_by_id = {item["id"]: item for item in validated_groups["strategies"]}
+    for item in validated_groups["examples"]:
+        strategy = strategies_by_id.get(item["strategy_id"])
+        if strategy is None:
+            raise KnowledgePackError(f"{item['id']}: example references an unknown strategy")
+        if item["skill"] != strategy["skill"]:
+            raise KnowledgePackError(f"{item['id']}: example skill must match its strategy skill")
 
     unknown_mappings = set(source_item_ids_by_strategy) - set(identifiers)
     if unknown_mappings:
@@ -149,6 +159,8 @@ def build_knowledge_pack(strategies: list[dict[str, Any]], destination: str | Pa
             for item in sorted(records, key=lambda value: value["id"]):
                 if directory == "strategies":
                     relative = Path(directory) / item["skill"] / f"{item['id']}.json"
+                elif directory == "examples":
+                    relative = Path(directory) / item["skill"] / f"{item['id']}.json"
                 else:
                     relative = Path(directory) / f"{item['id']}.json"
                 target = staging / relative
@@ -159,7 +171,7 @@ def build_knowledge_pack(strategies: list[dict[str, Any]], destination: str | Pa
         file_entries.sort(key=lambda item: item["path"])
         manifest = {
             "format": FORMAT,
-            "schema_version": "1.0",
+            "schema_version": "1.1" if validated_groups["examples"] else "1.0",
             "pack_version": pack_version,
             "files": file_entries,
         }
@@ -174,6 +186,7 @@ def build_knowledge_pack(strategies: list[dict[str, Any]], destination: str | Pa
             "concept_count": len(pack.concepts),
             "relationship_count": len(pack.relationships),
             "learning_path_count": len(pack.learning_paths),
+            "example_count": len(pack.examples),
             "manifest_sha256": pack.manifest_sha256,
             "exact_leak_scan": leak_report,
             "semantic_leak_scan": semantic_leak_report or {"status": "not_run", "reason": "no local semantic embedding provider configured"},
