@@ -38,9 +38,6 @@ class PublicationGovernanceTests(unittest.TestCase):
                         rights_basis="permission_confirmed",
                     )
                 review_semantic_item(store, item_id, "user_approved", "Content review note.")
-                history = list_publication_review_history(store, item_id)
-                self.assertEqual(len(history), 1)
-                self.assertEqual(history[0]["publication_status"], "rejected")
                 with self.assertRaisesRegex(ValueError, "publication approval"):
                     assert_items_publishable(store, [item_id])
                 with self.assertRaisesRegex(ValueError, "rights basis"):
@@ -75,6 +72,9 @@ class PublicationGovernanceTests(unittest.TestCase):
                     store, item_id, "rejected", reviewer="maintainer",
                     note="Rights are not cleared.",
                 )
+                history = list_publication_review_history(store, item_id)
+                self.assertEqual(len(history), 1)
+                self.assertEqual(history[0]["publication_status"], "rejected")
                 with self.assertRaisesRegex(ValueError, "publication approval"):
                     assert_items_publishable(store, [item_id])
 
