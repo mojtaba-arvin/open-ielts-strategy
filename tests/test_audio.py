@@ -11,7 +11,7 @@ def wav_bytes(seconds=1, rate=16000, channels=1):
         output.setnchannels(channels)
         output.setsampwidth(2)
         output.setframerate(rate)
-        output.writeframes(b"\\x00\\x00" * int(seconds * rate * channels))
+        output.writeframes(b"\x00\x00" * int(seconds * rate * channels))
     return buffer.getvalue()
 
 
@@ -39,7 +39,7 @@ class AudioValidationTests(unittest.TestCase):
                 inspect_audio(data, name)
 
     def test_accepts_minimal_valid_mp3_frames(self):
-        frame = bytes.fromhex("ff fb 90 64") + (b"\\x00" * (417 - 4))
+        frame = bytes.fromhex("ff fb 90 64") + (b"\x00" * (417 - 4))
         result = inspect_audio(frame * 3, "synthetic.mp3")
         self.assertEqual(result["format"], "mp3")
         self.assertEqual(result["frames"], 3)
@@ -47,7 +47,7 @@ class AudioValidationTests(unittest.TestCase):
 
     def test_rejects_mp3_without_valid_frame(self):
         with self.assertRaisesRegex(ValueError, "valid MP3"):
-            inspect_audio(b"ID3" + b"\\x00" * 20, "bad.mp3")
+            inspect_audio(b"ID3" + b"\x00" * 20, "bad.mp3")
 
 
 if __name__ == "__main__":
