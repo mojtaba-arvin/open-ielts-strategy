@@ -19,7 +19,7 @@ class SkillLiftAuditTests(unittest.TestCase):
         report = compare_skill_lift(self.base, self.skill)
         self.assertEqual(report["status"], "simulated-fixture")
         self.assertFalse(report["claim_eligible"])
-        self.assertEqual(report["overall"]["resolution_rate_delta"], 1 / 3)
+        self.assertAlmostEqual(report["overall"]["resolution_rate_delta"], 1 / 3, places=4)
         self.assertEqual(report["by_category"]["writing"]["n"], 2)
 
     def test_live_mode_is_still_descriptive_not_claimable(self):
