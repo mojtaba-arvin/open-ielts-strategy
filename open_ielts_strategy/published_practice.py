@@ -85,7 +85,7 @@ def generate_published_practice_answer(pack: KnowledgePack, question: str, *,
             raise GenerationError(f"answer output field must be non-empty text: {field}")
     used = result["strategy_ids_used"]
     available = {item["strategy_id"]: item for item in context["evidence"]}
-    if not isinstance(used, list) or any(not isinstance(value, str) or value not in available for value in used):
+    if not isinstance(used, list) or not used or any(not isinstance(value, str) or value not in available for value in used):
         raise GenerationError("answer output references a strategy outside the retrieved evidence")
     if len(used) != len(set(used)):
         raise GenerationError("answer output contains duplicate strategy attribution")
