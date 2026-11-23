@@ -30,6 +30,7 @@ ielts-practice-eval = "open_ielts_strategy.practice_evaluation_cli:main"
 ielts-knowledge-publish = "open_ielts_strategy.knowledge_publish_cli:main"
 ielts-learning = "open_ielts_strategy.published_learning_cli:main"
 ielts-knowledge-diff = "open_ielts_strategy.knowledge_diff_cli:main"
+ielts-knowledge-release = "open_ielts_strategy.knowledge_release:main"
 
 [tool.setuptools]
 packages = ["open_ielts_strategy"]
