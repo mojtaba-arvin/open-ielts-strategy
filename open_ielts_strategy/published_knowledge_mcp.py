@@ -14,6 +14,7 @@ from .published_learning import (get_published_learning_path, get_published_conc
 from .text_generation import build_consumption_provider
 from .embedding_providers import OpenAICompatibleEmbeddingProvider
 from .published_practice import generate_published_practice_answer
+from .mentor_sessions import continue_mentor_session
 from .study_progression import build_study_progression
 
 
@@ -183,6 +184,13 @@ def build_server(pack_path: str | Path, *, embedding_model_path: str | None = No
             """Teach one published strategy with its limitations and an exercise."""
             return explain_published_strategy(
                 pack, strategy_id, provider=text_provider, learner_question=learner_question
+            )
+
+        @server.tool()
+        def mentor_turn(strategy_id: str, learner_message: str, history: list[dict] | None = None) -> dict:
+            """Continue a bounded Mentor Mode conversation grounded in one published strategy."""
+            return continue_mentor_session(
+                pack, strategy_id, learner_message, provider=text_provider, history=history or ()
             )
 
         @server.tool()
