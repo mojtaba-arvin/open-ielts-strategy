@@ -69,6 +69,10 @@ def validate(path: str | Path) -> list[str]:
     ingress = by_kind.get("Ingress", {})
     if not ingress.get("spec", {}).get("tls"):
         errors.append("Ingress must configure TLS")
+    annotations = ingress.get("metadata", {}).get("annotations", {})
+    auth_url = annotations.get("nginx.ingress.kubernetes.io/auth-url", "")
+    if not auth_url.startswith("https://"):
+        errors.append("Ingress must delegate authentication to an HTTPS OIDC-aware gateway")
     network_policy = by_kind.get("NetworkPolicy", {})
     if set(network_policy.get("spec", {}).get("policyTypes", [])) != {"Ingress", "Egress"}:
         errors.append("NetworkPolicy must restrict both ingress and egress")
@@ -83,6 +87,11 @@ def validate(path: str | Path) -> list[str]:
         errors.append("plaintext Redis egress must not be allowed")
     if 443 in egress_ports:
         errors.append("unrestricted outbound HTTPS must not be allowed by default")
+    for rule in network_policy.get("spec", {}).get("egress", []):
+        for destination in rule.get("to", []):
+            cidr = destination.get("ipBlock", {}).get("cidr")
+            if cidr == "0.0.0.0/0":
+                errors.append("egress IP blocks must not allow every IPv4 destination")
     return errors
 
 
