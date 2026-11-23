@@ -4,7 +4,7 @@ from pathlib import Path
 
 from open_ielts_strategy.hybrid_retrieval import hybrid_search, suggest_overlaps
 from open_ielts_strategy.knowledge_store import KnowledgeStore
-from open_ielts_strategy.knowledge_pipeline import extract_source, review_semantic_item
+from open_ielts_strategy.knowledge_pipeline import extract_source, list_semantic_items
 from open_ielts_strategy.practice_context import prepare_practice_context
 
 
@@ -65,7 +65,6 @@ class HybridRetrievalTests(unittest.TestCase):
 
 
     def test_semantic_items_are_searchable_with_original_source_anchors(self):
-        from open_ielts_strategy.knowledge_pipeline import extract_source
         class SemanticProvider:
             def extract(self, text):
                 phrase = "Use a clear structure for IELTS Speaking."
@@ -81,9 +80,11 @@ class HybridRetrievalTests(unittest.TestCase):
         )
         extract_source(self.store, source["source_id"], SemanticProvider(),
                        provider_name="test", model_name="fixture", prompt_version="v1")
-        items = __import__("open_ielts_strategy.knowledge_pipeline", fromlist=["list_semantic_items"]).list_semantic_items(
-            self.store, source["source_id"])
-        review_semantic_item(self.store, items[0]["item_id"], "user_approved")
+        items = list_semantic_items(self.store, source["source_id"])
+        self.store._connection.execute(
+            "UPDATE semantic_items SET status='user_approved' WHERE item_id=?", (items[0]["item_id"],)
+        )
+        self.store._connection.commit()
         results = hybrid_search(self.store, "clear structure speaking")
         self.assertTrue(any(result["card_id"] == items[0]["item_id"] for result in results))
         match = next(result for result in results if result["card_id"] == items[0]["item_id"])
