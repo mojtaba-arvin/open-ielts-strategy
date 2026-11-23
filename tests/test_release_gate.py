@@ -1,6 +1,6 @@
 import unittest
 from pathlib import Path
-from scripts.validate_release import validate_claim_registry
+from scripts.validate_release import validate_claim_registry, validate_release_preflight
 
 def valid_claim():
     return {"id": "claim-a", "description": "A measured claim.", "status": "validated", "public_claim_allowed": True, "evidence_refs": ["private://study/report"], "reviewer": "independent-reviewer", "method": "pre-registered paired study", "scope": "Writing Task 2 synthetic cohort", "sample_count": 120, "reviewed_at": "2026-11-22T10:00:00Z"}
@@ -58,3 +58,19 @@ class ReleaseGateTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+    def test_release_preflight_checks_version_cli_and_license_contracts(self):
+        root = Path(__file__).resolve().parents[1]
+        self.assertEqual(validate_release_preflight(root), [])
+        self.assertEqual(validate_release_preflight(root, "v0.1.0"), [])
+
+    def test_release_preflight_rejects_tag_version_mismatch(self):
+        root = Path(__file__).resolve().parents[1]
+        errors = validate_release_preflight(root, "v9.9.9")
+        self.assertTrue(any("does not match project.version" in error for error in errors))
+
+    def test_release_preflight_rejects_non_semver_tag(self):
+        root = Path(__file__).resolve().parents[1]
+        errors = validate_release_preflight(root, "latest")
+        self.assertTrue(any("canonical vMAJOR.MINOR.PATCH" in error for error in errors))
