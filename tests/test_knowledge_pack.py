@@ -134,6 +134,75 @@ class PublishedKnowledgePackTests(unittest.TestCase):
             with self.assertRaises(KnowledgePackError):
                 load_knowledge_pack(root)
 
+
+    def test_loads_concepts_relationships_and_learning_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.make_pack(root)
+            provenance = {"basis": "original", "public_references": []}
+            review = {"content_status": "approved", "publication_status": "approved"}
+            records = {
+                "concepts/speaking/fluency.json": {
+                    "id": "speaking.fluency", "schema_version": "1.0",
+                    "title": "Fluency", "definition": "Communicate smoothly.",
+                    "related_strategies": ["speaking.answer-development"],
+                    "provenance": provenance, "review": review, "version": "1.0.0",
+                },
+                "relationships/speaking/answer-defines-fluency.json": {
+                    "id": "relation.answer-fluency", "schema_version": "1.0",
+                    "from_id": "speaking.answer-development", "to_id": "speaking.fluency",
+                    "type": "illustrates", "rationale": "A direct answer supports clear communication.",
+                    "provenance": provenance, "review": review,
+                },
+                "learning-paths/speaking/foundations.json": {
+                    "id": "speaking.foundations", "schema_version": "1.0",
+                    "title": "Speaking Foundations", "skill": "speaking",
+                    "description": "A short introduction.", "objectives": ["Answer clearly."],
+                    "steps": [{"order": 1, "strategy_id": "speaking.answer-development",
+                               "activity": "Practice a direct answer."}],
+                    "prerequisites": [], "provenance": provenance, "review": review,
+                    "version": "1.0.0",
+                },
+            }
+            manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+            for relative, record in records.items():
+                target = root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                payload = json.dumps(record, sort_keys=True, separators=(",", ":")).encode()
+                target.write_bytes(payload)
+                manifest["files"].append({"path": relative, "sha256": hashlib.sha256(payload).hexdigest()})
+            manifest["files"].sort(key=lambda item: item["path"])
+            (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+            pack = load_knowledge_pack(root)
+            self.assertEqual(pack.get_concept("speaking.fluency")["title"], "Fluency")
+            self.assertEqual(pack.get_learning_path("speaking.foundations")["steps"][0]["order"], 1)
+            self.assertEqual(len(pack.relationships), 1)
+
+    def test_rejects_dangling_learning_path_strategy_reference(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.make_pack(root)
+            record = {
+                "id": "speaking.foundations", "schema_version": "1.0",
+                "title": "Speaking Foundations", "skill": "speaking",
+                "description": "A short introduction.", "objectives": [],
+                "steps": [{"order": 1, "strategy_id": "missing.strategy", "activity": "Practice."}],
+                "prerequisites": [],
+                "provenance": {"basis": "original", "public_references": []},
+                "review": {"content_status": "approved", "publication_status": "approved"},
+                "version": "1.0.0",
+            }
+            target = root / "learning-paths/speaking/foundations.json"
+            target.parent.mkdir(parents=True)
+            payload = json.dumps(record, sort_keys=True, separators=(",", ":")).encode()
+            target.write_bytes(payload)
+            manifest = json.loads((root / "manifest.json").read_text())
+            manifest["files"].append({"path": "learning-paths/speaking/foundations.json",
+                                      "sha256": hashlib.sha256(payload).hexdigest()})
+            (root / "manifest.json").write_text(json.dumps(manifest))
+            with self.assertRaisesRegex(KnowledgePackError, "unknown strategies"):
+                load_knowledge_pack(root)
+
     def test_rejects_unknown_relationship_targets(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
