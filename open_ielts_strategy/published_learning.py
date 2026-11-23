@@ -157,3 +157,25 @@ def _parse_structured_text(raw: str, required: set[str]) -> dict[str, str]:
     if any(not isinstance(value, str) or not value.strip() or len(value) > 12_000 for value in result.values()):
         raise GenerationError("model response fields must be non-empty text")
     return result
+
+
+def get_published_example(pack: KnowledgePack, example_id: str) -> dict:
+    """Resolve a separately reviewed example to its published strategy record."""
+    example = pack.get_example(example_id)
+    if example is None:
+        raise KeyError(f"unknown published example: {example_id}")
+    strategy = pack.get_strategy(example["strategy_id"])
+    if strategy is None:
+        raise ValueError(f"published example references an unavailable strategy: {example['strategy_id']}")
+    return {
+        "example": example,
+        "strategy": {
+            "id": strategy["id"],
+            "title": strategy["title"],
+            "version": strategy["version"],
+            "summary": strategy["summary"],
+        },
+        "pack_version": pack.pack_version,
+        "schema_version": pack.schema_version,
+        "manifest_sha256": pack.manifest_sha256,
+    }
