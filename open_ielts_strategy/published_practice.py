@@ -67,8 +67,11 @@ def build_published_answer_prompt(context: dict[str, Any]) -> str:
 
 def generate_published_practice_answer(pack: KnowledgePack, question: str, *,
                                        provider: TextGenerationProvider,
-                                       skill: str = "general", limit: int = 6) -> dict:
-    context = prepare_published_practice_context(pack, question, skill=skill, limit=limit)
+                                       skill: str = "general", limit: int = 6,
+                                       retriever: PublishedRetrievalEngine | None = None) -> dict:
+    context = prepare_published_practice_context(
+        pack, question, skill=skill, limit=limit, retriever=retriever
+    )
     if not context["evidence"]:
         return {
             "status": "no-published-evidence",
