@@ -11,6 +11,7 @@ from .published_learning import (
     generate_published_strategy_example, get_published_example,
 )
 from .text_generation import build_consumption_provider
+from .mentor_sessions import continue_mentor_session
 
 
 def build_parser():
@@ -43,6 +44,16 @@ def build_parser():
     example.add_argument("--model", required=True)
     example.add_argument("--endpoint")
     example.add_argument("--api-key-env", default="OPENAI_API_KEY")
+    chat = commands.add_parser("mentor-chat", help="Continue a bounded multi-turn mentor conversation")
+    chat.add_argument("--pack", default="knowledge")
+    chat.add_argument("--strategy-id", required=True)
+    chat.add_argument("--message", required=True)
+    chat.add_argument("--history-json", default="[]", help="JSON array of prior learner/mentor turns")
+    chat.add_argument("--provider", choices=("ollama", "openai-compatible"), default="ollama")
+    chat.add_argument("--model", required=True)
+    chat.add_argument("--endpoint")
+    chat.add_argument("--api-key-env", default="OPENAI_API_KEY")
+
     return parser
 
 
@@ -61,7 +72,15 @@ def main(argv=None):
             if args.provider == "openai-compatible":
                 config["api_key_env"] = args.api_key_env
             provider = build_consumption_provider(args.provider, **config)
-            if args.command == "mentor":
+            if args.command == "mentor-chat":
+                try:
+                    history = json.loads(args.history_json)
+                except json.JSONDecodeError as exc:
+                    raise ValueError("--history-json must be a JSON array") from exc
+                result = continue_mentor_session(
+                    pack, args.strategy_id, args.message, provider=provider, history=history
+                )
+            elif args.command == "mentor":
                 result = explain_published_strategy(
                     pack, args.strategy_id, provider=provider,
                     learner_question=args.question,
