@@ -1,0 +1,30 @@
+# Local library UI and document import
+
+## Local paste-first UI
+
+Run:
+
+```bash
+python scripts/knowledge_web.py --port 8765
+```
+
+Open `http://127.0.0.1:8765`. The server refuses non-loopback bind addresses, checks Host and Origin, uses a per-process CSRF token, limits POST bodies, escapes all rendered user text, and sends restrictive security headers. It has no login system and is intended for a single-user local workstation only. Stop it when not in use; do not expose it through a tunnel, reverse proxy, LAN bind, or public host.
+
+The UI stores source text in the same private SQLite database and does not upload it. Logs must not contain request bodies.
+
+## TXT, Markdown, DOCX, and PDF
+
+`import_document(path)` supports local UTF-8 TXT/Markdown and bounded DOCX/PDF extraction. DOCX parsing uses the Python standard library, rejects macro-bearing packages, and bounds ZIP entry count and uncompressed size. PDF parsing requires optional `pypdf`; encrypted files and files over 300 pages are rejected. All formats are bounded by 20 MiB input and 5 million extracted characters. Scanned PDFs need OCR, which is not implemented.
+
+Example:
+
+```python
+from open_ielts_strategy.document_import import import_document
+from open_ielts_strategy.knowledge_store import KnowledgeStore
+
+document = import_document("./my-notes.docx")
+with KnowledgeStore() as store:
+    source = store.ingest_text(document["text"], title="My notes", source_type="personal_notes")
+```
+
+PDF support can be installed separately with `pip install '.[documents]'`. This project does not download parsers or document content automatically. Do not import material unless its intended processing is permitted.
