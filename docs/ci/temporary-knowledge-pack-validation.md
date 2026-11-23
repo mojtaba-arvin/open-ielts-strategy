@@ -23,3 +23,5 @@ A tenth validation run includes the latest consumption-provider contract tests a
 An eleventh run validates the exact latest feature head (including the final typed-relationship and roadmap updates).
 
 A twelfth run includes the publication-diff CLI and final typed relationship lookup.
+
+A thirteenth run validates the new publication-diff CLI and version-bump rule.
