@@ -121,11 +121,20 @@ class EnhancedPublishedRetrievalEngine:
                     current["matched_queries"].append(rewritten)
         candidates = sorted(merged.values(), key=lambda item: (-item["rrf_score"], item["strategy_id"]))
         if self.reranker is not None and candidates:
-            documents = [
-                " ".join((item["strategy"]["title"], item["strategy"]["summary"],
-                          " ".join(item["strategy"]["reasoning"]), " ".join(item["strategy"]["steps"])))
-                for item in candidates
-            ]
+            pack = getattr(self.baseline, "pack", None)
+            published_examples = getattr(pack, "examples", ())
+            documents = []
+            for item in candidates:
+                strategy = item["strategy"]
+                examples = [
+                    example for example in published_examples
+                    if example["strategy_id"] == item["strategy_id"]
+                ]
+                documents.append(" ".join((
+                    strategy["title"], strategy["summary"],
+                    " ".join(strategy["reasoning"]), " ".join(strategy["steps"]),
+                    " ".join(example["task"] + " " + example["content"] for example in examples),
+                )))
             scores = self.reranker.score(query, documents)
             if not isinstance(scores, list) or len(scores) != len(candidates):
                 raise ValueError("reranker returned an unexpected score count")
