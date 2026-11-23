@@ -36,3 +36,9 @@ class KnowledgeBenchmarkTests(unittest.TestCase):
     def test_invalid_kind_is_rejected(self):
         with self.assertRaises(ValueError):
             evaluate_extraction([{"kind": "band_score", "text": "x", "start_char": 0, "end_char": 1}], [])
+
+    def test_malformed_annotation_record_is_rejected(self):
+        with self.assertRaises(ValueError):
+            validate_annotation_set(self.source, [None])
+        with self.assertRaises(ValueError):
+            validate_annotation_set(self.source, [{"kind": "claim", "text": "x", "start_char": True, "end_char": 1}])
