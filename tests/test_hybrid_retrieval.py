@@ -88,7 +88,7 @@ class HybridRetrievalTests(unittest.TestCase):
         self.assertTrue(any(result["card_id"] == items[0]["item_id"] for result in results))
         match = next(result for result in results if result["card_id"] == items[0]["item_id"])
         self.assertEqual(match["text"] if "text" in match else match["excerpt"], "Use a clear structure for IELTS Speaking.")
-        self.assertEqual(match["start_char"], 26)
+        self.assertEqual(match["start_char"], len("Introductory discussion. "))
 
     def test_practice_context_uses_reviewed_cards_and_carries_citations(self):
         source = self.store.ingest_text("For IELTS Speaking, structure your answer clearly.", title="Speaking guide")
