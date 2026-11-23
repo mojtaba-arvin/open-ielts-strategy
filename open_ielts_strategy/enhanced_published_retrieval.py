@@ -6,6 +6,7 @@ fully deterministic and offline; this wrapper never silently calls a model.
 from __future__ import annotations
 
 import json
+import math
 from typing import Protocol, Any
 
 from .published_retrieval import PublishedRetrievalEngine
@@ -128,8 +129,8 @@ class EnhancedPublishedRetrievalEngine:
             scores = self.reranker.score(query, documents)
             if not isinstance(scores, list) or len(scores) != len(candidates):
                 raise ValueError("reranker returned an unexpected score count")
-            if any(type(score) not in (int, float) for score in scores):
-                raise ValueError("reranker scores must be numeric")
+            if any(type(score) not in (int, float) or not math.isfinite(float(score)) for score in scores):
+                raise ValueError("reranker scores must be finite numeric values")
             for item, score in zip(candidates, scores):
                 item["reranker_score"] = float(score)
             candidates.sort(key=lambda item: (-item["reranker_score"], -item["rrf_score"], item["strategy_id"]))
