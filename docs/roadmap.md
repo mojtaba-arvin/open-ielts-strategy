@@ -53,6 +53,7 @@ New learning skills may be developed only from original explanations and synthet
 4. Add a UI review workflow for candidate cards, relations, source deletion, preferences, and playbook editing; conduct a dedicated security review before broader use.
 5. Add parser fuzzing, malformed/large archive tests, PDF edge-case tests, and backup/restore recovery drills.
 6. Keep OCR, audio transcription, third-party crawling, cloud sync, accounts, and public hosting disabled until separately designed and reviewed.
-7. Resolve required-check governance and collect independent human evaluation only through separately approved processes; do not manufacture or infer ratings.
+7. Add a source-cited practice context command so learners can reuse reviewed private strategies without retaining or re-uploading original transcripts to ChatGPT; local retrieval is implemented, while an MCP bridge remains a separate optional integration.
+8. Resolve required-check governance and collect independent human evaluation only through separately approved processes; do not manufacture or infer ratings.
 
 No paid API, GPU spending, third-party content ingestion, or legal clearance is assumed.
