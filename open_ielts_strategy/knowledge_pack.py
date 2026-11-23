@@ -292,7 +292,7 @@ def load_knowledge_pack(path: str | Path) -> KnowledgePack:
     if not isinstance(files, list) or not files or len(files) > MAX_PACK_FILES:
         raise KnowledgePackError("manifest files must contain 1..5000 entries")
     seen = set()
-    strategies = []
+    strategies, concepts, relationships, learning_paths = [], [], [], []
     total_bytes = 0
     for entry in files:
         if not isinstance(entry, dict) or set(entry) != {"path", "sha256"}:
@@ -306,32 +306,67 @@ def load_knowledge_pack(path: str | Path) -> KnowledgePack:
         file_path = _safe_pack_file(root, relative)
         file_size = file_path.stat().st_size
         if file_size > MAX_STRATEGY_BYTES:
-            raise KnowledgePackError(f"strategy file exceeds size limit: {relative}")
+            raise KnowledgePackError(f"knowledge record exceeds size limit: {relative}")
         total_bytes += file_size
         if total_bytes > MAX_TOTAL_BYTES:
             raise KnowledgePackError("knowledge pack exceeds total size limit")
         payload = file_path.read_bytes()
         if hashlib.sha256(payload).hexdigest() != expected:
             raise KnowledgePackError(f"checksum mismatch: {relative}")
-        if not relative.startswith("strategies/") or not relative.endswith(".json"):
-            raise KnowledgePackError(f"unsupported v1 pack file: {relative}")
+        if not relative.endswith(".json"):
+            raise KnowledgePackError(f"published knowledge records must use JSON: {relative}")
         try:
             record = json.loads(payload)
         except (UnicodeError, json.JSONDecodeError) as exc:
-            raise KnowledgePackError(f"invalid JSON strategy: {relative}") from exc
-        strategies.append(_validate_strategy(record, relative))
-    ids = [item["id"] for item in strategies]
-    if len(ids) != len(set(ids)):
-        raise KnowledgePackError("strategy IDs must be unique within a pack")
-    known = set(ids)
+            raise KnowledgePackError(f"invalid JSON knowledge record: {relative}") from exc
+        if relative.startswith("strategies/"):
+            parts = PurePosixPath(relative).parts
+            if len(parts) < 3:
+                raise KnowledgePackError(f"strategy files must be grouped under a skill directory: {relative}")
+            validated = _validate_strategy(record, relative)
+            if parts[1] != validated["skill"]:
+                raise KnowledgePackError(f"{relative}: strategy skill does not match its directory")
+            strategies.append(validated)
+        elif relative.startswith("concepts/"):
+            concepts.append(_validate_concept(record, relative))
+        elif relative.startswith("relationships/"):
+            relationships.append(_validate_relationship(record, relative))
+        elif relative.startswith("learning-paths/"):
+            learning_paths.append(_validate_learning_path(record, relative))
+        else:
+            raise KnowledgePackError(f"unsupported v1 pack file: {relative}")
+    if not strategies:
+        raise KnowledgePackError("Knowledge Pack must contain at least one strategy")
+    all_records = strategies + concepts + relationships + learning_paths
+    all_ids = [item["id"] for item in all_records]
+    if len(all_ids) != len(set(all_ids)):
+        raise KnowledgePackError("record IDs must be unique across the Knowledge Pack")
+    strategy_ids = {item["id"] for item in strategies}
+    entity_ids = strategy_ids | {item["id"] for item in concepts}
     for item in strategies:
         for relation_ids in item["relationships"].values():
-            missing = sorted(set(relation_ids) - known)
+            missing = sorted(set(relation_ids) - strategy_ids)
             if missing:
                 raise KnowledgePackError(f"{item['id']}: relationship references unknown strategies: {missing}")
+    for item in concepts:
+        missing = sorted(set(item["related_strategies"]) - strategy_ids)
+        if missing:
+            raise KnowledgePackError(f"{item['id']}: related_strategies references unknown strategies: {missing}")
+    for item in relationships:
+        if item["from_id"] not in entity_ids or item["to_id"] not in entity_ids:
+            raise KnowledgePackError(f"{item['id']}: relationship references an unknown entity")
+    for item in learning_paths:
+        missing = sorted({step["strategy_id"] for step in item["steps"]} - strategy_ids)
+        if missing:
+            raise KnowledgePackError(f"{item['id']}: learning path references unknown strategies: {missing}")
     strategies.sort(key=lambda item: item["id"])
+    concepts.sort(key=lambda item: item["id"])
+    relationships.sort(key=lambda item: item["id"])
+    learning_paths.sort(key=lambda item: item["id"])
     return KnowledgePack(
         root=root, schema_version=manifest["schema_version"],
         pack_version=manifest["pack_version"], strategies=tuple(strategies),
         manifest_sha256=hashlib.sha256(manifest_bytes).hexdigest(),
+        concepts=tuple(concepts), relationships=tuple(relationships),
+        learning_paths=tuple(learning_paths),
     )
