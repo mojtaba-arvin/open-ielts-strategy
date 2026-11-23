@@ -46,7 +46,7 @@ def build_knowledge_pack(strategies: list[dict[str, Any]], destination: str | Pa
     learning_paths = learning_paths or []
     examples = examples or []
     if any(not isinstance(value, list) for value in (concepts, relationships, learning_paths, examples)):
-        raise KnowledgePackError("concepts, relationships, and learning_paths must be arrays")
+        raise KnowledgePackError("concepts, relationships, learning_paths, and examples must be arrays")
 
     validated_groups = {
         "strategies": [_validate_strategy(item, f"<strategy:{index}>") for index, item in enumerate(strategies)],
