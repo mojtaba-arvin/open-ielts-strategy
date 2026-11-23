@@ -4,6 +4,7 @@ from __future__ import annotations
 import math
 import re
 from typing import Protocol
+from pathlib import Path
 
 
 class EmbeddingProvider(Protocol):
@@ -34,8 +35,8 @@ def _cosine(left: list[float], right: list[float]) -> float:
 class LocalSentenceTransformer:
     """Load an already-cached local model; never download weights from the network."""
     def __init__(self, model_path: str):
-        if not isinstance(model_path, str) or not model_path.strip():
-            raise ValueError("model_path must point to an existing local model directory")
+        if not isinstance(model_path, str) or not model_path.strip() or not Path(model_path).expanduser().is_dir():
+            raise ValueError("model_path must point to an existing local model directory; remote model IDs are not accepted")
         try:
             from sentence_transformers import SentenceTransformer
         except ImportError as exc:
@@ -52,8 +53,8 @@ class LocalSentenceTransformer:
 def hybrid_search(store, query: str, *, provider: EmbeddingProvider | None = None,
                   limit: int = 10, status: str | None = None, topic: str | None = None) -> list[dict]:
     """Search all locally stored cards; lexical fallback always works without embeddings."""
-    if not isinstance(query, str) or not query.strip():
-        raise ValueError("query must be non-empty")
+    if not isinstance(query, str) or not query.strip() or len(query) > 1000:
+        raise ValueError("query must contain 1..1000 characters")
     if type(limit) is not int or not 1 <= limit <= 100:
         raise ValueError("limit must be between 1 and 100")
     if status is not None and status not in {"needs_review", "supported", "conflicting", "user_approved", "superseded", "rejected"}:
@@ -63,7 +64,7 @@ def hybrid_search(store, query: str, *, provider: EmbeddingProvider | None = Non
                     g.start_char, g.end_char, g.locator_json, s.source_id, s.title AS source_title,
                     s.source_type, s.author, s.source_url, s.rights_status
              FROM knowledge_cards c JOIN segments g ON g.segment_id=c.segment_id
-             JOIN sources s ON s.source_id=c.source_id"""
+             JOIN sources s ON s.source_id=c.source_id LIMIT 5000"""
     params = ()
     if status:
         sql += " WHERE c.status=?"
