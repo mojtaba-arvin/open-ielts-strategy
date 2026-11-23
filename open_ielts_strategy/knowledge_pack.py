@@ -73,6 +73,10 @@ class KnowledgePack:
                 " ".join(item.get("purpose", [])),
                 " ".join(item.get("steps", [])),
                 " ".join(item.get("applicability", {}).get("question_types", [])),
+                " ".join(
+                    " ".join((example["task"], example["content"], example["strategy_application"], example["learning_note"]))
+                    for example in self.examples if example["strategy_id"] == item["id"]
+                ),
             )).casefold()
             score = sum(1 for term in terms if term in haystack)
             if score:
