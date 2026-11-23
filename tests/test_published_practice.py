@@ -41,11 +41,30 @@ def pack_fixture(root):
     folder.mkdir(parents=True)
     payload = json.dumps(record, sort_keys=True, separators=(",", ":")).encode()
     (folder / "answer-development.json").write_bytes(payload)
+    example = {
+        "id": "speaking.example.direct-answer-01", "schema_version": "1.0",
+        "strategy_id": "speaking.answer-development", "skill": "speaking",
+        "task": "Describe a useful skill.",
+        "content": "I learned to cook a new dish.",
+        "strategy_application": "The first sentence answers directly.",
+        "learning_note": "Add one supporting detail.",
+        "provenance": {"basis": "original", "public_references": []},
+        "review": {"content_status": "approved", "publication_status": "approved"},
+        "version": "1.0.0",
+    }
+    example_path = root / "examples/speaking/speaking.example.direct-answer-01.json"
+    example_path.parent.mkdir(parents=True)
+    example_payload = json.dumps(example, sort_keys=True, separators=(",", ":")).encode()
+    example_path.write_bytes(example_payload)
     (root / "manifest.json").write_text(json.dumps({
-        "format": "open-ielts-knowledge-pack", "schema_version": "1.0",
+        "format": "open-ielts-knowledge-pack", "schema_version": "1.1",
         "pack_version": "2.0.0",
-        "files": [{"path": "strategies/speaking/answer-development.json",
-                   "sha256": hashlib.sha256(payload).hexdigest()}],
+        "files": [
+            {"path": "strategies/speaking/answer-development.json",
+             "sha256": hashlib.sha256(payload).hexdigest()},
+            {"path": "examples/speaking/speaking.example.direct-answer-01.json",
+             "sha256": hashlib.sha256(example_payload).hexdigest()},
+        ],
     }), encoding="utf-8")
 
 
@@ -66,6 +85,9 @@ class PublishedPracticeTests(unittest.TestCase):
             )
             self.assertEqual(result["context"]["knowledge_version"], "2.0.0")
             self.assertEqual(result["strategy_attribution"][0]["strategy_id"], "speaking.answer-development")
+            self.assertEqual(result["context"]["published_examples"][0]["example_id"], "speaking.example.direct-answer-01")
+            self.assertIn("I learned to cook a new dish.", provider.prompt)
+            self.assertIn("do not copy them verbatim", provider.prompt)
             self.assertEqual(provider.calls, 1)
 
     def test_no_evidence_means_no_model_call(self):
