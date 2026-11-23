@@ -26,6 +26,7 @@ def main(argv=None):
     parser.add_argument("--concept", action="append", default=[], help="Optional private local concept JSON draft")
     parser.add_argument("--relationship", action="append", default=[], help="Optional private local relationship JSON draft")
     parser.add_argument("--learning-path", action="append", default=[], help="Optional private local learning-path JSON draft")
+    parser.add_argument("--example", action="append", default=[], help="Optional standalone reviewed example JSON draft (selects pack schema 1.1)")
     parser.add_argument("--destination", required=True)
     parser.add_argument("--version", required=True, dest="pack_version")
     parser.add_argument("--source-item", action="append", type=_parse_source_item, default=[],
@@ -49,6 +50,7 @@ def main(argv=None):
         concepts = read_records(args.concept, "concept")
         relationships = read_records(args.relationship, "relationship")
         learning_paths = read_records(args.learning_path, "learning path")
+        examples = read_records(args.example, "example")
         semantic_embeddings = None
         if args.semantic_embedding_model_path:
             from .hybrid_retrieval import LocalSentenceTransformer
@@ -62,14 +64,14 @@ def main(argv=None):
                     strategies, args.destination, pack_version=args.pack_version,
                     human_confirmed=args.confirm_human_review, store=store,
                     source_item_ids_by_strategy=mappings, concepts=concepts,
-                    relationships=relationships, learning_paths=learning_paths,
+                    relationships=relationships, learning_paths=learning_paths, examples=examples,
                     semantic_embedding_provider=semantic_embeddings,
                 )
         else:
             result = build_knowledge_pack(
                 strategies, args.destination, pack_version=args.pack_version,
                 human_confirmed=args.confirm_human_review, concepts=concepts,
-                relationships=relationships, learning_paths=learning_paths,
+                relationships=relationships, learning_paths=learning_paths, examples=examples,
                 semantic_embedding_provider=semantic_embeddings,
             )
         print(json.dumps(result, ensure_ascii=False, indent=2))
