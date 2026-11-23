@@ -219,6 +219,61 @@ class NewInfrastructureTests(unittest.TestCase):
             return messages[0]["status"]
         self.assertEqual(asyncio.run(run()), 413)
 
+    def test_http_middleware_uses_subject_tokens_and_emits_content_free_audit(self):
+        async def app(scope, receive, send):
+            await send({"type": "http.response.start", "status": 204, "headers": []})
+            await send({"type": "http.response.body", "body": b""})
+        audit = []
+        tokens = json.dumps([
+            {"token": "a" * 40, "subject": "learner-a", "scopes": ["knowledge:read"]},
+            {"token": "b" * 40, "subject": "learner-b", "scopes": ["knowledge:read"]},
+        ])
+        middleware = AuthenticatedMCPMiddleware(
+            app, tokens_json=tokens, allowed_hosts={"localhost"},
+            rate=1, burst=1, audit_sink=audit.append,
+        )
+        async def request(token):
+            messages = []
+            async def receive():
+                return {"type": "http.request", "body": b"", "more_body": False}
+            async def send(message):
+                messages.append(message)
+            await middleware({"type": "http", "method": "POST", "path": "/mcp",
+                              "headers": [(b"authorization", b"Bearer " + token),
+                                          (b"host", b"localhost")],
+                              "client": ("127.0.0.1", 1234)}, receive, send)
+            return messages[0]["status"]
+        self.assertEqual(asyncio.run(request(b"a" * 40)), 204)
+        self.assertEqual(asyncio.run(request(b"b" * 40)), 204)
+        self.assertEqual(asyncio.run(request(b"a" * 40)), 429)
+        self.assertEqual([event["subject"] for event in audit], ["learner-a", "learner-b", "learner-a"])
+        self.assertTrue(all(event["event"] == "published_mcp_http_request" for event in audit))
+        self.assertTrue(all("authorization" not in event and "request_body" not in event for event in audit))
+
+    def test_http_middleware_fails_closed_when_distributed_limiter_is_unavailable(self):
+        class BrokenLimiter:
+            def allow(self, key):
+                raise RuntimeError("redis unavailable")
+        async def app(scope, receive, send):
+            await send({"type": "http.response.start", "status": 204, "headers": []})
+            await send({"type": "http.response.body", "body": b""})
+        middleware = AuthenticatedMCPMiddleware(
+            app, token="c" * 40, allowed_hosts={"localhost"}, rate_limiter=BrokenLimiter(),
+            audit_sink=lambda event: None,
+        )
+        async def run():
+            messages = []
+            async def receive():
+                return {"type": "http.request", "body": b"", "more_body": False}
+            async def send(message):
+                messages.append(message)
+            await middleware({"type": "http", "method": "POST", "path": "/mcp",
+                              "headers": [(b"authorization", b"Bearer " + b"c" * 40),
+                                          (b"host", b"localhost")],
+                              "client": ("127.0.0.1", 1)}, receive, send)
+            return messages[0]["status"]
+        self.assertEqual(asyncio.run(run()), 503)
+
     def test_http_middleware_exposes_only_health_without_token(self):
         async def app(scope, receive, send):
             await send({"type": "http.response.start", "status": 204, "headers": []})
