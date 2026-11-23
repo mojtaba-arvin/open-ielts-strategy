@@ -177,6 +177,43 @@ class PublishedLearningTests(unittest.TestCase):
             )
             self.assertEqual(result["strategy_id"], "speaking.answer-development")
 
+    def test_example_generation_rejects_standalone_published_example_copy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            make_pack(root)
+            example = {
+                "id": "speaking.example.direct-answer-01", "schema_version": "1.0",
+                "strategy_id": "speaking.answer-development", "skill": "speaking",
+                "task": "Describe a useful skill.",
+                "content": "A separately reviewed published example that must not be copied.",
+                "strategy_application": "It starts with a direct answer.",
+                "learning_note": "Add a relevant detail.",
+                "provenance": {"basis": "original", "public_references": []},
+                "review": {"content_status": "approved", "publication_status": "approved"},
+                "version": "1.0.0",
+            }
+            path = root / "examples/speaking/speaking.example.direct-answer-01.json"
+            path.parent.mkdir(parents=True)
+            payload = json.dumps(example, sort_keys=True, separators=(",", ":")).encode()
+            path.write_bytes(payload)
+            manifest_path = root / "manifest.json"
+            manifest = json.loads(manifest_path.read_text())
+            manifest["schema_version"] = "1.1"
+            manifest["files"].append({"path": "examples/speaking/speaking.example.direct-answer-01.json",
+                                      "sha256": hashlib.sha256(payload).hexdigest()})
+            manifest["files"].sort(key=lambda item: item["path"])
+            manifest_path.write_text(json.dumps(manifest))
+            pack = load_knowledge_pack(root)
+            provider = FakeProvider(json.dumps({
+                "example": example["content"],
+                "strategy_application": "Copied.",
+                "learning_note": "Copied.",
+            }))
+            with self.assertRaises(GenerationError):
+                generate_published_strategy_example(
+                    pack, "speaking.answer-development", "Describe a useful skill", provider=provider
+                )
+
     def test_example_generation_rejects_existing_example_copy(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
