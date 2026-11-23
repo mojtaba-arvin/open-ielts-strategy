@@ -9,6 +9,7 @@ from pathlib import Path
 from open_ielts_strategy.enhanced_published_retrieval import EnhancedPublishedRetrievalEngine, ModelQueryRewriter
 from open_ielts_strategy.practice_evaluation import PracticeReviewStore
 from open_ielts_strategy.published_index import PublishedIndexStore
+from open_ielts_strategy.published_retrieval import _document_text
 from open_ielts_strategy.published_mcp_http import AuthenticatedMCPMiddleware
 from open_ielts_strategy.semantic_publication_scan import scan_semantic_publication_leaks
 
@@ -56,7 +57,14 @@ class FakeEmbeddings:
 class FakePack:
     pack_version = "1.0.0"
     manifest_sha256 = "a" * 64
-    examples = ()
+    examples = [{
+        "id": "speaking.example.direct-answer-01",
+        "strategy_id": "speaking.direct-answer",
+        "task": "public example task",
+        "content": "public example content",
+        "strategy_application": "application",
+        "learning_note": "note",
+    }]
     strategies = [{
         "id": "speaking.direct-answer", "title": "Direct answer",
         "summary": "Answer directly", "purpose": ["Purpose"],
@@ -107,6 +115,8 @@ class NewInfrastructureTests(unittest.TestCase):
             cached = store.embedding_provider(FakePack(), model_fingerprint="local-model-v1",
                                               query_provider=FakeEmbeddings())
             self.assertEqual(cached.encode(["Answer directly"])[0], [0.0, 1.0])
+            document = _document_text(FakePack.strategies[0], FakePack.examples)
+            self.assertEqual(cached.encode([document])[0], [1.0, 0.0])
             with self.assertRaisesRegex(ValueError, "stale"):
                 store.embedding_provider(FakePack(), model_fingerprint="local-model-v2",
                                           query_provider=FakeEmbeddings())
