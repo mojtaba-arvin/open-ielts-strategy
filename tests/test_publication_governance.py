@@ -5,6 +5,7 @@ from pathlib import Path
 from open_ielts_strategy.knowledge_pipeline import (
     assert_items_publishable, persist_segment_extraction,
     review_publication_item, review_semantic_item, get_publication_review,
+    list_publication_review_history,
 )
 from open_ielts_strategy.knowledge_store import KnowledgeStore
 
@@ -37,6 +38,9 @@ class PublicationGovernanceTests(unittest.TestCase):
                         rights_basis="permission_confirmed",
                     )
                 review_semantic_item(store, item_id, "user_approved", "Content review note.")
+                history = list_publication_review_history(store, item_id)
+                self.assertEqual(len(history), 1)
+                self.assertEqual(history[0]["publication_status"], "rejected")
                 with self.assertRaisesRegex(ValueError, "publication approval"):
                     assert_items_publishable(store, [item_id])
                 with self.assertRaisesRegex(ValueError, "rights basis"):
@@ -51,6 +55,10 @@ class PublicationGovernanceTests(unittest.TestCase):
                 self.assertEqual(eligible[0]["rights_basis"], "permission_confirmed")
                 self.assertNotIn("note", eligible[0])
                 self.assertEqual(get_publication_review(store, item_id)["note"], "Private evidence checked.")
+                history = list_publication_review_history(store, item_id)
+                self.assertEqual(len(history), 1)
+                self.assertEqual(history[0]["publication_status"], "approved")
+                self.assertEqual(history[0]["note"], "Private evidence checked.")
                 self.assertEqual(
                     store._connection.execute(
                         "SELECT status FROM semantic_items WHERE item_id=?", (item_id,)
