@@ -42,7 +42,7 @@ def validate_extraction(payload: object, source_text: str) -> dict:
     for item in payload["items"]:
         if not isinstance(item, dict) or set(item) != REQUIRED_FIELDS:
             raise ExtractionError("each item must match the exact extraction schema")
-        if item["kind"] not in ALLOWED_KINDS:
+        if not isinstance(item["kind"], str) or item["kind"] not in ALLOWED_KINDS:
             raise ExtractionError("unsupported extraction kind")
         text = item["text"]
         start, end = item["start_char"], item["end_char"]
