@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import re
 import sqlite3
 import uuid
@@ -143,11 +142,13 @@ class KnowledgeStore:
         self.db_path = str(db_path)
         if self.db_path != ":memory:":
             path = Path(self.db_path).expanduser()
-            path.parent.mkdir(parents=True, exist_ok=True)
-            try:
-                path.parent.chmod(0o700)
-            except OSError:
-                pass
+            parent_existed = path.parent.exists()
+            path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            if not parent_existed:
+                try:
+                    path.parent.chmod(0o700)
+                except OSError:
+                    pass
             self.db_path = str(path)
         self._connection = sqlite3.connect(self.db_path)
         self._connection.row_factory = sqlite3.Row
