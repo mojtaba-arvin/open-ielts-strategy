@@ -70,7 +70,7 @@ ielts-knowledge-publish \
   --confirm-human-review
 ```
 
-For source-derived strategies, map each strategy to its private semantic item IDs with repeated `--source-item STRATEGY_ID=SITEM_ID` arguments. The command checks content approval, separate publication approval, and a matching rights basis in the private SQLite database. Private IDs, reviewer notes, and source text are not included in the generated pack. The builder writes a new directory only, verifies the staged pack, and refuses to overwrite an existing destination. It does not create a Git commit or push; review the resulting file diff separately.
+For source-derived records, map each record to its private semantic item IDs with repeated `--source-item RECORD_ID=SITEM_ID` arguments. The command checks content approval, separate publication approval, and a matching rights basis in the private SQLite database. Private IDs, reviewer notes, and source text are not included in the generated pack. The builder writes a new directory only, verifies the staged pack, and refuses to overwrite an existing destination. It does not create a Git commit or push; review the resulting file diff separately.
 
 The `--confirm-human-review` flag is an explicit operator attestation, not an automated legal determination. Rights metadata and model-generated content are never treated as self-approving.
 
@@ -101,7 +101,7 @@ python -m pip install '.[mcp]'
 ielts-published-knowledge-mcp --pack ./knowledge
 ```
 
-The server exposes only `search_strategies`, `get_strategy`, and `get_related_strategies`. It loads and verifies the pack at startup and returns the pack version and manifest digest with results. It does not import the private SQLite store, expose private ingestion/review tools, or contact a model. Restart the server after changing the checked-out pack. This v1 adapter supports stdio; authenticated Streamable HTTP remains a separate deployment task.
+The server exposes `search_strategies`, `get_strategy`, `get_related_strategies`, `get_concept`, `get_learning_path`, and `create_study_plan`. When a provider and model are explicitly configured, it also exposes `answer_ielts_question`, `explain_strategy`, and `generate_strategy_example`. It loads and verifies the pack at startup and returns the pack version and manifest digest with results. It does not import the private SQLite store or expose private ingestion/review tools. Restart the server after changing the checked-out pack. This v1 adapter supports stdio; authenticated Streamable HTTP remains a separate deployment task.
 
 ## Contract validation
 
