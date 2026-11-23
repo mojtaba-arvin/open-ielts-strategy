@@ -85,6 +85,14 @@ python scripts/knowledge.py ingest ./notes.md \
   --rights-status self_authored
 ```
 
+After semantic extraction and review, if you do not want the original transcript retained locally, you can irreversibly purge its raw body while keeping reviewed semantic items searchable:
+
+```bash
+python scripts/knowledge.py purge-source-text src_ID --confirm
+```
+
+This requires all extracted items to be reviewed. The source hash and offsets remain, but exact source-span re-verification is no longer possible; old backups may still contain the original.
+
 Browse, search, review, and relate cards:
 
 ```bash
