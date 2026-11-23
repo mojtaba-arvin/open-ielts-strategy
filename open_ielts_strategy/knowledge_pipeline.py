@@ -46,6 +46,7 @@ def persist_segment_extraction(store, source_id: str, segment_id: str, result: d
                                *, provider_name: str, model_name: str,
                                prompt_version: str) -> dict:
     """Validate model output against a segment and persist global source offsets."""
+    _ensure_schema(store)
     source = store.get_source(source_id, include_body=True)
     segment = next((item for item in source["segments"] if item["segment_id"] == segment_id), None)
     if segment is None:
