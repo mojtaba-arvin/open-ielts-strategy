@@ -36,6 +36,18 @@ The comparison reports resolution rates and skill lift; it does not generate mod
 
 The Runtime Evaluation workflow supports paired baseline/skill fixture arms for all four skills (Writing, Speaking, Reading, and Listening). Pull requests evaluate only affected skills; manual and scheduled runs cover all four. It publishes one wiring-only scorecard per evaluated skill. Each arm records SHA-256 fingerprints for its canonical evaluation-case suite and exact skill file; aggregation rejects mismatched fingerprints. All GitHub Actions triggers (pull requests, manual dispatches, and scheduled runs) are fixture-only and make zero model calls; the workflow exposes no paid/live-model input. Fixture scores are wiring checks, not quality judgments, and do not establish educational effectiveness or Skill Lift.
 
+## Private knowledge library
+
+The local knowledge library now has optional modules for structured local-model extraction, hybrid retrieval, source-grounded playbook drafts, a loopback-only paste UI, and bounded local document import. Start the private UI with:
+
+```bash
+python scripts/knowledge_web.py --port 8765
+```
+
+Then open `http://127.0.0.1:8765`. For local DOCX/PDF import, see [Local UI and Documents](docs/local-ui-and-documents.md). Optional local Ollama extraction, embeddings, hybrid retrieval, and playbooks are documented in [Semantic Extraction](docs/semantic-extraction.md), [Hybrid Retrieval](docs/hybrid-retrieval.md), and [Strategy Playbooks](docs/strategy-playbooks.md). These features produce reviewable drafts, not validated IELTS advice.
+
+Backup and restore helpers are available in `open_ielts_strategy.knowledge_backup`; backups are unencrypted and must be stored privately with full-disk encryption.
+
 ## Free offline evaluation foundations
 
 - **Deterministic writing diagnostics:** `open_ielts_strategy.rule_judge.evaluate_writing` emits reproducible text-feature diagnostics. Its simulated heuristic indices are not IELTS bands, examiner judgments, or validated assessments. See [Rule-based Judge](docs/rule-based-judge.md).
