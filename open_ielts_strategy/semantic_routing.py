@@ -19,7 +19,11 @@ SKILL_IDS = {
 
 
 def validate_route(result: object, *, threshold: float = 0.65) -> dict:
-    if type(threshold) not in (int, float) or not math.isfinite(threshold) or not 0 <= threshold <= 1:
+    try:
+        threshold_valid = type(threshold) in (int, float) and math.isfinite(threshold) and 0 <= threshold <= 1
+    except OverflowError:
+        threshold_valid = False
+    if not threshold_valid:
         raise ValueError("threshold must be a finite number between 0 and 1")
     if not isinstance(result, dict) or set(result) != {"skill_id", "confidence", "reason"}:
         raise ValueError("route result must contain exactly skill_id, confidence, and reason")
@@ -27,7 +31,11 @@ def validate_route(result: object, *, threshold: float = 0.65) -> dict:
     if skill_id is not None and (not isinstance(skill_id, str) or skill_id not in SKILL_IDS):
         raise ValueError("unknown skill_id")
     confidence = result["confidence"]
-    if type(confidence) not in (int, float) or not math.isfinite(confidence) or not 0 <= confidence <= 1:
+    try:
+        confidence_valid = type(confidence) in (int, float) and math.isfinite(confidence) and 0 <= confidence <= 1
+    except OverflowError:
+        confidence_valid = False
+    if not confidence_valid:
         raise ValueError("confidence must be a finite number between 0 and 1")
     reason = result["reason"]
     if not isinstance(reason, str) or len(reason) > 500:
