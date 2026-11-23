@@ -235,15 +235,15 @@ def review_publication_item(store, item_id: str, status: str, *,
     """
     if not isinstance(item_id, str) or not item_id.startswith("sitem_"):
         raise ValueError("item_id must identify a semantic extraction item")
-    if status not in PUBLICATION_REVIEW_STATUSES:
+    if not isinstance(status, str) or status not in PUBLICATION_REVIEW_STATUSES:
         raise ValueError("invalid publication review status")
     if not isinstance(reviewer, str) or not reviewer.strip() or len(reviewer) > 200:
         raise ValueError("reviewer must be non-empty text no longer than 200 characters")
     if not isinstance(note, str) or len(note) > 4000:
         raise ValueError("publication review note must be text no longer than 4000 characters")
-    if status == "approved" and rights_basis not in PUBLICATION_RIGHTS_BASES:
+    if status == "approved" and (not isinstance(rights_basis, str) or rights_basis not in PUBLICATION_RIGHTS_BASES):
         raise ValueError("publication approval requires an explicit publishable rights basis")
-    if rights_basis is not None and rights_basis not in PUBLICATION_RIGHTS_BASES:
+    if rights_basis is not None and (not isinstance(rights_basis, str) or rights_basis not in PUBLICATION_RIGHTS_BASES):
         raise ValueError("unsupported publication rights basis")
     _ensure_publication_schema(store)
     item = store._connection.execute(
