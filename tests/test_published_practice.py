@@ -61,7 +61,7 @@ class PublishedPracticeTests(unittest.TestCase):
                 "practice_suggestion": "Add one relevant detail.",
             }))
             result = generate_published_practice_answer(
-                pack, "Describe a memorable journey", skill="speaking", provider=provider
+                pack, "How can I give a direct answer?", skill="speaking", provider=provider
             )
             self.assertEqual(result["context"]["knowledge_version"], "2.0.0")
             self.assertEqual(result["strategy_attribution"][0]["strategy_id"], "speaking.answer-development")
