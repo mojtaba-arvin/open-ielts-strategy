@@ -94,7 +94,6 @@ def main(argv=None):
                     source_url=args.source_url,
                     published_at=args.published_at,
                     language=args.language,
-                    notes=args.notes,
                     rights_status=args.rights_status,
                     notes="; ".join(part for part in (
                         args.notes,
