@@ -26,7 +26,7 @@ This roadmap distinguishes implemented repository mechanics from educational val
 - Phase 5 foundations: exact-span extraction benchmark harness and synthetic regression fixtures. No qualified independent ratings or learner outcome evidence have been collected.
 - Optional semantic routing foundation: loopback-only local model adapter with known-skill schema, low-confidence abstention, deterministic fallback, and explicitly uncalibrated confidence. See docs/semantic-routing.md.
 - Optional semantic routing foundation: loopback-only local model adapter with known-skill schema, low-confidence abstention, deterministic fallback, and explicitly uncalibrated confidence. See docs/semantic-routing.md.
-- Privacy operations: SQLite online backup/restore helpers with integrity checks and restrictive best-effort permissions. Backups are not encrypted; use OS full-disk encryption.
+- Privacy operations: SQLite online backup/restore helpers with integrity checks and restrictive best-effort permissions. Backups are not encrypted; use OS full-disk encryption. A reviewed-knowledge retention operation can irreversibly purge raw source/segment text while preserving reviewed semantic items and source hash/offset metadata; prior backups remain separate copies.
 
 ## Not yet established or implemented
 

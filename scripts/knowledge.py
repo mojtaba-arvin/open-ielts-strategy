@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from open_ielts_strategy.document_import import import_document
-from open_ielts_strategy.knowledge_pipeline import list_semantic_items, review_semantic_item
+from open_ielts_strategy.knowledge_pipeline import list_semantic_items, review_semantic_item, purge_source_text
 from open_ielts_strategy.knowledge_store import (
     DEFAULT_DB_PATH,
     CARD_STATUSES,
@@ -81,6 +81,10 @@ def build_parser():
     semantic_review.add_argument("item_id")
     semantic_review.add_argument("--status", required=True, choices=sorted(CARD_STATUSES))
     semantic_review.add_argument("--note", default="")
+
+    purge = commands.add_parser("purge-source-text", help="Permanently remove raw source text but keep reviewed semantic items")
+    purge.add_argument("source_id")
+    purge.add_argument("--confirm", action="store_true", help="Required confirmation for irreversible raw-text purge")
     return parser
 
 
@@ -130,6 +134,8 @@ def main(argv=None):
                 emit(list_semantic_items(store, args.source_id))
             elif args.command == "review-semantic":
                 emit(review_semantic_item(store, args.item_id, args.status, args.note))
+            elif args.command == "purge-source-text":
+                emit(purge_source_text(store, args.source_id, confirm=args.confirm))
     except (OSError, UnicodeError, ValueError, KeyError, RuntimeError, sqlite3.Error) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
