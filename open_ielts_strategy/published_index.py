@@ -71,7 +71,13 @@ class PublishedIndexStore:
                     "document_count": len(pack.strategies)}
         if self.identity() == identity:
             return {**identity, "rebuilt": False}
-        documents = [(item["id"], _document_text(item)) for item in pack.strategies]
+        examples_by_strategy = {}
+        for example in pack.examples:
+            examples_by_strategy.setdefault(example["strategy_id"], []).append(example)
+        documents = [
+            (item["id"], _document_text(item, examples_by_strategy.get(item["id"], [])))
+            for item in pack.strategies
+        ]
         vectors: list[list[float] | None] = [None] * len(documents)
         vector_dimensions = None
         if embedding_provider is not None:
