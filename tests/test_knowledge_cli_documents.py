@@ -38,6 +38,13 @@ class KnowledgeCliDocumentTests(unittest.TestCase):
             )
             self.assertEqual(detail.returncode, 0, detail.stderr)
             self.assertIn("file SHA-256:", json.loads(detail.stdout)["user_notes"])
+            source_id = json.loads(result.stdout)["source_id"]
+            detail = subprocess.run(
+                [sys.executable, "scripts/knowledge.py", "--db", str(db), "show", source_id],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(detail.returncode, 0, detail.stderr)
+            self.assertIn("file SHA-256:", json.loads(detail.stdout)["user_notes"])
 
     def test_unsupported_document_fails_closed(self):
         with tempfile.TemporaryDirectory() as tmp:

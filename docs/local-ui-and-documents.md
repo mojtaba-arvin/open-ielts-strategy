@@ -14,7 +14,7 @@ The UI stores source text in the same private SQLite database and does not uploa
 
 ## TXT, Markdown, DOCX, and PDF
 
-`import_document(path)` supports local UTF-8 TXT/Markdown and bounded DOCX/PDF extraction. DOCX parsing uses the Python standard library, rejects macro-bearing packages, and bounds ZIP entry count and uncompressed size. PDF parsing requires optional `pypdf`; encrypted files and files over 300 pages are rejected. All formats are bounded by 20 MiB input and 5 million extracted characters. Scanned PDFs need OCR, which is not implemented.
+`import_document(path)` supports local UTF-8 TXT/Markdown and bounded DOCX/PDF extraction. DOCX parsing uses the Python standard library, rejects macro-bearing packages, and bounds ZIP entry count and uncompressed size. PDF parsing requires optional `pypdf`; encrypted files and files over 300 pages are rejected. All formats are bounded by 20 MiB input and 5 million extracted characters. The importer fingerprints the original file bytes and the CLI records filename, format, and file SHA-256 in source notes; the database stores extracted text, not a binary archive of the original document. Keep the original file separately if exact binary preservation is required. Scanned PDFs need OCR, which is not implemented.
 
 Example:
 
