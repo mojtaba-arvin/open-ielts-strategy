@@ -12,6 +12,8 @@ from open_ielts_strategy.knowledge_pipeline import extract_source
 from open_ielts_strategy.knowledge_store import DEFAULT_DB_PATH, KnowledgeStore
 from open_ielts_strategy.provider_registry import build_extraction_provider
 
+DEFAULT_OLLAMA_ENDPOINT = "http://127.0.0.1:11434/api/generate"
+
 
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -19,7 +21,7 @@ def build_parser():
     parser.add_argument("--source-id", required=True)
     parser.add_argument("--provider", choices=("ollama", "openai-compatible"), default="ollama")
     parser.add_argument("--model", required=True, help="Local Ollama model or remote API model name")
-    parser.add_argument("--endpoint", help="Optional provider endpoint; remote endpoints must use HTTPS")
+    parser.add_argument("--endpoint", default=DEFAULT_OLLAMA_ENDPOINT, help="Provider endpoint; remote endpoints must use HTTPS")
     parser.add_argument("--api-key-env", default="OPENAI_API_KEY",
                         help="Environment variable containing the explicitly configured remote API key")
     parser.add_argument("--max-retries", type=int, default=2)
@@ -35,7 +37,7 @@ def main(argv=None):
             if args.endpoint:
                 config["endpoint"] = args.endpoint
         else:
-            if args.endpoint:
+            if args.endpoint != DEFAULT_OLLAMA_ENDPOINT:
                 config["endpoint"] = args.endpoint
             config["api_key_env"] = args.api_key_env
             config["max_retries"] = args.max_retries
