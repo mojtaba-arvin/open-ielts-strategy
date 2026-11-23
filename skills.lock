@@ -3,7 +3,7 @@
   "skills": [
     {
       "name": "ielts-writing-feedback",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "path": "skills/ielts-writing-feedback/SKILL.md",
       "evals": "skills/ielts-writing-feedback/evals/cases.json",
       "content_origin": "original",
