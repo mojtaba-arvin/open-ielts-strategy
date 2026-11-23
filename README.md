@@ -50,6 +50,8 @@ python scripts/knowledge_web.py --port 8765
 
 Then open `http://127.0.0.1:8765`. For local DOCX/PDF import, see [Local UI and Documents](docs/local-ui-and-documents.md). Optional local Ollama extraction, embeddings, hybrid retrieval, and playbooks are documented in [Semantic Extraction](docs/semantic-extraction.md), [Hybrid Retrieval](docs/hybrid-retrieval.md), and [Strategy Playbooks](docs/strategy-playbooks.md). These features produce reviewable drafts, not validated IELTS advice.
 
+Prepare a source-cited context pack for a new Speaking/Writing practice question with `python scripts/knowledge_practice.py "..." --skill speaking`. By default, only personally approved or explicitly supported cards are included; use `--include-unreviewed` to inspect drafts. The command prepares evidence for ChatGPT to write an answer; it does not generate an answer itself. See [Practice Context](docs/practice-context.md).
+
 Backup and restore helpers are available in `open_ielts_strategy.knowledge_backup`; backups are unencrypted and must be stored privately with full-disk encryption.
 
 ## Free offline evaluation foundations
