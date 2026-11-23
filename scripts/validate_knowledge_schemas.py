@@ -55,15 +55,6 @@ def fixtures():
             "learning_note": "Follow the answer with one relevant detail.",
             "provenance": provenance, "review": review, "version": "1.0.0",
         },
-        "example.schema.json": {
-            "id": "speaking.example.direct-answer-01", "schema_version": "1.0",
-            "strategy_id": "speaking.answer-development", "skill": "speaking",
-            "task": "Describe a recent learning experience.",
-            "content": "I recently learned to cook a new dish.",
-            "strategy_application": "The opening sentence answers the question directly.",
-            "learning_note": "Follow the answer with one relevant detail.",
-            "provenance": provenance, "review": review, "version": "1.0.0",
-        },
         "learning-path.schema.json": {
             "id": "speaking.foundations", "schema_version": "1.0",
             "title": "Speaking Foundations", "skill": "speaking",
