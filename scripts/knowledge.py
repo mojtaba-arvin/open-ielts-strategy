@@ -84,7 +84,8 @@ def main(argv=None):
                 if args.input == "-":
                     body = sys.stdin.read()
                 else:
-                    body = import_document(args.input)["text"]
+                    document = import_document(args.input)
+                    body = document["text"]
                 result = store.ingest_text(
                     body,
                     title=args.title,
@@ -95,6 +96,10 @@ def main(argv=None):
                     language=args.language,
                     notes=args.notes,
                     rights_status=args.rights_status,
+                    notes="; ".join(part for part in (
+                        args.notes,
+                        f"Imported file: {document['filename']} ({document['format']}); file SHA-256: {document['file_sha256']}" if args.input != "-" else None,
+                    ) if part),
                 )
                 emit(result)
             elif args.command == "search":
