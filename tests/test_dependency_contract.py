@@ -12,7 +12,7 @@ class DependencyContractTests(unittest.TestCase):
 
     def test_build_backend_is_bounded(self):
         build = tomllib.loads((ROOT / "pyproject.toml").read_text())["build-system"]
-        self.assertIn("setuptools>=68,<82", build["requires"])
+        self.assertIn("setuptools>=77,<82", build["requires"])
 
     def test_skill_lock_uses_semver_for_every_skill(self):
         import json
