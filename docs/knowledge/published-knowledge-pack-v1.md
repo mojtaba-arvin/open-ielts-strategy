@@ -80,7 +80,7 @@ For source-derived records, map each record to its private semantic item IDs wit
 
 The `--confirm-human-review` flag is an explicit operator attestation, not an automated legal determination. Rights metadata and model-generated content are never treated as self-approving.
 
-Retrieval defaults to in-memory BM25 and works without an embedding model. For local dense/hybrid retrieval, install `.[local-embeddings]` and pass an existing on-disk sentence-transformer directory with `--embedding-model-path /path/to/cached/model` to either `ielts-practice` or `ielts-published-knowledge-mcp`. The adapter uses `local_files_only=True`; it will not download model weights. The current hybrid fusion is BM25 plus cosine similarity; learned reranking and incremental persistent indexes remain future work.
+Retrieval defaults to in-memory BM25 and works without an embedding model. For local dense/hybrid retrieval, install `.[local-embeddings]` and pass an existing on-disk sentence-transformer directory with `--embedding-model-path /path/to/cached/model` to either `ielts-practice` or `ielts-published-knowledge-mcp`. The adapter uses `local_files_only=True`; it will not download model weights. The default hybrid fusion is BM25 plus cosine similarity. `PublishedIndexStore` can persist public-only document text/vectors in a separate SQLite cache; its identity includes the pack manifest digest and embedding-model fingerprint, and stale identities must be rebuilt. `EnhancedPublishedRetrievalEngine` accepts optional query-rewriter and reranker adapters, but neither is enabled unless explicitly injected. Remote embedding providers and production benchmark calibration remain future work.
 
 ## Study, Mentor, and Example workflows
 
@@ -106,7 +106,7 @@ Compare the current public pack with a newly built candidate before any Git oper
 ielts-knowledge-diff --current ./knowledge --candidate ./.local/candidate-knowledge
 ```
 
-The command verifies both packs, emits deterministic added/modified/removed record diffs with exact pack versions and manifest digests, and blocks candidate content containing common secret-like values. It is review output only: it does not create a commit, push, or release. A separate human review is mandatory. The diff scanner cannot compare against private source bodies; that check occurs during the local pack build.
+The command verifies both packs, emits deterministic added/modified/removed record diffs with exact pack versions and manifest digests, and blocks candidate content containing common secret-like values. It is review output only: it does not create a commit, push, or release. A separate human review is mandatory. The diff scanner cannot compare against private source bodies; that check occurs during the local pack build. For an additional optional local embedding-based overlap screen, run `python -m open_ielts_strategy.semantic_publication_scan --candidate ./.local/candidate-knowledge/strategies/speaking/example.json --private-sources .local/private-sources.json --embedding-model-path /path/to/cached/model`. This reports source IDs and offsets, never matched text. It is a heuristic signal, not proof of semantic non-disclosure or legal clearance.
 
 ## Published Knowledge MCP (stdio)
 
@@ -117,7 +117,7 @@ python -m pip install '.[mcp]'
 ielts-published-knowledge-mcp --pack ./knowledge
 ```
 
-The server exposes `search_strategies`, `get_strategy`, `get_related_strategies`, `get_concept`, `get_learning_path`, and `create_study_plan`. When a provider and model are explicitly configured, it also exposes `answer_ielts_question`, `explain_strategy`, and `generate_strategy_example`. It loads and verifies the pack at startup and returns the pack version and manifest digest with results. It does not import the private SQLite store or expose private ingestion/review tools. Restart the server after changing the checked-out pack. This v1 adapter supports stdio; authenticated Streamable HTTP remains a separate deployment task.
+The server exposes `search_strategies`, `get_strategy`, `get_related_strategies`, `get_concept`, `get_learning_path`, and `create_study_plan`. When a provider and model are explicitly configured, it also exposes `answer_ielts_question`, `explain_strategy`, and `generate_strategy_example`. It loads and verifies the pack at startup and returns the pack version and manifest digest with results. It does not import the private SQLite store or expose private ingestion/review tools. Restart the server after changing the checked-out pack. The stdio adapter remains the simplest local integration. An opt-in authenticated Streamable HTTP deployment is available with `python -m pip install '.[http-mcp]'` and `ielts-published-knowledge-mcp-http`. It requires `IELTS_MCP_BEARER_TOKEN` (32+ characters), validates Host and optional Origin, applies an in-memory per-IP token bucket, and is packaged in `Dockerfile.published-mcp` plus `compose.published-mcp.yml`. See [HTTP MCP deployment](../deployment/published-mcp-http.md). The Compose configuration binds to host loopback only. Public deployment still requires a TLS reverse proxy, restricted direct network access, distributed rate limiting, per-user identity/authorization, and a security review.
 
 ## Contract validation
 
@@ -144,3 +144,7 @@ Choose `--provider openai-compatible` and configure the API key environment vari
 ## Governance boundary
 
 Loading validates structure and integrity. It does not grant rights, certify IELTS advice, or authorize publication. The publication workflow must independently enforce human content approval, rights approval, private-data leakage checks, deterministic build validation, diff review, and explicit maintainer authorization before commit/push.
+
+## Practice review and calibration
+
+Generated outputs can be registered and reviewed locally with `ielts-practice-eval --db .local/practice-reviews.sqlite`. Use `register`, `review`, and `report` subcommands; the rubric covers task relevance, evidence grounding, clarity, actionability, and factual safety. The report gives descriptive reviewer agreement only. See [Practice human review](../evaluation/practice-human-review.md). No human ratings, examiner equivalence, band calibration, or educational outcomes are implied.
