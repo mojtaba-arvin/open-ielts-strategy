@@ -56,7 +56,7 @@ def get_related_published_strategies(pack: KnowledgePack, strategy_id: str) -> d
     }
 
 
-def build_server(pack_path: str | Path):
+def build_server(pack_path: str | Path, *, embedding_model_path: str | None = None):
     """Create an optional stdio MCP server backed only by a verified pack directory."""
     try:
         from mcp.server.fastmcp import FastMCP
@@ -64,7 +64,11 @@ def build_server(pack_path: str | Path):
         raise RuntimeError("install the optional MCP dependency: pip install '.[mcp]'") from exc
 
     pack = load_knowledge_pack(pack_path)
-    retriever = PublishedRetrievalEngine(pack)
+    embedding_provider = None
+    if embedding_model_path:
+        from .hybrid_retrieval import LocalSentenceTransformer
+        embedding_provider = LocalSentenceTransformer(embedding_model_path)
+    retriever = PublishedRetrievalEngine(pack, embedding_provider=embedding_provider)
     server = FastMCP("Open IELTS Published Knowledge")
 
     @server.tool()
@@ -88,9 +92,10 @@ def build_server(pack_path: str | Path):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pack", default="knowledge", help="Verified published Knowledge Pack directory")
+    parser.add_argument("--embedding-model-path", help="Optional already-cached local sentence-transformer directory")
     args = parser.parse_args(argv)
     try:
-        server = build_server(args.pack)
+        server = build_server(args.pack, embedding_model_path=args.embedding_model_path)
         server.run(transport="stdio")
     except (OSError, RuntimeError, ValueError, KeyError, KnowledgePackError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
