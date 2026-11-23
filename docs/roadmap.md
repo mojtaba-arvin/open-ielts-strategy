@@ -28,6 +28,8 @@ This roadmap distinguishes implemented repository mechanics from educational val
 - Optional semantic routing foundation: loopback-only local model adapter with known-skill schema, low-confidence abstention, deterministic fallback, and explicitly uncalibrated confidence. See docs/semantic-routing.md.
 - Privacy operations: SQLite online backup/restore helpers with integrity checks and restrictive best-effort permissions. Backups are not encrypted; use OS full-disk encryption. A reviewed-knowledge retention operation can irreversibly purge raw source/segment text while preserving reviewed semantic items and source hash/offset metadata; prior backups remain separate copies.
 
+- **Published Knowledge Pack v1 foundation (in progress):** a standard-library-only filesystem loader, checksum verification, strict strategy contract checks, separate content/publication approval enforcement, private-field rejection, deterministic strategy lookup, JSON Schemas, and architecture decisions are added on the feature branch. The loader currently supports strategy records only; pack building, full concept/relationship/learning-path loading, and publication automation remain outstanding.
+
 ## Not yet established or implemented
 
 1. **Real educational effectiveness:** no independently reviewed benchmark currently demonstrates positive skill lift. Fixture-mode results are not evidence of effectiveness.
