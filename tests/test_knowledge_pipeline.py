@@ -22,9 +22,7 @@ class KnowledgePipelineTests(unittest.TestCase):
     def test_extraction_is_persisted_with_absolute_offsets_and_provenance(self):
         with tempfile.TemporaryDirectory() as tmp:
             with KnowledgeStore(Path(tmp) / "db.sqlite3") as store:
-                original = "Intro.
-
-For IELTS Writing Task 2, plan before drafting."
+                original = "Intro.\\n\\nFor IELTS Writing Task 2, plan before drafting."
                 source = store.ingest_text(original, title="Podcast")
                 results = extract_source(
                     store, source["source_id"], FakeProvider(),
