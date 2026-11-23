@@ -40,6 +40,18 @@ class HybridRetrievalTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             hybrid_search(self.store, "anything", provider=Bad())
 
+    def test_non_finite_embedding_values_are_rejected(self):
+        class Bad:
+            def encode(self, texts): return [[float("nan")], *([[1.0]] * (len(texts) - 1))]
+        with self.assertRaises(ValueError):
+            hybrid_search(self.store, "anything", provider=Bad())
+
+    def test_embedding_dimension_mismatch_is_rejected(self):
+        class Bad:
+            def encode(self, texts): return [[1.0, 0.0], *([[1.0]] * (len(texts) - 1))]
+        with self.assertRaises(ValueError):
+            hybrid_search(self.store, "anything", provider=Bad())
+
     def test_overlap_suggestions_do_not_create_relations(self):
         cards = [
             {"card_id": "a", "text": "Plan your IELTS essay before drafting."},
