@@ -35,6 +35,38 @@ class ReadOnlyKnowledgeStore:
         self.close()
 
 
+def list_private_semantic_items(store: ReadOnlyKnowledgeStore, source_id: str) -> dict:
+    """Read semantic extraction items and their provenance without reading the full source body."""
+    exists = store._connection.execute(
+        "SELECT 1 FROM sources WHERE source_id=?", (source_id,)
+    ).fetchone()
+    if exists is None:
+        raise KeyError(f"unknown source_id: {source_id}")
+    table = store._connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='semantic_items'"
+    ).fetchone()
+    if not table:
+        return {"source_id": source_id, "items": [], "item_count": 0}
+    rows = store._connection.execute(
+        """SELECT i.item_id, i.kind, i.text, i.start_char, i.end_char,
+                  i.topic_tags_json, i.rationale, i.status, i.review_note,
+                  e.model_name, e.prompt_version, e.created_at,
+                  COALESCE(r.state, 'retained') AS source_text_state
+           FROM semantic_items i
+           JOIN semantic_extractions e ON e.extraction_id=i.extraction_id
+           LEFT JOIN source_retention r ON r.source_id=i.source_id
+           WHERE i.source_id=? ORDER BY i.start_char, i.item_id""",
+        (source_id,),
+    ).fetchall()
+    import json
+    items = [{
+        **dict(row), "topic_tags": json.loads(row["topic_tags_json"])
+    } for row in rows]
+    for item in items:
+        item.pop("topic_tags_json", None)
+    return {"source_id": source_id, "items": items, "item_count": len(items)}
+
+
 def search_private_knowledge(store: ReadOnlyKnowledgeStore, query: str, *,
                              limit: int = 10, status: str | None = None,
                              topic: str | None = None) -> dict:
@@ -102,6 +134,12 @@ def build_server(db_path: str = DEFAULT_DB_PATH, *, enable_write_tools: bool = F
         raise RuntimeError("install the optional MCP dependency: pip install '.[mcp]'") from exc
 
     server = FastMCP("Open IELTS Private Knowledge")
+
+    @server.tool()
+    def list_ielts_semantic_items(source_id: str) -> dict:
+        """List extracted candidate strategies and review states for one private source."""
+        with ReadOnlyKnowledgeStore(db_path) as store:
+            return list_private_semantic_items(store, source_id)
 
     @server.tool()
     def search_ielts_knowledge(query: str, limit: int = 10,
