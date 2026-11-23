@@ -11,7 +11,7 @@ from open_ielts_strategy.evaluation import validate_case
 from open_ielts_strategy.provenance import validate_source_record
 
 ROOT = Path(__file__).resolve().parents[1]
-SEMVER = re.compile(r"^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$")
+SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 IDENTIFIER = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 
 
@@ -63,7 +63,7 @@ def validate_repository_data(lock, registry, root=ROOT):
             errors.append(f"missing {cases.relative_to(root)}")
         if skill.is_file() and valid_version:
             body = skill.read_text(encoding="utf-8")
-            if not body.startswith("---\\n") or "\\n---\\n" not in body[4:]:
+            if not body.startswith("---\n") or "\n---\n" not in body[4:]:
                 errors.append(f"{sid}: invalid frontmatter fence")
             else:
                 fm = body.split("---", 2)[1]
@@ -124,12 +124,12 @@ def main():
         lock = json.loads((ROOT / "skills.lock").read_text(encoding="utf-8"))
         registry = json.loads((ROOT / "registry/sources.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        print(f"VALIDATION FAILED\\n- unable to read repository metadata: {exc}")
+        print(f"VALIDATION FAILED\n- unable to read repository metadata: {exc}")
         return 1
 
     errors, skill_count, source_count = validate_repository_data(lock, registry)
     if errors:
-        print("VALIDATION FAILED\\n" + "\\n".join("- " + error for error in errors))
+        print("VALIDATION FAILED\n" + "\n".join("- " + error for error in errors))
         return 1
     print(f"VALIDATION PASSED: {skill_count} skill(s), {source_count} source record(s)")
     return 0
