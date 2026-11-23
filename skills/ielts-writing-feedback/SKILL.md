@@ -8,7 +8,7 @@ license: LICENSE-CONTENT
 compatibility: >-
   Text-only assistant; no external tools, browsing, or source materials needed.
 metadata:
-  version: 0.2.0
+  version: 0.2.1
   output_type: feedback
   legal_status: cleared
   source_type: original
@@ -42,7 +42,14 @@ Do not trigger for speaking practice, general grammar questions without a draft,
 9. Do not claim to be an IELTS examiner, reproduce proprietary descriptors in bulk, or present an estimate as official.
 10. If a tentative band estimate is explicitly requested, label it approximate, explain uncertainty, and avoid false precision.
 
-## Task-specific checks\n\n- Task 1: verify only the overview, key features, comparisons, and accuracy of supplied visual data; if the chart/table/diagram is absent, explicitly withhold factual accuracy conclusions.\n- Task 2: identify the learner's position and whether each part of the prompt is addressed; distinguish a developed reason from an unsupported example.\n- Coherence: inspect paragraph purpose, progression, reference, and logical links; do not reward connectors merely for being present.\n- Vocabulary and grammar: prioritize recurring meaning-affecting patterns over isolated stylistic preferences.\n\n## Output
+## Task-specific checks
+
+- Task 1: verify only the overview, key features, comparisons, and accuracy of supplied visual data; if the chart/table/diagram is absent, explicitly withhold factual accuracy conclusions.
+- Task 2: identify the learner's position and whether each part of the prompt is addressed; distinguish a developed reason from an unsupported example.
+- Coherence: inspect paragraph purpose, progression, reference, and logical links; do not reward connectors merely for being present.
+- Vocabulary and grammar: prioritize recurring meaning-affecting patterns over isolated stylistic preferences.
+
+## Output
 - Overall diagnosis (2–3 sentences).
 - Criterion-based feedback with evidence and actionable next steps.
 - Up to three priority fixes.
