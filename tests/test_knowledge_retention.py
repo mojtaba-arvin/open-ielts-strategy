@@ -54,6 +54,10 @@ class KnowledgeRetentionTests(unittest.TestCase):
                 self.assertEqual(retained[0]["text"], items[0]["text"])
                 self.assertEqual(retained[0]["status"], "user_approved")
                 self.assertEqual(retained[0]["source_text_state"], "body_purged")
+                summary = store._connection.execute(
+                    "SELECT summary FROM semantic_extractions WHERE source_id=?", (source["source_id"],)
+                ).fetchone()["summary"]
+                self.assertEqual(summary, "")
                 self.assertEqual(source_after["content_sha256"], source["content_sha256"])
                 self.assertEqual(store.search("Plan IELTS Speaking"), [])
 
