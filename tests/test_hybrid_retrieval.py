@@ -64,3 +64,12 @@ class HybridRetrievalTests(unittest.TestCase):
     def test_threshold_validation(self):
         with self.assertRaises(ValueError):
             suggest_overlaps([], threshold=2)
+
+    def test_local_embedding_adapter_rejects_remote_model_ids(self):
+        from open_ielts_strategy.hybrid_retrieval import LocalSentenceTransformer
+        with self.assertRaises(ValueError):
+            LocalSentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
+    def test_query_length_is_bounded(self):
+        with self.assertRaises(ValueError):
+            hybrid_search(self.store, "x" * 1001)
