@@ -6,6 +6,7 @@ predict IELTS bands, certify examiner equivalence, or infer learner outcomes.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sqlite3
 from pathlib import Path
@@ -26,7 +27,13 @@ class PracticeReviewStore:
 
     def __init__(self, path: str | Path):
         self.path = str(path)
+        if self.path != ":memory:":
+            db_path = Path(self.path).expanduser()
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            self.path = str(db_path)
         self.connection = sqlite3.connect(self.path)
+        if self.path != ":memory:":
+            os.chmod(self.path, 0o600)
         self.connection.row_factory = sqlite3.Row
         self.connection.execute("PRAGMA foreign_keys=ON")
         self.connection.executescript("""
