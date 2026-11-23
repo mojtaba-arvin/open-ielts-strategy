@@ -12,6 +12,11 @@ metadata:
     app.kubernetes.io/name: published-mcp
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: published-mcp
@@ -20,6 +25,14 @@ spec:
       labels:
         app.kubernetes.io/name: published-mcp
     spec:
+      terminationGracePeriodSeconds: 30
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: published-mcp
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
@@ -62,7 +75,6 @@ spec:
                 secretKeyRef:
                   name: published-mcp-secrets
                   key: redis-url
-                  optional: true
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -88,7 +100,7 @@ spec:
               command:
                 - python
                 - -c
-                - "import urllib.request; req=urllib.request.Request('http://127.0.0.1:8000/healthz', headers={'Host':'published-mcp.example.com'}); urllib.request.urlopen(req, timeout=2).close()"
+                - "import urllib.request; req=urllib.request.Request('http://127.0.0.1:8000/readyz', headers={'Host':'published-mcp.example.com'}); urllib.request.urlopen(req, timeout=2).close()"
             periodSeconds: 10
             timeoutSeconds: 3
           livenessProbe:
@@ -214,4 +226,4 @@ spec:
             cidr: 0.0.0.0/0
       ports:
         - protocol: TCP
-          port: 443
+          port: 6380
