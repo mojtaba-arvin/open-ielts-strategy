@@ -13,7 +13,6 @@ import sys
 import time
 import uuid
 from datetime import datetime, timezone
-from collections import defaultdict
 from pathlib import Path
 from typing import Callable
 
@@ -38,6 +37,9 @@ class _TokenBucket:
         if len(self._state) > 10000:
             cutoff = now - max(60.0, self.burst / self.rate * 4)
             self._state = {k: v for k, v in self._state.items() if v[1] >= cutoff}
+            if len(self._state) > 10000:
+                newest = sorted(self._state.items(), key=lambda item: item[1][1], reverse=True)[:8000]
+                self._state = dict(newest)
         return True
 
 
