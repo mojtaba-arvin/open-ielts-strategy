@@ -112,15 +112,15 @@ def _validate_strategy(item: Any, relative: str) -> dict[str, Any]:
     if set(item) != required:
         missing, extra = sorted(required - set(item)), sorted(set(item) - required)
         raise KnowledgePackError(f"{relative}: strategy fields mismatch (missing={missing}, extra={extra})")
+    for field in ("id", "title", "summary", "skill", "version"):
+        if not isinstance(item[field], str) or not item[field].strip():
+            raise KnowledgePackError(f"{relative}: {field} must be non-empty text")
     if not re.fullmatch(r"[a-z][a-z0-9_.-]{2,127}", item["id"]):
         raise KnowledgePackError(f"{relative}: invalid strategy ID")
     if item["skill"] not in {"speaking", "writing", "reading", "listening", "general"}:
         raise KnowledgePackError(f"{relative}: unsupported skill")
     if len(item["title"]) > 160 or len(item["summary"]) > 2000:
         raise KnowledgePackError(f"{relative}: title or summary exceeds its length limit")
-    for field in ("id", "title", "summary", "skill", "version"):
-        if not isinstance(item[field], str) or not item[field].strip():
-            raise KnowledgePackError(f"{relative}: {field} must be non-empty text")
     if not _SEMVER.fullmatch(item["version"]):
         raise KnowledgePackError(f"{relative}: version must be semantic version text")
     if not isinstance(item["schema_version"], str) or item["schema_version"] not in SUPPORTED_SCHEMA_VERSIONS:
