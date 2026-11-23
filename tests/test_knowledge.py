@@ -50,6 +50,15 @@ class KnowledgeSegmentationTests(unittest.TestCase):
         self.assertIn("part", segments[1]["locator"])
         self.assertEqual(segments[-1]["locator"]["paragraph"], 2)
 
+    def test_crlf_paragraph_boundaries_are_preserved(self):
+        source = "First paragraph about IELTS Writing.\r\n\r\nSecond paragraph about Speaking."
+        segments = segment_text(source)
+        self.assertEqual(len(segments), 2)
+        self.assertEqual(segments[0]["locator"]["paragraph"], 1)
+        self.assertEqual(segments[1]["locator"]["paragraph"], 2)
+        for segment in segments:
+            self.assertEqual(source[segment["start_char"]:segment["end_char"]], segment["text"])
+
     def test_empty_input_and_invalid_segment_limit_are_rejected(self):
         with self.assertRaises(ValueError):
             segment_text(" ")
