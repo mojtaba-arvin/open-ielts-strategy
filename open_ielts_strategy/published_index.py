@@ -104,6 +104,8 @@ class PublishedIndexStore:
 
     def embedding_provider(self, pack: KnowledgePack, *, model_fingerprint: str,
                            query_provider):
+        if model_fingerprint == "bm25-only":
+            raise ValueError("BM25-only indexes do not contain vectors; build with an explicit embedding model first")
         identity = self.identity()
         expected = (pack.pack_version, pack.manifest_sha256, model_fingerprint, len(pack.strategies))
         actual = None if identity is None else (identity["pack_version"], identity["manifest_sha256"],
