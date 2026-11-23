@@ -36,5 +36,24 @@ jobs:
         run: python scripts/validate_repo.py
       - name: Validate release claims
         run: python scripts/validate_release.py
+      - name: Build source distribution and wheel
+        run: |
+          python -m pip install build
+          python -m build
+          sha256sum dist/* > dist/SHA256SUMS
+      - name: Verify wheel installation in a clean environment
+        run: |
+          python -m venv /tmp/release-venv
+          /tmp/release-venv/bin/python -m pip install dist/*.whl
+          /tmp/release-venv/bin/python -c "import open_ielts_strategy; print('wheel import passed')"
+      - name: Build immutable release candidate container
+        run: docker build -f Dockerfile.published-mcp -t open-ielts-strategy/published-mcp:${{ github.sha }} .
       - name: Run deterministic regression suite
         run: python -m unittest discover -s tests -v
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: open-ielts-release-candidate
+          path: |
+            dist/*
+          if-no-files-found: error
+          retention-days: 30
