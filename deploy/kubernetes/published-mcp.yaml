@@ -2,6 +2,10 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: open-ielts
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -12,6 +16,11 @@ metadata:
     app.kubernetes.io/name: published-mcp
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: published-mcp
@@ -20,6 +29,14 @@ spec:
       labels:
         app.kubernetes.io/name: published-mcp
     spec:
+      terminationGracePeriodSeconds: 30
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: published-mcp
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
@@ -62,7 +79,6 @@ spec:
                 secretKeyRef:
                   name: published-mcp-secrets
                   key: redis-url
-                  optional: true
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -88,7 +104,7 @@ spec:
               command:
                 - python
                 - -c
-                - "import urllib.request; req=urllib.request.Request('http://127.0.0.1:8000/healthz', headers={'Host':'published-mcp.example.com'}); urllib.request.urlopen(req, timeout=2).close()"
+                - "import urllib.request; req=urllib.request.Request('http://127.0.0.1:8000/readyz', headers={'Host':'published-mcp.example.com'}); urllib.request.urlopen(req, timeout=2).close()"
             periodSeconds: 10
             timeoutSeconds: 3
           livenessProbe:
@@ -142,6 +158,8 @@ metadata:
   namespace: open-ielts
   annotations:
     cert-manager.io/cluster-issuer: REPLACE_WITH_CLUSTER_ISSUER
+    nginx.ingress.kubernetes.io/auth-url: "https://oauth2-proxy.example.com/oauth2/auth"
+    nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User,X-Auth-Request-Email"
     nginx.ingress.kubernetes.io/proxy-body-size: 1m
     nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
@@ -203,15 +221,8 @@ spec:
         - protocol: TCP
           port: 53
     - to:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: redis
-      ports:
-        - protocol: TCP
-          port: 6379
-    - to:
         - ipBlock:
-            cidr: 0.0.0.0/0
+            cidr: 203.0.113.0/24
       ports:
         - protocol: TCP
-          port: 443
+          port: 6380
