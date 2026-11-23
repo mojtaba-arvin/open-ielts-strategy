@@ -52,6 +52,8 @@ def generate_publication_diff(current: KnowledgePack, candidate: KnowledgePack) 
                 "status": status,
                 "diff": "".join(diff_lines),
             })
+    if changes and candidate.pack_version == current.pack_version:
+        raise ValueError("candidate pack version must change when published records change")
     return {
         "current_pack_version": current.pack_version,
         "candidate_pack_version": candidate.pack_version,
