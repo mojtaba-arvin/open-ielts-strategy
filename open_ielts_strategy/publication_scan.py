@@ -51,7 +51,7 @@ def scan_publication_leaks(payloads: list[str], private_sources: list[dict[str, 
             continue
         matches = []
         seen = set()
-        step = max(16, min_match_chars // 2)
+        step = max(8, min_match_chars // 4)
         for offset in range(0, len(normalized_source) - min_match_chars + 1, step):
             span = normalized_source[offset:offset + min_match_chars]
             if span in seen:
@@ -73,4 +73,8 @@ def scan_publication_leaks(payloads: list[str], private_sources: list[dict[str, 
         "secret_findings": secret_findings,
         "matched_text_included": False,
         "source_bodies_included": False,
+        "method": "normalized-exact-window-heuristic",
+        "min_match_chars": min_match_chars,
+        "window_stride": max(8, min_match_chars // 4),
+        "not_legal_clearance": True,
     }
