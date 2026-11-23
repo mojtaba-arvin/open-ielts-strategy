@@ -132,6 +132,8 @@ The `ielts-practice` command can generate an evidence-attributed practice answer
 
 Knowledge Pack JSON Schemas are meta-validated and cross-reference checked in CI with the optional `schema-validation` extra; the runtime loader itself remains standard-library-only.
 
+`ielts-knowledge-diff` produces a deterministic, review-only diff between two verified Knowledge Pack revisions; it never commits or pushes.
+
 The `ielts-learning` CLI provides deterministic Study paths plus model-backed Mentor explanations and original-example generation from published strategies. Published MCP exposes Study tools by default and model-backed Mentor/Example tools only when a provider and model are explicitly configured.
 
 ## Principles
