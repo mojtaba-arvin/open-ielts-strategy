@@ -29,7 +29,7 @@ def main(argv=None):
     parser.add_argument("--destination", required=True)
     parser.add_argument("--version", required=True, dest="pack_version")
     parser.add_argument("--source-item", action="append", type=_parse_source_item, default=[],
-                        help="Map source-derived strategy to a reviewed item: STRATEGY_ID=SITEM_ID")
+                        help="Map a source-derived record to a reviewed item: RECORD_ID=SITEM_ID")
     parser.add_argument("--db", default=DEFAULT_DB_PATH)
     parser.add_argument("--confirm-human-review", action="store_true",
                         help="Confirm content, rights, and publication review were completed")
