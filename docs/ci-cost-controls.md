@@ -10,7 +10,7 @@
 
 ## Isolation
 
-Each workflow has its own concurrency group and artifact names. Runtime matrix artifacts are namespaced by skill and arm; judge artifacts use a separate name. Runtime and judge workflows use `cancel-in-progress: false`, so a later PR update cannot cancel an in-progress evaluation. The core CI workflow may cancel superseded runs for the same ref.
+Each workflow has its own concurrency group and artifact names. Runtime matrix artifacts are namespaced by skill and arm; judge artifacts use a separate name. The fixture-only Runtime evaluation workflow uses `cancel-in-progress: true`: a newer commit cancels an obsolete run on the same ref, while different PR refs remain isolated. Judge calibration uses `cancel-in-progress: false` so an in-progress calibration is not interrupted. The core CI workflow may also cancel superseded runs for the same ref.
 
 ## Cost policy
 
