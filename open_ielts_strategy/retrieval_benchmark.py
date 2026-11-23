@@ -31,6 +31,10 @@ def percentile(values: list[float], quantile: float) -> float:
 def benchmark(pack_path: str, *, queries: list[str] | None = None,
               iterations: int = 5, warmup: int = 2,
               embedding_model_path: str | None = None,
+              embedding_provider_name: str | None = None,
+              embedding_model_name: str | None = None,
+              embedding_endpoint: str = "https://api.openai.com/v1/embeddings",
+              embedding_api_key_env: str = "OPENAI_API_KEY",
               index_db: str | None = None,
               model_fingerprint: str | None = None) -> dict:
     if type(iterations) is not int or not 1 <= iterations <= 1000:
@@ -44,11 +48,27 @@ def benchmark(pack_path: str, *, queries: list[str] | None = None,
         not isinstance(query, str) or not query.strip() or len(query) > 1000 for query in queries
     ):
         raise ValueError("queries must be a non-empty list of bounded text queries")
-    if index_db and not embedding_model_path:
-        raise ValueError("--index-db requires --embedding-model-path")
+    embedding_kind = embedding_provider_name or ("local" if embedding_model_path else None)
+    embedding_provider = None
+    if embedding_kind == "local":
+        if not embedding_model_path or embedding_model_name:
+            raise ValueError("local embeddings require only --embedding-model-path")
+        embedding_provider = LocalSentenceTransformer(embedding_model_path)
+    elif embedding_kind == "openai-compatible":
+        if embedding_model_path or not embedding_model_name:
+            raise ValueError("remote embeddings require --embedding-model-name and no local model path")
+        embedding_provider = OpenAICompatibleEmbeddingProvider(
+            model=embedding_model_name, endpoint=embedding_endpoint,
+            api_key_env=embedding_api_key_env,
+        )
+    elif embedding_model_name:
+        raise ValueError("--embedding-model-name requires an embedding provider")
+    if index_db and embedding_provider is None:
+        raise ValueError("--index-db requires an embedding provider")
     if index_db and not model_fingerprint:
         raise ValueError("--index-db requires --model-fingerprint")
-    embedding_provider = LocalSentenceTransformer(embedding_model_path) if embedding_model_path else None
+    if model_fingerprint and not index_db:
+        raise ValueError("--model-fingerprint requires --index-db")
     index_build_seconds = None
     store = None
     try:
@@ -82,7 +102,7 @@ def benchmark(pack_path: str, *, queries: list[str] | None = None,
             "manifest_sha256": pack.manifest_sha256,
             "strategy_count": len(pack.strategies),
             "retrieval_mode": "hybrid" if embedding_provider is not None else "bm25",
-            "model_fingerprint": model_fingerprint if embedding_model_path else None,
+            "model_fingerprint": model_fingerprint if embedding_provider is not None else None,
             "query_count": len(queries),
             "iterations": iterations,
             "warmup_iterations": warmup,
@@ -110,7 +130,11 @@ def main(argv=None):
     parser.add_argument("--queries-json", help="Optional JSON file containing a list of search queries")
     parser.add_argument("--iterations", type=int, default=5)
     parser.add_argument("--warmup", type=int, default=2)
-    parser.add_argument("--embedding-model-path", help="Optional already-cached local embedding model")
+    parser.add_argument("--embedding-provider", choices=("local", "openai-compatible"))
+    parser.add_argument("--embedding-model-path", help="Already-cached local embedding model")
+    parser.add_argument("--embedding-model-name", help="Remote embedding model name")
+    parser.add_argument("--embedding-endpoint", default="https://api.openai.com/v1/embeddings")
+    parser.add_argument("--embedding-api-key-env", default="OPENAI_API_KEY")
     parser.add_argument("--index-db", help="Optional persistent public-only embedding cache")
     parser.add_argument("--model-fingerprint", help="Stable local model/version identity for the persistent cache")
     parser.add_argument("--output", help="Optional JSON report path")
@@ -119,7 +143,9 @@ def main(argv=None):
         queries = json.loads(Path(args.queries_json).read_text(encoding="utf-8")) if args.queries_json else None
         result = benchmark(
             args.pack, queries=queries, iterations=args.iterations, warmup=args.warmup,
-            embedding_model_path=args.embedding_model_path, index_db=args.index_db,
+            embedding_model_path=args.embedding_model_path, embedding_provider_name=args.embedding_provider,
+            embedding_model_name=args.embedding_model_name, embedding_endpoint=args.embedding_endpoint,
+            embedding_api_key_env=args.embedding_api_key_env, index_db=args.index_db,
             model_fingerprint=args.model_fingerprint,
         )
         payload = json.dumps(result, ensure_ascii=False, indent=2)
