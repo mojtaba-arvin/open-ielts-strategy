@@ -63,6 +63,14 @@ def build_parser():
     link.add_argument("to_card_id")
     link.add_argument("--relation", required=True, choices=sorted(RELATION_TYPES))
     link.add_argument("--note", default="")
+
+    relations = commands.add_parser("relations", help="List explicitly reviewed relationships between cards")
+    relations.add_argument("--source-id")
+    relations.add_argument("--limit", type=int, default=200)
+
+    delete = commands.add_parser("delete-source", help="Delete a source and all derived cards/relations")
+    delete.add_argument("source_id")
+    delete.add_argument("--confirm", action="store_true", help="Required confirmation for destructive deletion")
     return parser
 
 
@@ -99,6 +107,12 @@ def main(argv=None):
                 emit(store.review_card(args.card_id, args.status, args.note))
             elif args.command == "link":
                 emit(store.link_cards(args.from_card_id, args.to_card_id, args.relation, args.note))
+            elif args.command == "relations":
+                emit(store.list_relations(source_id=args.source_id, limit=args.limit))
+            elif args.command == "delete-source":
+                if not args.confirm:
+                    raise ValueError("source deletion is destructive; pass --confirm to proceed")
+                emit(store.delete_source(args.source_id))
     except (OSError, UnicodeError, ValueError, KeyError, RuntimeError, sqlite3.Error) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
