@@ -100,7 +100,7 @@ class OpenAICompatibleEmbeddingProvider:
                 last_error = exc
                 if attempt >= self.max_retries:
                     raise ValueError("embedding provider request failed after bounded retries") from None
-            except json.JSONDecodeError as exc:
+            except (json.JSONDecodeError, UnicodeDecodeError) as exc:
                 raise ValueError("embedding provider returned invalid JSON") from exc
             self._sleeper(min(0.25 * (2 ** attempt), 1.0))
         raise ValueError("embedding provider request failed") from last_error
