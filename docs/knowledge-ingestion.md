@@ -79,6 +79,8 @@ Review an individual card:
 Record a reviewed relationship:
 
     python scripts/knowledge.py link card_A card_B --relation contradicts --note "The recommendations differ in the planning time they propose."
+    python scripts/knowledge.py relations --source-id src_ID
+    python scripts/knowledge.py delete-source src_ID --confirm
 
 A user-approved card means accepted for personal use, not scientifically verified. supported must be used only when the reviewer can record the supporting basis. conflicting records an explicitly reviewed disagreement; the system does not infer contradiction from similar words.
 
@@ -88,7 +90,7 @@ A user-approved card means accepted for personal use, not scientifically verifie
 - **Segments:** exact text, ordinal, character offsets, and paragraph/timestamp locator.
 - **Candidate cards:** title derived from the first sentence, type, topic tags, extraction-method version, reason for review, and status.
 - **Search results:** matching excerpt, card/source IDs, title, author/source URL when supplied, rights declaration, topic tags, and exact segment anchor.
-- **Human curation:** review status/note and explicit card-to-card relations.
+- **Human curation:** review status/note and explicit card-to-card relations. Relations can be listed globally or by source. Deleting a source cascades to its segments, cards, and links involving those cards.
 
 The current first-sentence title is a display label, not an AI summary. Search is lexical, not semantic. The CLI emits JSON so that a future UI or assistant can consume the records without changing the storage contract.
 
@@ -98,7 +100,7 @@ The current first-sentence title is a display label, not an AI summary. Search i
 
 The default database is .local/knowledge.sqlite3. The importer creates a private local directory (0700 where supported) and database file (0600 where supported). .local/ and SQLite files are ignored by Git. The body is stored only in this local database; it is not uploaded by the library or added to fixtures. Backups must be treated as private copies too.
 
-Do not point the database at a synchronized/shared folder unless that storage is appropriate for the material. The permissions are best-effort filesystem controls, not encryption at rest. Use full-disk encryption and secure backups for sensitive material.
+Do not point the database at a synchronized/shared folder unless that storage is appropriate for the material. The permissions are best-effort filesystem controls, not encryption at rest. SQLite secure_delete is enabled, but it cannot guarantee removal from filesystem snapshots, SSD wear-leveling areas, backups, or synchronized copies. Use full-disk encryption and secure backups for sensitive material.
 
 ### Untrusted content
 
@@ -161,7 +163,7 @@ The foundation is accepted only when all of these hold:
 - Paragraph/sentence segmentation with source offsets and timestamps.
 - Deterministic candidate extraction and topic tags.
 - Local lexical search and source-linked results.
-- Human review states and explicit relationships.
+- Human review states, explicit relationships, relationship browsing, and confirmed source deletion with cascading derived-data cleanup.
 - CLI, unit tests, private storage defaults, and operating documentation.
 
 ### Phase 2 — richer local extraction
