@@ -15,6 +15,16 @@ class DocumentImportTests(unittest.TestCase):
             self.assertIn("Plan your essay.", result["text"])
             self.assertEqual(result["format"], "md")
 
+    def test_crlf_is_preserved_and_original_file_hash_is_returned(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "notes.txt"
+            original = b"First paragraph.\\r\\n\\r\\nSecond paragraph."
+            path.write_bytes(original)
+            result = import_document(path)
+            self.assertEqual(result["text"].encode("utf-8"), original)
+            self.assertEqual(result["file_sha256"], hashlib.sha256(original).hexdigest())
+
     def test_docx_paragraph_extraction(self):
         xml = """<?xml version="1.0" encoding="UTF-8"?>
         <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
