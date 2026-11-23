@@ -14,10 +14,12 @@ This roadmap distinguishes implemented repository mechanics from educational val
 - Offline audio input foundation for WAV/MP3 container, size, and duration validation using only the Python standard library; this is not transcription or pronunciation assessment.
 - Synthetic calibration corpus (20 distinct responses); live human-rating ingestion and statistical calculations are implemented, but no human ratings or independent reliability result are currently established. A separate offline calibration audit compares versioned judge scorecards, reports per-dimension disagreement, and creates a deterministic review queue.
 - Deterministic Writing task routing and conflict resolution; dependency graph validation and explicit skill composition.
-- Metadata/robots-policy source inspection tooling. It does not ingest source bodies, and metadata is not legal permission.
+- Metadata/robots-policy source inspection tooling. It does not fetch source bodies, and metadata is not legal permission. A separate local-only CLI now accepts learner-supplied UTF-8 text; imported content is stored outside Git in a private SQLite library.
 - Unit tests and CI workflows. All currently inspected GitHub Actions references in the six repository workflows are pinned to full commit SHAs.
 - Security report generation and read-only branch/ruleset inspection.
 - A default-deny release-claim registry and tag/release CI gate; public band-score, examiner-equivalence, Skill Lift, educational-effectiveness, guaranteed-improvement, and third-party-clearance claims remain disabled until independently evidenced.
+
+- Phase 1 private Knowledge Ingestion & Retrieval: local text/stdin/file import, source metadata and SHA-256, idempotent source registration, paragraph/sentence segmentation with exact offsets and timestamps, deterministic lexical candidate cards and topic tags, local lexical search, human review states, and explicit card relationships. Every imported card begins as needs_review; this is not semantic extraction or educational validation. See docs/knowledge-ingestion.md.
 
 ## Not yet established or implemented
 
@@ -26,8 +28,9 @@ This roadmap distinguishes implemented repository mechanics from educational val
 3. **Broader skill coverage:** the four text-based skill modules cover Writing feedback, Speaking transcript feedback, Reading strategy, and Listening strategy. Runtime fixture wiring now covers each skill independently, but fixture scores are not model-quality measurements. Listening remains limited to learner-authored notes and synthetic scenarios; the audio module validates file structure only and is not integrated as a Listening skill or transcription service. ASR, pronunciation assessment, and third-party listening materials remain out of scope.
 4. **Semantic routing:** routing is deterministic lexical logic, not a calibrated semantic or model-based classifier.
 5. **Repository governance:** the active `Protect main` ruleset does not yet require the exact `validate` status context. Issue #4 tracks this administrative configuration; no ruleset change was made.
-6. **Rights clearance for third-party materials:** no blanket rights clearance exists. Source ingestion remains disabled; metadata, public availability, attribution, and a passing check do not grant copyright permission.
-7. **Release readiness:** no claim of official IELTS affiliation, official band prediction, examiner equivalence, guaranteed score improvement, or production release validation is made.
+6. **Rights clearance for third-party materials:** no blanket rights clearance exists. Remote scraping/fetching and repository ingestion remain disabled. The local importer only stores text that the learner supplies; it does not grant permission or determine whether private processing is lawful. Metadata, public availability, attribution, and a passing check do not grant copyright permission.
+7. **Knowledge product completeness:** Phase 1 is a local CLI and lexical search foundation. Semantic extraction, embeddings/hybrid retrieval, automatic overlap suggestions, UI, PDF/DOCX parsing, synchronization, and study-playbook generation are not implemented.
+8. **Release readiness:** no claim of official IELTS affiliation, official band prediction, examiner equivalence, guaranteed score improvement, or production release validation is made.
 
 ## Legal and copyright hard boundary
 
@@ -37,12 +40,12 @@ New learning skills may be developed only from original explanations and synthet
 
 ## Next safe priorities
 
-1. Keep the default CI path offline, deterministic, and free of model/API calls.
-2. Keep documentation aligned with the offline judge, audio validation, Skill Lift, and calibration audit contracts; preserve the distinction between software diagnostics and educational validity.
-3. Expand automated tests using original synthetic cases only.
-4. Improve the existing skills' output-contract and safety tests without importing third-party IELTS content.
-5. Keep fixture-backed runtime validation offline and deterministic; extend malformed-input and provenance tests whenever the scorecard contract changes.
-6. Resolve required-check governance through repository administration, preserving existing protections.
-7. Collect independent human evaluation only through a separately approved process; do not manufacture or infer ratings.
+1. Keep the default CI path offline, deterministic, and free of model/API calls. Keep imported learning material in ignored local storage, never fixtures or CI artifacts.
+2. Extend knowledge ingestion tests using synthetic, independently authored material; preserve exact source offsets and provenance in every derived card and retrieval result.
+3. Implement optional local semantic extraction only behind a provider-neutral, no-network-by-default adapter and human-review gate.
+4. Add local hybrid retrieval, comparison/playbook drafting, and explicit human-curated conflict workflows.
+5. Add vetted local PDF/DOCX parsing only after size/page limits, privacy controls, and synthetic parser fixtures exist.
+6. Build a paste-first UI and local library browser without uploading private source text.
+7. Resolve required-check governance and collect independent human evaluation only through separately approved processes; do not manufacture or infer ratings.
 
 No paid API, GPU spending, third-party content ingestion, or legal clearance is assumed.

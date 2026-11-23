@@ -24,3 +24,10 @@ For suspected rights/privacy incidents, stop publication, preserve minimal incid
 ## Workflow input and injection boundaries
 
 All third-party actions are pinned to full commit SHAs. Workflows must declare explicit least-privilege permissions and must not use `pull_request_target` to execute untrusted pull-request code. Third-party source crawling remains manual-only. Values originating from a matrix, dispatch input, issue, or repository metadata must be passed through step environment variables and quoted as shell variables; do not interpolate untrusted values directly into a `run:` script. Regression tests enforce these invariants for the current workflow set.
+
+
+## Local knowledge library
+
+The knowledge importer stores learner-supplied text only in an ignored local SQLite database. It makes no network requests and never executes commands, links, markup, macros, or instructions found in source text. The database and source text must not be uploaded to CI artifacts, issues, logs, or public fixtures. File permissions are best-effort and are not encryption; use disk encryption and private backups.
+
+Any future LLM extraction or retrieval stage must keep source text in a data-only context, deny source-controlled tool execution and secret access, require schema-constrained output, and attach every generated item to a verifiable source span. Generated recommendations remain untrusted drafts until human review.

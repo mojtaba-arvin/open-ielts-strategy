@@ -6,7 +6,7 @@ An evaluation-first collection of original Agent Skills for IELTS preparation. T
 
 ## Status
 
-Repository foundation with original Writing-feedback, Speaking-transcript-feedback, Reading-strategy, and Listening-strategy skills. Speaking feedback is text-only and does not assess pronunciation or audio delivery. Reading guidance uses learner-supplied material and original synthetic examples. Listening guidance is text-only and reviews learner-authored notes; it does not process audio or transcripts. A separate offline audio-validation foundation validates WAV/MP3 containers but does not transcribe speech or alter those skill contracts. No third-party source content is bundled.
+Repository foundation with original Writing-feedback, Speaking-transcript-feedback, Reading-strategy, and Listening-strategy skills. Speaking feedback is text-only and does not assess pronunciation or audio delivery. Reading guidance uses learner-supplied material and original synthetic examples. Listening guidance is text-only and reviews learner-authored notes; it does not process audio or transcripts. A separate offline audio-validation foundation validates WAV/MP3 containers but does not transcribe speech or alter those skill contracts. No third-party source content is bundled. The optional knowledge library imports learner-supplied UTF-8 text into a private local SQLite database; it does not scrape or fetch source bodies.
 
 ## Quick start
 
@@ -45,6 +45,43 @@ The Runtime Evaluation workflow supports paired baseline/skill fixture arms for 
 
 All four helpers are pure Python, offline, and API-key-free. CI tests validate implementation contracts only. Live model judgments, qualified human calibration, educational validity, and claims of learner improvement remain separate gates.
 
+## Private offline knowledge library
+
+The Phase 1 Knowledge Ingestion & Retrieval foundation accepts learner-supplied transcript text, personal notes, and other UTF-8 material. Imported text stays in a local SQLite database (default: `.local/knowledge.sqlite3`), not in Git, CI artifacts, or a hosted service. The extraction baseline is deterministic and lexical: it segments passages, tags recognizable IELTS topics, creates candidate cards, and leaves every card in `needs_review`. It does not generate semantic summaries or validate advice.
+
+Paste text through standard input:
+
+```bash
+cat transcript.txt | python scripts/knowledge.py ingest - \
+  --title "Writing strategy podcast" \
+  --type podcast_transcript \
+  --author "Presenter" \
+  --language en \
+  --rights-status personal_copy_unverified
+```
+
+Or import your own Markdown notes:
+
+```bash
+python scripts/knowledge.py ingest ./notes.md \
+  --title "My IELTS notes" \
+  --type personal_notes \
+  --rights-status self_authored
+```
+
+Browse, search, review, and relate cards:
+
+```bash
+python scripts/knowledge.py sources
+python scripts/knowledge.py search "Writing Task 2 planning"
+python scripts/knowledge.py search "speaking fluency" --topic speaking
+python scripts/knowledge.py show src_ID
+python scripts/knowledge.py review card_ID --status user_approved --note "Useful for my practice"
+python scripts/knowledge.py link card_A card_B --relation contradicts --note "Reviewed disagreement"
+```
+
+Use only material you are entitled to import and process. Rights metadata is a declaration, not legal clearance. See [Knowledge Ingestion & Retrieval](docs/knowledge-ingestion.md) for the data model, limitations, acceptance criteria, phases, and parallel work plan. PDF/DOCX parsing, semantic extraction, embeddings, a graphical UI, and educational validation are not part of Phase 1.
+
 ## Principles
 
 - Evaluation cases precede skill implementation.
@@ -61,8 +98,8 @@ All four helpers are pure Python, offline, and API-key-free. CI tests validate i
 - `skills/`: original Agent Skills and evaluation cases.
 - `registry/sources.json`: metadata-only source registry.
 - `schemas/`: machine-readable provenance schema.
-- `scripts/`: offline validators.
-- `open_ielts_strategy/`: deterministic evaluation, audio validation, and audit helpers.
+- `scripts/`: offline validators and the private knowledge-library CLI.
+- `open_ielts_strategy/`: deterministic evaluation, audio validation, audit, and knowledge-library helpers.
 - `docs/`: legal, ingestion, evaluation, security, governance, and roadmap policies.
 - `.github/workflows/`: CI and scheduled checks.
 

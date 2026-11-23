@@ -1,16 +1,26 @@
 # Source ingestion and provenance
 
-## Default: no third-party content ingestion
+## Repository ingestion remains disabled
 
-The public repository is metadata-only for third-party sources. Do not store transcripts, audio, video, scraped article bodies, official test questions, answer keys, candidate responses belonging to others, official band-descriptor text, or substantial excerpts.
+The public repository remains metadata-only for third-party sources. Do not store transcripts, audio, video, scraped article bodies, official IELTS test questions, answer keys, candidate responses belonging to others, official band-descriptor text, or substantial excerpts in Git, fixtures, releases, or CI artifacts.
 
-The source metadata crawl workflow is deliberately manual-only. It is not run on pull requests or on a schedule. No crawl was executed as part of the current maintenance work. A metadata check, robots.txt response, HTTP header, public URL, or content hash is not legal permission and does not establish that a source may be accessed, copied, transformed, or republished.
+A separate **local-only learner library** is now available for text explicitly supplied by the learner. It accepts UTF-8 text and files and stores the supplied body in a local SQLite database outside the repository's tracked files. It does not fetch URLs, scrape pages, download transcripts, or upload the database. This local capability is not permission to import any particular third-party work: the learner must determine that the proposed access and processing are lawful and permitted for their circumstances. The tool's rights-status field is descriptive metadata, not a legal decision.
+
+The source metadata crawl workflow is deliberately manual-only. It is not run on pull requests or on a schedule. A metadata check, robots.txt response, HTTP header, public URL, or content hash is not legal permission and does not establish that a source may be accessed, copied, transformed, or republished.
 
 ## Rights review gate
 
-Before any proposed interaction with a third-party source, identify the exact material and intended operation. Review applicable terms and rights for the specific jurisdiction and use. Distinguish viewing, automated access, metadata collection, text/data mining, extraction, transformation, quotation, publication, redistribution, and commercial use. Do not infer that permission for one activity covers another.
+Before importing or otherwise interacting with third-party material, identify the exact material, source, intended operation, storage location, and disclosure audience. Review applicable terms and rights for the specific jurisdiction and use. Distinguish viewing, automated access, metadata collection, text/data mining, extraction, transformation, quotation, private storage, publication, redistribution, and commercial use. Do not infer that permission for one activity covers another.
 
-If rights, terms, or legal basis are unclear, do not access or use the material. Keep permission evidence private; never commit contracts, correspondence, contact details, or restricted source copies. Any future exception requires explicit maintainer approval and documented permission covering the exact operation.
+If rights, terms, or legal basis are unclear, do not access or use the material. The local tool's personal_copy_unverified or unknown values do not override this rule. Keep permission evidence private; never commit contracts, correspondence, contact details, or restricted source copies. Any proposed publication or sharing requires explicit maintainer review and documented permission covering the exact operation.
+
+## Local data handling
+
+- Default database: .local/knowledge.sqlite3. The directory is ignored by Git and uses best-effort 0700 permissions; the database uses best-effort 0600 permissions.
+- These mode bits are not encryption at rest. Full-disk encryption and secure backups remain the user's responsibility.
+- Do not store third-party texts, personal learner records, or private excerpts in repository fixtures, GitHub issues, workflow logs, or artifacts.
+- Treat local database backups and exports as sensitive copies with the same restrictions as the source.
+- Do not point the database to a shared/synchronized folder unless its privacy and retention properties have been reviewed.
 
 ## Safe project content
 
