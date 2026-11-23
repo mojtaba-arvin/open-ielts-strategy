@@ -43,5 +43,6 @@
         }
       }
     }
-  }
+  },
+  "$id": "https://open-ielts-strategy.dev/schemas/knowledge-pack.schema.json"
 }
