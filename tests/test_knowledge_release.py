@@ -1,8 +1,11 @@
+import contextlib
+import io
+import os
 import unittest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
-from open_ielts_strategy.knowledge_release import create_approval, verify_approval
+from open_ielts_strategy.knowledge_release import create_approval, verify_approval, main, publish_pack
 
 
 class KnowledgeReleaseApprovalTests(unittest.TestCase):
@@ -54,6 +57,29 @@ class KnowledgeReleaseApprovalTests(unittest.TestCase):
                     approval, "current", "candidate", key=self.key,
                     now=self.now + timedelta(hours=25),
                 )
+
+    def test_rollback_cli_does_not_require_publication_hmac_key(self):
+        with patch.dict(os.environ, {}, clear=True), patch(
+            "open_ielts_strategy.knowledge_release.rollback_pack",
+            return_value={"rolled_back": True},
+        ):
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                result = main([
+                    "rollback", "--repo", ".", "--commit", "a" * 40,
+                    "--branch", "release/knowledge-v1", "--expected-head", "b" * 40,
+                    "--confirm-rollback",
+                ])
+        self.assertEqual(result, 0)
+        self.assertIn('"rolled_back": true', output.getvalue())
+
+    def test_direct_default_branch_publication_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "non-default release branch"):
+            publish_pack(
+                ".", "candidate", "knowledge", approval_path="approval.json",
+                branch="main", expected_head="a" * 40, key=self.key,
+                confirm_publish=True,
+            )
 
     def test_approval_requires_both_human_gates(self):
         with self.assertRaisesRegex(ValueError, "confirmations"):
