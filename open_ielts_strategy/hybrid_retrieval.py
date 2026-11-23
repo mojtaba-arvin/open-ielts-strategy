@@ -70,7 +70,29 @@ def hybrid_search(store, query: str, *, provider: EmbeddingProvider | None = Non
         sql += " WHERE c.status=?"
         params = (status,)
     sql += " LIMIT 5000"
-    rows = store._connection.execute(sql, params).fetchall()
+    rows = list(store._connection.execute(sql, params).fetchall())
+    # Semantic extraction records are a second source-linked candidate stream.
+    # Older databases without the optional tables continue to work unchanged.
+    semantic_table = store._connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='semantic_items'"
+    ).fetchone()
+    if semantic_table:
+        semantic_sql = """SELECT i.item_id AS card_id, i.kind, substr(i.text,1,160) AS title,
+                    i.topic_tags_json, i.status, i.rationale AS review_reason,
+                    i.rationale AS review_note, e.prompt_version AS extraction_method,
+                    g.segment_id, i.text, g.ordinal, i.start_char, i.end_char,
+                    g.locator_json, s.source_id, s.title AS source_title,
+                    s.source_type, s.author, s.source_url, s.rights_status
+             FROM semantic_items i
+             JOIN semantic_extractions e ON e.extraction_id=i.extraction_id
+             JOIN segments g ON g.segment_id=i.segment_id
+             JOIN sources s ON s.source_id=i.source_id"""
+        semantic_params = ()
+        if status:
+            semantic_sql += " WHERE i.status=?"
+            semantic_params = (status,)
+        semantic_sql += " LIMIT 5000"
+        rows.extend(store._connection.execute(semantic_sql, semantic_params).fetchall())
     records = []
     qtokens = _tokens(query)
     for row in rows:
