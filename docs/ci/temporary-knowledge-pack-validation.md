@@ -11,3 +11,5 @@ A fourth validation run includes the rolling-hash private-source scanner, local 
 A fifth run validates BM25/dense retrieval integration and the new local embedding CLI option.
 
 A sixth run validates BM25 and optional dense retrieval integration into published practice and MCP.
+
+A seventh run validates the final published retrieval documentation and current feature base.
