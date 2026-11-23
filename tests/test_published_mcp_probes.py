@@ -8,14 +8,14 @@ class PublishedMCPProbeTests(unittest.IsolatedAsyncioTestCase):
         async def app(scope, receive, send):
             raise AssertionError("health probes must not invoke the MCP application")
 
+        sent = []
+        audit_events = []
         middleware = AuthenticatedMCPMiddleware(
             app,
             token="t" * 40,
             allowed_hosts={"published-mcp.example.com"},
             audit_sink=audit_events.append,
         )
-        sent = []
-        audit_events = []
 
         async def receive():
             return {"type": "http.request", "body": b"", "more_body": False}
@@ -39,11 +39,13 @@ class PublishedMCPProbeTests(unittest.IsolatedAsyncioTestCase):
     async def test_liveness_and_readiness_are_content_free_and_public(self):
         for path in ("/healthz", "/readyz"):
             with self.subTest(path=path):
-                messages = await self.request(path)
+                messages, events = await self.request(path)
                 self.assertEqual(messages[0]["status"], 200)
-                self.assertEqual(messages[1]["body"], b"ok\n")
+                self.assertEqual(messages[1]["body"], b"ok\\n")
                 headers = dict(messages[0]["headers"])
                 self.assertEqual(headers[b"cache-control"], b"no-store")
+                self.assertEqual(len(events), 1)
+                self.assertNotIn("client_ip", events[0])
 
     async def test_probe_still_enforces_host_allowlist(self):
         messages, _ = await self.request("/readyz", host="attacker.example")
