@@ -8,6 +8,9 @@ from pathlib import Path
 
 from .knowledge_pack import KnowledgePack, KnowledgePackError, load_knowledge_pack
 from .published_retrieval import PublishedRetrievalEngine
+from .published_learning import (get_published_learning_path, create_published_study_plan,
+                                 explain_published_strategy, generate_published_strategy_example)
+from .text_generation import build_consumption_provider
 
 
 def search_published_strategies(pack: KnowledgePack, query: str, *,
@@ -56,7 +59,9 @@ def get_related_published_strategies(pack: KnowledgePack, strategy_id: str) -> d
     }
 
 
-def build_server(pack_path: str | Path, *, embedding_model_path: str | None = None):
+def build_server(pack_path: str | Path, *, embedding_model_path: str | None = None,
+                 provider_name: str | None = None, model: str | None = None,
+                 endpoint: str | None = None, api_key_env: str = "OPENAI_API_KEY"):
     """Create an optional stdio MCP server backed only by a verified pack directory."""
     try:
         from mcp.server.fastmcp import FastMCP
@@ -69,6 +74,16 @@ def build_server(pack_path: str | Path, *, embedding_model_path: str | None = No
         from .hybrid_retrieval import LocalSentenceTransformer
         embedding_provider = LocalSentenceTransformer(embedding_model_path)
     retriever = PublishedRetrievalEngine(pack, embedding_provider=embedding_provider)
+    text_provider = None
+    if provider_name is not None or model is not None:
+        if provider_name is None or model is None:
+            raise ValueError("both provider_name and model are required for generated MCP tools")
+        provider_config = {"model": model}
+        if endpoint:
+            provider_config["endpoint"] = endpoint
+        if provider_name == "openai-compatible":
+            provider_config["api_key_env"] = api_key_env
+        text_provider = build_consumption_provider(provider_name, **provider_config)
     server = FastMCP("Open IELTS Published Knowledge")
 
     @server.tool()
@@ -86,6 +101,32 @@ def build_server(pack_path: str | Path, *, embedding_model_path: str | None = No
         """Get the typed relationships of one published strategy."""
         return get_related_published_strategies(pack, strategy_id)
 
+
+    @server.tool()
+    def get_learning_path(path_id: str) -> dict:
+        """Get a curated learning path with its strategy steps resolved."""
+        return get_published_learning_path(pack, path_id)
+
+    @server.tool()
+    def create_study_plan(skill: str, limit: int = 5) -> dict:
+        """Find published learning paths for an IELTS skill."""
+        return create_published_study_plan(pack, skill=skill, limit=limit)
+
+    if text_provider is not None:
+        @server.tool()
+        def explain_strategy(strategy_id: str, learner_question: str | None = None) -> dict:
+            """Teach one published strategy with its limitations and an exercise."""
+            return explain_published_strategy(
+                pack, strategy_id, provider=text_provider, learner_question=learner_question
+            )
+
+        @server.tool()
+        def generate_strategy_example(strategy_id: str, task: str) -> dict:
+            """Generate a new example and reject long exact copies of existing examples."""
+            return generate_published_strategy_example(
+                pack, strategy_id, task, provider=text_provider
+            )
+
     return server
 
 
@@ -93,9 +134,17 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pack", default="knowledge", help="Verified published Knowledge Pack directory")
     parser.add_argument("--embedding-model-path", help="Optional already-cached local sentence-transformer directory")
+    parser.add_argument("--provider", choices=("ollama", "openai-compatible"))
+    parser.add_argument("--model")
+    parser.add_argument("--endpoint")
+    parser.add_argument("--api-key-env", default="OPENAI_API_KEY")
     args = parser.parse_args(argv)
     try:
-        server = build_server(args.pack, embedding_model_path=args.embedding_model_path)
+        server = build_server(
+            args.pack, embedding_model_path=args.embedding_model_path,
+            provider_name=args.provider, model=args.model,
+            endpoint=args.endpoint, api_key_env=args.api_key_env,
+        )
         server.run(transport="stdio")
     except (OSError, RuntimeError, ValueError, KeyError, KnowledgePackError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
