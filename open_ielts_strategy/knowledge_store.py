@@ -157,6 +157,7 @@ class KnowledgeStore:
         self._connection = sqlite3.connect(self.db_path)
         self._connection.row_factory = sqlite3.Row
         self._connection.execute("PRAGMA foreign_keys = ON")
+        self._connection.execute("PRAGMA secure_delete = ON")
         self._initialize()
         self._secure_database_file()
 
@@ -378,6 +379,7 @@ class KnowledgeStore:
             }
             for item in segments
         ]
+        source["relations"] = self.list_relations(source_id=source_id)
         return source
 
     def search(
@@ -453,6 +455,65 @@ class KnowledgeStore:
             })
         results.sort(key=lambda item: (-item["score"], item["source_id"], item["ordinal"]))
         return results[:limit]
+
+    def list_relations(self, source_id: str | None = None, limit: int = 200) -> list[dict]:
+        """Return explicitly curated card relationships, optionally touching one source."""
+        if type(limit) is not int or not 1 <= limit <= 500:
+            raise ValueError("limit must be between 1 and 500")
+        params = []
+        sql = """SELECT r.relation_id, r.from_card_id, r.to_card_id, r.relation_type,
+                        r.note, r.created_at,
+                        fc.title AS from_title, fs.source_id AS from_source_id,
+                        fs.title AS from_source_title,
+                        tc.title AS to_title, ts.source_id AS to_source_id,
+                        ts.title AS to_source_title
+                 FROM card_relations r
+                 JOIN knowledge_cards fc ON fc.card_id = r.from_card_id
+                 JOIN sources fs ON fs.source_id = fc.source_id
+                 JOIN knowledge_cards tc ON tc.card_id = r.to_card_id
+                 JOIN sources ts ON ts.source_id = tc.source_id"""
+        if source_id is not None:
+            exists = self._connection.execute(
+                "SELECT 1 FROM sources WHERE source_id = ?", (source_id,)
+            ).fetchone()
+            if exists is None:
+                raise KeyError(f"unknown source_id: {source_id}")
+            sql += " WHERE fs.source_id = ? OR ts.source_id = ?"
+            params.extend((source_id, source_id))
+        sql += " ORDER BY r.created_at, r.relation_id LIMIT ?"
+        params.append(limit)
+        return [dict(row) for row in self._connection.execute(sql, params).fetchall()]
+
+    def delete_source(self, source_id: str) -> dict:
+        """Delete one source and cascade to its segments, cards, and linked relations."""
+        source = self._connection.execute(
+            "SELECT source_id FROM sources WHERE source_id = ?", (source_id,)
+        ).fetchone()
+        if source is None:
+            raise KeyError(f"unknown source_id: {source_id}")
+        segment_count = self._connection.execute(
+            "SELECT COUNT(*) FROM segments WHERE source_id = ?", (source_id,)
+        ).fetchone()[0]
+        card_count = self._connection.execute(
+            "SELECT COUNT(*) FROM knowledge_cards WHERE source_id = ?", (source_id,)
+        ).fetchone()[0]
+        relation_count = self._connection.execute(
+            """SELECT COUNT(*) FROM card_relations
+               WHERE from_card_id IN (SELECT card_id FROM knowledge_cards WHERE source_id = ?)
+                  OR to_card_id IN (SELECT card_id FROM knowledge_cards WHERE source_id = ?)""",
+            (source_id, source_id),
+        ).fetchone()[0]
+        with self._connection:
+            self._connection.execute("DELETE FROM sources WHERE source_id = ?", (source_id,))
+        self._secure_database_file()
+        return {
+            "source_id": source_id,
+            "deleted": True,
+            "deleted_segments": segment_count,
+            "deleted_cards": card_count,
+            "deleted_relations": relation_count,
+            "note": "SQLite secure_delete is enabled; backups and filesystem-level remnants require separate handling.",
+        }
 
     def review_card(self, card_id: str, status: str, note: str = "") -> dict:
         if status not in CARD_STATUSES:
