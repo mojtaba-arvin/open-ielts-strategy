@@ -82,7 +82,7 @@ class HybridRetrievalTests(unittest.TestCase):
                        provider_name="test", model_name="fixture", prompt_version="v1")
         items = list_semantic_items(self.store, source["source_id"])
         self.store._connection.execute(
-            "UPDATE semantic_items SET status='user_approved' WHERE item_id=?", (items[0]["item_id"],)
+            "UPDATE semantic_items SET status='user_approved', review_note='My selected practice rule.' WHERE item_id=?", (items[0]["item_id"],)
         )
         self.store._connection.commit()
         results = hybrid_search(self.store, "clear structure speaking")
@@ -90,6 +90,8 @@ class HybridRetrievalTests(unittest.TestCase):
         match = next(result for result in results if result["card_id"] == items[0]["item_id"])
         self.assertEqual(match["text"] if "text" in match else match["excerpt"], "Use a clear structure for IELTS Speaking.")
         self.assertEqual(match["start_char"], len("Introductory discussion. "))
+        self.assertEqual(match["review_note"], "My selected practice rule.")
+        self.assertEqual(match["extraction_rationale"], "Explicit recommendation in the source.")
 
     def test_practice_context_uses_reviewed_cards_and_carries_citations(self):
         source = self.store.ingest_text("For IELTS Speaking, structure your answer clearly.", title="Speaking guide")
@@ -107,6 +109,17 @@ class HybridRetrievalTests(unittest.TestCase):
         draft = prepare_practice_context(self.store, "How should I answer?", skill="speaking", include_unreviewed=True)
         self.assertGreaterEqual(draft["evidence_count"], 1)
         self.assertTrue(any(item["source"]["source_id"] == source["source_id"] for item in draft["evidence"]))
+
+
+    def test_practice_context_surfaces_conflicting_items_separately(self):
+        self.store.ingest_text("For IELTS Speaking, write a full script before answering.", title="Script advice")
+        card = self.store.search("full script")[0]
+        self.store.review_card(card["card_id"], "conflicting", "Conflicts with another reviewed recommendation.")
+        result = prepare_practice_context(
+            self.store, "Should I write a full script?", skill="speaking"
+        )
+        self.assertEqual(result["evidence_count"], 0)
+        self.assertTrue(any(item["item_id"] == card["card_id"] for item in result["conflicting_candidates"]))
 
     def test_threshold_validation(self):
         with self.assertRaises(ValueError):

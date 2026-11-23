@@ -77,3 +77,4 @@ class KnowledgeRetentionTests(unittest.TestCase):
                 results = hybrid_search(store, item["text"])
                 self.assertTrue(results, "reviewed semantic item should remain in hybrid retrieval")
                 self.assertEqual(results[0]["card_id"], item["item_id"])
+                self.assertEqual(results[0]["source_text_state"], "body_purged")

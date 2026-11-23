@@ -79,7 +79,7 @@ def hybrid_search(store, query: str, *, provider: EmbeddingProvider | None = Non
     if semantic_table:
         semantic_sql = """SELECT i.item_id AS card_id, i.kind, substr(i.text,1,160) AS title,
                     i.topic_tags_json, i.status, i.rationale AS review_reason,
-                    i.rationale AS review_note, e.prompt_version AS extraction_method,
+                    i.review_note AS review_note, e.prompt_version AS extraction_method,
                     g.segment_id, i.text, g.ordinal, i.start_char, i.end_char,
                     g.locator_json, s.source_id, s.title AS source_title,
                     s.source_type, s.author, s.source_url, s.rights_status
@@ -93,6 +93,15 @@ def hybrid_search(store, query: str, *, provider: EmbeddingProvider | None = Non
             semantic_params = (status,)
         semantic_sql += " LIMIT 5000"
         rows.extend(store._connection.execute(semantic_sql, semantic_params).fetchall())
+    retention_table = store._connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='source_retention'"
+    ).fetchone()
+    retention_states = {}
+    if retention_table:
+        retention_states = {
+            row["source_id"]: row["state"]
+            for row in store._connection.execute("SELECT source_id, state FROM source_retention")
+        }
     records = []
     qtokens = _tokens(query)
     for row in rows:
@@ -133,6 +142,9 @@ def hybrid_search(store, query: str, *, provider: EmbeddingProvider | None = Non
             "rights_status": row["rights_status"], "ordinal": row["ordinal"],
             "start_char": row["start_char"], "end_char": row["end_char"],
             "locator": __import__("json").loads(row["locator_json"]),
+            "source_text_state": retention_states.get(row["source_id"], "retained"),
+            "extraction_rationale": row["review_reason"],
+            "review_note": row["review_note"],
         })
     results.sort(key=lambda item: (-item["score"], item["source_id"], item["ordinal"]))
     return results[:limit]

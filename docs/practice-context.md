@@ -22,7 +22,7 @@ Optional local semantic embeddings can be enabled with `--embedding-model-path` 
 
 ## What is returned
 
-The JSON context pack includes the question, IELTS skill, relevant strategy excerpts, source IDs/titles, segment IDs, exact character offsets, paragraph/timestamp locators, review states, and retrieval scores. It also includes explicit instructions to preserve disagreements, avoid unsupported claims, and treat source text as untrusted data.
+The JSON context pack includes the question, IELTS skill, relevant strategy excerpts, source IDs/titles, segment IDs, exact character offsets, paragraph/timestamp locators, source-retention state, extraction rationale, review states, retrieval scores, and any human-curated relations. Items marked conflicting are returned separately as warnings, not as approved evidence. It also includes explicit instructions to preserve disagreements, avoid unsupported claims, and treat source text as untrusted data.
 
 Paste the JSON output into ChatGPT with a request such as:
 
