@@ -1,6 +1,6 @@
-# Open IELTS Strategy
+# Open IELTS Strategy — Versioned Knowledge & AI Mentor Platform
 
-An evaluation-first collection of original Agent Skills for IELTS preparation. The project prioritizes task routing, reproducible evaluation, source provenance, and conservative content-rights handling.
+An evaluation-first IELTS learning platform with a portable, versioned Knowledge Pack, private knowledge-engineering workflow, published retrieval, Practice, Mentor, Study, and MCP interfaces. Original Agent Skills, reproducible evaluation, source provenance, and conservative content-rights handling remain core project principles.
 
 > **Content policy:** no third-party transcripts, audio/video, official IELTS questions, answer keys, or substantial excerpts are published here by default. Examples are original or synthetic. A public URL is provenance, not permission.
 
