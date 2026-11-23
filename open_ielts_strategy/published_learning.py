@@ -47,7 +47,7 @@ def get_published_concept(pack: KnowledgePack, concept_id: str) -> dict:
 
 
 def create_published_study_plan(pack: KnowledgePack, *, skill: str, limit: int = 5) -> dict:
-    if skill not in {"speaking", "writing", "reading", "listening", "general"}:
+    if not isinstance(skill, str) or skill not in {"speaking", "writing", "reading", "listening", "general"}:
         raise ValueError("unsupported IELTS skill")
     if type(limit) is not int or not 1 <= limit <= 20:
         raise ValueError("limit must be between 1 and 20")
@@ -154,6 +154,6 @@ def _parse_structured_text(raw: str, required: set[str]) -> dict[str, str]:
         raise GenerationError("model must return the required JSON object") from exc
     if not isinstance(result, dict) or set(result) != required:
         raise GenerationError("model output does not match the required structured response contract")
-    if any(not isinstance(value, str) or not value.strip() for value in result.values()):
+    if any(not isinstance(value, str) or not value.strip() or len(value) > 12_000 for value in result.values()):
         raise GenerationError("model response fields must be non-empty text")
     return result
