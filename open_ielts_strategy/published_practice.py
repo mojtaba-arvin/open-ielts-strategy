@@ -16,7 +16,7 @@ def prepare_published_practice_context(pack: KnowledgePack, question: str, *,
         raise ValueError("unsupported IELTS skill")
     if type(limit) is not int or not 1 <= limit <= 20:
         raise ValueError("limit must be between 1 and 20")
-    query = question if skill == "general" else f"IELTS {skill} {question}"
+    query = question if skill == "general" else question
     strategies = pack.search_strategies(query, skill=None if skill == "general" else skill, limit=limit)
     return {
         "question": question,
@@ -54,10 +54,10 @@ def build_published_answer_prompt(context: dict[str, Any]) -> str:
         "knowledge records. Do not copy examples verbatim. Do not invent strategy IDs or claim a band score. "
         "If the evidence does not support a recommendation, say so. Return exactly a JSON object with keys: "
         "answer (string), strategy_ids_used (array of supplied strategy IDs), reasoning_explanation (string), "
-        "practice_suggestion (string). Attribute only strategies that materially shaped the answer.\\n"
-        "PUBLISHED_CONTEXT_JSON_BEGIN\\n"
+        "practice_suggestion (string). Attribute only strategies that materially shaped the answer.\n"
+        "PUBLISHED_CONTEXT_JSON_BEGIN\n"
         + json.dumps(context, ensure_ascii=False, sort_keys=True)
-        + "\\nPUBLISHED_CONTEXT_JSON_END"
+        + "\nPUBLISHED_CONTEXT_JSON_END"
     )
 
 
