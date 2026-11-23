@@ -36,6 +36,12 @@ class SemanticExtractionTests(unittest.TestCase):
         with self.assertRaises(ExtractionError):
             validate_extraction({"summary": "", "items": [item]}, self.source)
 
+    def test_non_string_kind_is_rejected_cleanly(self):
+        item = self.item()
+        item["kind"] = []
+        with self.assertRaises(ExtractionError):
+            validate_extraction({"summary": "", "items": [item]}, self.source)
+
     def test_provider_refuses_remote_endpoints(self):
         with self.assertRaises(ValueError):
             OllamaLocalProvider("qwen", "https://example.com/api")
