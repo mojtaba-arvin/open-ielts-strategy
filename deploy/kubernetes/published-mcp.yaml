@@ -76,30 +76,27 @@ spec:
             - name: tmp
               mountPath: /tmp
           startupProbe:
-            httpGet:
-              path: /healthz
-              port: http
-              httpHeaders:
-                - name: Host
-                  value: published-mcp.example.com
+            exec:
+              command:
+                - python
+                - -c
+                - "import urllib.request; req=urllib.request.Request('http://127.0.0.1:8000/healthz', headers={'Host':'published-mcp.example.com'}); urllib.request.urlopen(req, timeout=2).close()"
             periodSeconds: 5
             failureThreshold: 24
           readinessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-              httpHeaders:
-                - name: Host
-                  value: published-mcp.example.com
+            exec:
+              command:
+                - python
+                - -c
+                - "import urllib.request; req=urllib.request.Request('http://127.0.0.1:8000/healthz', headers={'Host':'published-mcp.example.com'}); urllib.request.urlopen(req, timeout=2).close()"
             periodSeconds: 10
             timeoutSeconds: 3
           livenessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-              httpHeaders:
-                - name: Host
-                  value: published-mcp.example.com
+            exec:
+              command:
+                - python
+                - -c
+                - "import urllib.request; req=urllib.request.Request('http://127.0.0.1:8000/healthz', headers={'Host':'published-mcp.example.com'}); urllib.request.urlopen(req, timeout=2).close()"
             periodSeconds: 20
             timeoutSeconds: 3
           resources:
@@ -160,13 +157,6 @@ spec:
         paths:
           - path: /mcp
             pathType: Prefix
-            backend:
-              service:
-                name: published-mcp
-                port:
-                  number: 8000
-          - path: /healthz
-            pathType: Exact
             backend:
               service:
                 name: published-mcp
