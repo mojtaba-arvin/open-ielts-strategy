@@ -56,8 +56,15 @@ def validate_annotation_set(source_text: str, annotations: list[dict]) -> list[d
         raise ValueError("source_text must be non-empty")
     result = []
     for item in annotations:
-        _key(item)
+        if not isinstance(item, dict) or item.get("kind") not in VALID_KINDS:
+            raise ValueError("annotation kind is unsupported")
+        if type(item.get("start_char")) is not int or type(item.get("end_char")) is not int:
+            raise ValueError("annotation offsets must be integers")
+        if not isinstance(item.get("text"), str) or not item["text"]:
+            raise ValueError("annotation text must be non-empty")
         start, end = item["start_char"], item["end_char"]
+        if start < 0 or end <= start:
+            raise ValueError("annotation offsets are invalid")
         if end > len(source_text) or source_text[start:end] != item["text"]:
             raise ValueError("annotation text does not match source offsets")
         result.append(dict(item))
