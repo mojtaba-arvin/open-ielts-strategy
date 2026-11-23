@@ -10,6 +10,7 @@ from .hybrid_retrieval import _cosine, _validated_vector
 from .knowledge_pack import KnowledgePack
 
 _TOKEN_RE = re.compile(r"[^\W_]+", re.UNICODE)
+EMBEDDING_BATCH_SIZE = 64
 _STOPWORDS = {
     "a", "an", "and", "are", "as", "at", "be", "can", "do", "for", "from",
     "how", "i", "in", "is", "it", "of", "on", "or", "the", "this", "to",
@@ -63,10 +64,14 @@ class PublishedRetrievalEngine:
         self._document_count = len(self._strategies)
         self._document_vectors = None
         if embedding_provider is not None and self._texts:
-            vectors = embedding_provider.encode(self._texts)
-            if not isinstance(vectors, list) or len(vectors) != len(self._texts):
-                raise ValueError("embedding provider returned an unexpected document vector count")
-            self._document_vectors = [_validated_vector(vector) for vector in vectors]
+            vectors = []
+            for start in range(0, len(self._texts), EMBEDDING_BATCH_SIZE):
+                batch = self._texts[start:start + EMBEDDING_BATCH_SIZE]
+                encoded = embedding_provider.encode(batch)
+                if not isinstance(encoded, list) or len(encoded) != len(batch):
+                    raise ValueError("embedding provider returned an unexpected document vector count")
+                vectors.extend(_validated_vector(vector) for vector in encoded)
+            self._document_vectors = vectors
             dimensions = {len(vector) for vector in self._document_vectors}
             if len(dimensions) != 1:
                 raise ValueError("embedding provider returned inconsistent vector dimensions")
