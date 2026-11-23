@@ -24,6 +24,7 @@ def build_parser():
     parser.add_argument("--endpoint")
     parser.add_argument("--api-key-env", default="OPENAI_API_KEY")
     parser.add_argument("--limit", type=int, default=6)
+    parser.add_argument("--session-db", help="Optional local SQLite path for persisting this practice attempt")
     parser.add_argument("--embedding-provider", choices=("local", "openai-compatible"), help="Optional local or remote embedding backend")
     parser.add_argument("--embedding-model-path", help="Already-cached local sentence-transformer directory")
     parser.add_argument("--embedding-model-name", help="Embedding model name for the OpenAI-compatible provider")
@@ -99,6 +100,21 @@ def main(argv=None):
             pack, args.question, skill=args.skill, provider=provider,
             limit=args.limit, retriever=retriever,
         )
+        if args.session_db and result.get("status") == "generated":
+            from .practice_sessions import PracticeSessionStore
+            with PracticeSessionStore(args.session_db) as store:
+                session = store.create_session(
+                    args.question, skill=args.skill, pack_version=pack.pack_version
+                )
+                attempt = store.record_attempt(
+                    session["id"], result["answer"],
+                    feedback=(result["reasoning_explanation"] + "\n\n" + result["practice_suggestion"])[:12000],
+                    strategy_ids=[item["strategy_id"] for item in result["strategy_attribution"]],
+                )
+                result["persistence"] = {
+                    "session_id": session["id"], "attempt_id": attempt["id"],
+                    "storage": "local_sqlite",
+                }
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except (OSError, RuntimeError, ValueError, KeyError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
