@@ -46,7 +46,7 @@ The manifest is an integrity index, not a signature. Consumers must trust the Gi
 
 ## Strategy record
 
-A strategy has stable identity, a strategy-level semantic version, applicability, reasoning, limitations, examples, typed relationships, public provenance, and two independent approvals. The loader rejects unknown/missing fields, unsupported schema versions, invalid relationships, checksum mismatches, path traversal, symlink entries, private provenance fields, and any record without both approvals.
+A strategy has stable identity, a strategy-level semantic version, applicability, reasoning, limitations, examples, typed relationships, public provenance, and two independent approvals. The loader rejects unknown/missing fields, unsupported schema versions, invalid relationships, checksum mismatches, path traversal, symlink entries, private provenance fields, and any record without both approvals. Cross-record validation also rejects self-links, duplicate typed edges, asymmetric `conflicts_with` links, conflicts that are simultaneously required or complementary, and cycles in `requires` dependencies.
 
 Published provenance must not include private `source_id`, `extraction_id`, source text, transcript text, local paths, or private review notes. A source hash or offset is not a substitute for publication permission and is not part of the public contract.
 
