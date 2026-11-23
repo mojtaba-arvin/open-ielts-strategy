@@ -16,6 +16,7 @@ dependencies = []
 documents = ["pypdf>=5,<7"]
 local-embeddings = ["sentence-transformers>=3,<6"]
 mcp = ["mcp>=1.9,<2"]
+schema-validation = ["jsonschema>=4.23,<5"]
 
 [project.scripts]
 ielts-knowledge-web = "open_ielts_strategy.knowledge_web:serve"
