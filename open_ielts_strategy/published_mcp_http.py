@@ -117,6 +117,10 @@ class AuthenticatedMCPMiddleware:
 
 def create_http_app(pack_path: str | Path, *, token: str,
                     embedding_model_path: str | None = None,
+                    embedding_provider_name: str | None = None,
+                    embedding_model_name: str | None = None,
+                    embedding_endpoint: str = "https://api.openai.com/v1/embeddings",
+                    embedding_api_key_env: str = "OPENAI_API_KEY",
                     provider_name: str | None = None, model: str | None = None,
                     endpoint: str | None = None, api_key_env: str = "OPENAI_API_KEY",
                     allowed_hosts: set[str] | None = None,
@@ -125,6 +129,10 @@ def create_http_app(pack_path: str | Path, *, token: str,
                     max_body_bytes: int = 1_000_000):
     from .published_knowledge_mcp import build_server
     server = build_server(pack_path, embedding_model_path=embedding_model_path,
+                          embedding_provider_name=embedding_provider_name,
+                          embedding_model_name=embedding_model_name,
+                          embedding_endpoint=embedding_endpoint,
+                          embedding_api_key_env=embedding_api_key_env,
                           provider_name=provider_name, model=model,
                           endpoint=endpoint, api_key_env=api_key_env)
     app_factory = getattr(server, "streamable_http_app", None)
@@ -149,7 +157,11 @@ def main(argv=None):
     parser.add_argument("--rate", type=float, default=2.0, help="requests per second per client IP")
     parser.add_argument("--burst", type=int, default=20)
     parser.add_argument("--max-body-bytes", type=int, default=1_000_000)
+    parser.add_argument("--embedding-provider", choices=("local", "openai-compatible"))
     parser.add_argument("--embedding-model-path")
+    parser.add_argument("--embedding-model-name")
+    parser.add_argument("--embedding-endpoint", default="https://api.openai.com/v1/embeddings")
+    parser.add_argument("--embedding-api-key-env", default="OPENAI_API_KEY")
     parser.add_argument("--provider", choices=("ollama", "openai-compatible"))
     parser.add_argument("--model")
     parser.add_argument("--endpoint")
@@ -164,6 +176,8 @@ def main(argv=None):
             raise ValueError("port must be between 1 and 65535")
         app = create_http_app(
             args.pack, token=token, embedding_model_path=args.embedding_model_path,
+            embedding_provider_name=args.embedding_provider, embedding_model_name=args.embedding_model_name,
+            embedding_endpoint=args.embedding_endpoint, embedding_api_key_env=args.embedding_api_key_env,
             provider_name=args.provider, model=args.model, endpoint=args.endpoint,
             api_key_env=args.api_key_env,
             allowed_hosts={x.strip() for x in args.allowed_hosts.split(",") if x.strip()},
