@@ -73,3 +73,8 @@ Only single-parent commits whose changed paths are entirely inside the configure
 - The release command does not merge a pull request or bypass branch protection.
 - Git push requires a configured remote and credentials; no credentials are stored by the project.
 - Protect the approval file and private candidate directory. Keep both out of Git.
+
+
+## Software release candidate validation
+
+The tag-triggered Release gate validates the exact SemVer tag, repository/source-rights invariants, default-deny release claims, and deterministic regression suite. It also builds a source distribution and wheel, verifies installation of the wheel in a clean virtual environment, builds the published-MCP container, and uploads the distribution files plus SHA-256 checksums as a retained CI artifact. A successful workflow is a reproducible software candidate, not a public GitHub Release, live deployment, rights clearance, or educational validation. Before announcing a release, verify the artifact checksums, review the exact tagged commit, and complete the environment-specific Production acceptance gates and independent educational/rights gates that apply to the claims being made.
