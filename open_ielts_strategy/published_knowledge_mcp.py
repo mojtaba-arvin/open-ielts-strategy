@@ -7,11 +7,14 @@ import sys
 from pathlib import Path
 
 from .knowledge_pack import KnowledgePack, KnowledgePackError, load_knowledge_pack
+from .published_retrieval import PublishedRetrievalEngine
 
 
 def search_published_strategies(pack: KnowledgePack, query: str, *,
-                                skill: str | None = None, limit: int = 10) -> dict:
-    results = pack.search_strategies(query, skill=skill, limit=limit)
+                                skill: str | None = None, limit: int = 10,
+                                retriever: PublishedRetrievalEngine | None = None) -> dict:
+    engine = retriever or PublishedRetrievalEngine(pack)
+    results = engine.search(query, skill=skill, limit=limit)
     return {
         "pack_version": pack.pack_version,
         "schema_version": pack.schema_version,
@@ -61,12 +64,13 @@ def build_server(pack_path: str | Path):
         raise RuntimeError("install the optional MCP dependency: pip install '.[mcp]'") from exc
 
     pack = load_knowledge_pack(pack_path)
+    retriever = PublishedRetrievalEngine(pack)
     server = FastMCP("Open IELTS Published Knowledge")
 
     @server.tool()
     def search_strategies(query: str, skill: str | None = None, limit: int = 10) -> dict:
         """Search approved strategies in the local published Knowledge Pack."""
-        return search_published_strategies(pack, query, skill=skill, limit=limit)
+        return search_published_strategies(pack, query, skill=skill, limit=limit, retriever=retriever)
 
     @server.tool()
     def get_strategy(strategy_id: str) -> dict:
