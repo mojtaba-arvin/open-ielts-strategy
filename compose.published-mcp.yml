@@ -7,6 +7,7 @@ services:
     restart: unless-stopped
     environment:
       IELTS_MCP_BEARER_TOKEN: ${IELTS_MCP_BEARER_TOKEN:?Set a random token of at least 32 characters}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
