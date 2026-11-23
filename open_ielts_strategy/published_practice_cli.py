@@ -10,6 +10,7 @@ from .published_practice import generate_published_practice_answer
 from .text_generation import build_consumption_provider
 from .published_retrieval import PublishedRetrievalEngine
 from .hybrid_retrieval import LocalSentenceTransformer
+from .published_index import PublishedIndexStore
 
 
 def build_parser():
@@ -23,11 +24,14 @@ def build_parser():
     parser.add_argument("--api-key-env", default="OPENAI_API_KEY")
     parser.add_argument("--limit", type=int, default=6)
     parser.add_argument("--embedding-model-path", help="Optional already-cached local sentence-transformer directory")
+    parser.add_argument("--index-db", help="Optional persistent public-only embedding cache SQLite path")
+    parser.add_argument("--embedding-model-fingerprint", help="Required stable model/version fingerprint when --index-db is used")
     return parser
 
 
 def main(argv=None):
     args = build_parser().parse_args(argv)
+    index_store = None
     try:
         pack = load_knowledge_pack(args.pack)
         config = {"model": args.model}
@@ -37,9 +41,25 @@ def main(argv=None):
             config["api_key_env"] = args.api_key_env
         provider = build_consumption_provider(args.provider, **config)
         retriever = None
+        if args.index_db and not args.embedding_model_path:
+            raise ValueError("--index-db requires --embedding-model-path")
+        if args.index_db and not args.embedding_model_fingerprint:
+            raise ValueError("--index-db requires --embedding-model-fingerprint")
         if args.embedding_model_path:
             embeddings = LocalSentenceTransformer(args.embedding_model_path)
-            retriever = PublishedRetrievalEngine(pack, embedding_provider=embeddings)
+            if args.index_db:
+                index_store = PublishedIndexStore(args.index_db)
+                index_store.build(
+                    pack, model_fingerprint=args.embedding_model_fingerprint,
+                    embedding_provider=embeddings,
+                )
+                cached_embeddings = index_store.embedding_provider(
+                    pack, model_fingerprint=args.embedding_model_fingerprint,
+                    query_provider=embeddings,
+                )
+                retriever = PublishedRetrievalEngine(pack, embedding_provider=cached_embeddings)
+            else:
+                retriever = PublishedRetrievalEngine(pack, embedding_provider=embeddings)
         result = generate_published_practice_answer(
             pack, args.question, skill=args.skill, provider=provider,
             limit=args.limit, retriever=retriever,
@@ -48,6 +68,9 @@ def main(argv=None):
     except (OSError, RuntimeError, ValueError, KeyError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
+    finally:
+        if index_store is not None:
+            index_store.close()
     return 0
 
 
