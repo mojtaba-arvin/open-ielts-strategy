@@ -12,7 +12,7 @@ from .knowledge_store import DEFAULT_DB_PATH, KnowledgeStore
 
 def _parse_source_item(value: str) -> tuple[str, str]:
     if "=" not in value:
-        raise argparse.ArgumentTypeError("source item must use STRATEGY_ID=SITEM_ID")
+        raise argparse.ArgumentTypeError("source item must use RECORD_ID=SITEM_ID")
     strategy_id, item_id = value.split("=", 1)
     if not strategy_id or not item_id:
         raise argparse.ArgumentTypeError("source item must use STRATEGY_ID=SITEM_ID")
