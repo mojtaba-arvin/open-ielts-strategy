@@ -17,3 +17,5 @@ A seventh run validates the final published retrieval documentation and current 
 An eighth validation run includes multi-record Knowledge Pack loading/building, Study/Mentor/Example tools, and unmanifested-file rejection.
 
 A ninth validation run includes concept lookup, MCP answer tools, and stricter manifest/file-set integrity checks.
+
+A tenth validation run includes the latest consumption-provider contract tests and expanded published record APIs.
