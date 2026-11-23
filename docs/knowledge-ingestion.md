@@ -22,9 +22,10 @@ The product has three layers:
 - Run without network access, paid APIs, secrets, or non-standard Python dependencies.
 - Keep imported material out of Git and public CI artifacts by default.
 
-## Non-goals of the current foundation
+## Boundaries of the private authoring foundation
 
-- No hosted LLM, remote embedding provider, vector database, browser scraper, URL downloader, or API key. Optional Ollama and local embedding adapters require explicit local configuration.
+- The private authoring library does not automatically publish content. Published Knowledge Pack construction and consumption are separate workflows documented in [Published Knowledge Pack v1](knowledge/published-knowledge-pack-v1.md).
+- Optional Ollama and explicitly selected HTTPS OpenAI-compatible extraction/embedding providers exist; they require explicit configuration and must not be treated as a default or silent cloud fallback. Remote embedding credentials are environment-backed and requests are bounded.
 - No automatic fact checking, educational validation, or authoritative IELTS strategy classification. Optional semantic extraction produces drafts only.
 - No automatic assertion that two cards contradict each other. Similarity is not contradiction.
 - No audio transcription, ASR, diarization, OCR, or video downloading. PDF/DOCX parsing is local and text-only; scanned-PDF OCR is unsupported.
@@ -187,7 +188,7 @@ The foundation is accepted only when all of these hold:
 - Human review states, explicit relationships, relationship browsing, and confirmed source deletion with cascading derived-data cleanup.
 - CLI, unit tests, private storage defaults, and operating documentation.
 
-### Phase 2 — richer local extraction
+### Phase 2 — richer local extraction (implemented foundation)
 
 - Optional local-model adapter behind a provider-neutral interface.
 - Structured outputs: recommendation, procedure, claim, rationale, example, exception, warning, and open question.
@@ -195,7 +196,7 @@ The foundation is accepted only when all of these hold:
 - Golden fixtures authored independently; measure extraction precision/recall with human annotations.
 - Never treat model confidence or repeated claims as truth.
 
-### Phase 3 — retrieval and strategy composition
+### Phase 3 — retrieval and strategy composition (implemented foundation; advanced published retrieval is in the separate Knowledge Pack layer)
 
 - Local embedding/index adapter with a lexical fallback.
 - Hybrid ranking, filters by IELTS skill/task/source/status, and duplicate/overlap suggestions.
@@ -203,7 +204,7 @@ The foundation is accepted only when all of these hold:
 - Explicit contradiction review; never infer contradicts from semantic similarity alone.
 - Personal constraints/preferences stored separately from source claims.
 
-### Phase 4 — user experience and richer files
+### Phase 4 — user experience and richer files (implemented foundation)
 
 - Paste form and local library UI.
 - TXT/Markdown first; PDF/DOCX parsing only via vetted local parsers with size/page limits and fixture-based tests.
@@ -211,7 +212,7 @@ The foundation is accepted only when all of these hold:
 - Audio remains a separate future capability; file validation is not transcription.
 - Encryption-at-rest and backup/restore guidance for private libraries.
 
-### Phase 5 — educational validation
+### Phase 5 — educational validation (infrastructure exists; independent evidence remains outstanding)
 
 - Independent reviewers annotate source fidelity, classification, and extraction quality.
 - Evaluate against curated human-reviewed examples; keep inter-rater agreement separate from correctness.
@@ -234,7 +235,7 @@ Recommended execution: start A and B in parallel against shared schemas; C can i
 
 ## Current completion boundary
 
-Phase 1 is a developer-facing local foundation, not a hosted product or UI. PDF/DOCX, ASR, LLM semantic extraction, embeddings, semantic conflict detection, user accounts, sync, and educational validation remain future work.
+The private authoring library has implemented local ingestion, optional structured extraction, hybrid retrieval, source-grounded playbook foundations, a loopback-only UI, bounded local document parsing, and private extraction-evaluation infrastructure. These capabilities are still a single-user local authoring system, not a hosted multi-user service. The separately published Knowledge Pack, enhanced retrieval, Practice/Study/Mentor learning runtime, and published-only MCP integration are implemented on `main`; see [Published Knowledge Pack v1](knowledge/published-knowledge-pack-v1.md) and [roadmap](roadmap.md). Educational effectiveness, qualified independent ratings, legal rights clearance for specific content, ASR/OCR, cloud sync, federated identity, and production operations are not implied by those implementations.
 
 
 ## Optional advanced local workflows
