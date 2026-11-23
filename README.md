@@ -67,7 +67,7 @@ Backup and restore helpers are available in `open_ielts_strategy.knowledge_backu
 - **Paired Skill Lift audit:** `open_ielts_strategy.skill_lift.compare_skill_lift` pairs Baseline/Skill results by case ID and reports overall/category deltas. Fixture outputs are explicitly simulated and never claim-eligible. See [Skill Lift](docs/skill-lift.md).
 - **Calibration audit:** `open_ielts_strategy.calibration_audit.audit_calibration` compares judge versions and produces a deterministic review queue. Optional reference comparisons are descriptive and do not authenticate reviewer qualifications. See [Calibration Audit](docs/calibration-audit.md).
 
-All four helpers are pure Python, offline, and API-key-free. CI tests validate implementation contracts only. Live model judgments, qualified human calibration, educational validity, and claims of learner improvement remain separate gates.
+All four helpers are pure Python, offline, and API-key-free. CI tests validate implementation contracts only. Live model judgments, qualified human calibration, educational validity, and claims of learner improvement remain separate gates. The preregistration-first [Independent Educational Validation Protocol](docs/evaluation/independent-validation-protocol.md) defines how extraction fidelity, retrieval relevance, Practice quality, and learner outcomes must be independently assessed.
 
 ## Private offline knowledge library
 
