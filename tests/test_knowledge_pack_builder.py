@@ -30,6 +30,20 @@ def strategy():
     }
 
 
+def example_record():
+    return {
+        "id": "speaking.example.direct-answer-01", "schema_version": "1.0",
+        "strategy_id": "speaking.answer-development", "skill": "speaking",
+        "task": "Describe a recent learning experience.",
+        "content": "I recently learned to cook a new dish.",
+        "strategy_application": "The opening sentence answers the question directly.",
+        "learning_note": "Follow the answer with one relevant detail.",
+        "provenance": {"basis": "original", "public_references": []},
+        "review": {"content_status": "approved", "publication_status": "approved"},
+        "version": "1.0.0",
+    }
+
+
 class KnowledgePackBuilderTests(unittest.TestCase):
     def test_build_is_deterministic_and_verified(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -165,6 +179,44 @@ class KnowledgePackBuilderTests(unittest.TestCase):
             self.assertEqual(result["learning_path_count"], 1)
             pack = load_knowledge_pack(root / "complete-pack")
             self.assertEqual(pack.get_learning_path("speaking.foundations")["title"], "Speaking Foundations")
+
+    def test_standalone_example_records_select_pack_schema_1_1(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = build_knowledge_pack(
+                [strategy()], root / "pack", pack_version="1.1.0",
+                human_confirmed=True, examples=[example_record()],
+            )
+            pack = load_knowledge_pack(root / "pack")
+            self.assertEqual(pack.schema_version, "1.1")
+            self.assertEqual(result["example_count"], 1)
+            self.assertEqual(pack.get_example("speaking.example.direct-answer-01")["strategy_id"],
+                             "speaking.answer-development")
+            self.assertTrue((root / "pack/examples/speaking/speaking.example.direct-answer-01.json").is_file())
+
+    def test_standalone_example_requires_a_valid_strategy_reference(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            invalid = example_record()
+            invalid["strategy_id"] = "speaking.unknown-strategy"
+            with self.assertRaisesRegex(KnowledgePackError, "unknown strategy"):
+                build_knowledge_pack(
+                    [strategy()], Path(tmp) / "pack", pack_version="1.1.0",
+                    human_confirmed=True, examples=[invalid],
+                )
+
+    def test_schema_1_0_rejects_separate_example_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "pack"
+            build_knowledge_pack(
+                [strategy()], root, pack_version="1.1.0",
+                human_confirmed=True, examples=[example_record()],
+            )
+            manifest_path = root / "manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["schema_version"] = "1.0"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            with self.assertRaisesRegex(KnowledgePackError, "schema version 1.1"):
+                load_knowledge_pack(root)
 
     def test_optional_semantic_scan_is_a_blocking_build_gate(self):
         with tempfile.TemporaryDirectory() as tmp:
