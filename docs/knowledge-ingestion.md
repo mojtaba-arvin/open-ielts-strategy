@@ -12,7 +12,7 @@ The product has three layers:
 
 ## Goals
 
-- Accept UTF-8 text by paste/stdin or local TXT/Markdown files.
+- Accept UTF-8 text by paste/stdin or local TXT/Markdown/PDF/DOCX files; PDF support is optional and local.
 - Preserve the exact original input locally and calculate a SHA-256 fingerprint.
 - Record source type, title, author/speaker, optional HTTPS URL, publication date, language, learner notes, and an explicit rights-status declaration.
 - Split text at paragraph and sentence boundaries while retaining exact character offsets and optional transcript timestamps.
@@ -24,10 +24,10 @@ The product has three layers:
 
 ## Non-goals of the current foundation
 
-- No hosted LLM, embedding provider, vector database, browser scraper, URL downloader, or API key.
-- No semantic summary, automatic fact checking, educational validation, or authoritative IELTS strategy classification.
+- No hosted LLM, remote embedding provider, vector database, browser scraper, URL downloader, or API key. Optional Ollama and local embedding adapters require explicit local configuration.
+- No automatic fact checking, educational validation, or authoritative IELTS strategy classification. Optional semantic extraction produces drafts only.
 - No automatic assertion that two cards contradict each other. Similarity is not contradiction.
-- No audio transcription, ASR, diarization, OCR, PDF/DOCX parsing, or video downloading.
+- No audio transcription, ASR, diarization, OCR, or video downloading. PDF/DOCX parsing is local and text-only; scanned-PDF OCR is unsupported.
 - No public dataset or content redistribution.
 - No claim that a recommendation improves an IELTS band score.
 
@@ -214,3 +214,12 @@ Recommended execution: start A and B in parallel against shared schemas; C can i
 ## Current completion boundary
 
 Phase 1 is a developer-facing local foundation, not a hosted product or UI. PDF/DOCX, ASR, LLM semantic extraction, embeddings, semantic conflict detection, user accounts, sync, and educational validation remain future work.
+
+
+## Optional advanced local workflows
+
+- Structured extraction: see [Semantic Extraction](semantic-extraction.md). It is opt-in, loopback-only, exact-span validated, and always needs human review.
+- Hybrid search: see [Hybrid Retrieval](hybrid-retrieval.md). It falls back to lexical retrieval and uses only pre-installed local model weights when configured.
+- Comparison and playbook drafts: see [Strategy Playbooks](strategy-playbooks.md). Every step preserves source offsets and selection order; no conflicting advice is silently reconciled.
+- Paste-first UI and local documents: see [Local UI and Documents](local-ui-and-documents.md). The UI is loopback-only; parser limits apply.
+- Extraction evaluation: see [Knowledge Evaluation](knowledge-evaluation.md). Synthetic tests measure code behavior, not educational validity.
