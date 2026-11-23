@@ -114,6 +114,14 @@ python scripts/knowledge.py delete-source src_ID --confirm
 
 Use only material you are entitled to import and process. Rights metadata is a declaration, not legal clearance. See [Knowledge Ingestion & Retrieval](docs/knowledge-ingestion.md) for the data model, limitations, acceptance criteria, phases, and parallel work plan. PDF/DOCX parsing, semantic extraction, embeddings, a graphical UI, and educational validation are not part of Phase 1.
 
+## Published Knowledge Pack (v1 foundation)
+
+The repository now includes a dependency-free reader for versioned, published strategy packs. A cloned checkout can load approved strategy JSON files and perform deterministic lexical lookup without opening the private SQLite library, installing Ollama, or contacting a model/API provider.
+
+The v1 pack contract uses `knowledge/manifest.json`, per-strategy JSON records, and SHA-256 file checksums. Content approval and publication approval are separate mandatory states. Published provenance excludes private source/extraction IDs, source bodies, transcript text, and private review notes. See [Published Knowledge Pack v1](docs/knowledge/published-knowledge-pack-v1.md) and [ADR-001](docs/architecture/adr-001-published-knowledge-pack.md).
+
+This is the portable-consumption foundation, not yet the complete publication workflow: pack authoring, rights review, leak scanning, diff generation, and human-authorized Git publication remain subsequent work.
+
 ## Principles
 
 - Evaluation cases precede skill implementation.
