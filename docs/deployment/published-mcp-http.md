@@ -38,7 +38,7 @@ The middleware applies a per-source-IP in-memory token bucket (default 2 request
 - STDIO remains the recommended local desktop integration; HTTP is opt-in.
 - The pack is loaded and validated at process startup. Restart after replacing a pack.
 - The container does not mount the private authoring database or local source corpus.
-- Do not configure model-backed tools unless the service is intentionally allowed to send retrieved published context and learner prompts to the selected model provider.
+- Do not configure model-backed tools unless the service is intentionally allowed to send retrieved published context and learner prompts to the selected model provider. For remote embeddings, pass `--embedding-provider openai-compatible --embedding-model-name <model>` and inject `OPENAI_API_KEY` through the runtime secret manager; Compose forwards the variable when set. The embedding endpoint receives published strategy/example text and search queries. Local cached embeddings remain available with `--embedding-provider local --embedding-model-path <path>`.
 - Model API keys belong in a secret manager, not Compose literals.
 - The liveness endpoint does not prove MCP readiness or educational quality.
 - Backups, deployment availability, TLS, identity federation, per-user authorization, shared distributed rate limiting, structured audit retention, and incident response remain deployment-operator responsibilities.
