@@ -1,5 +1,4 @@
 """Paired, provenance-labelled Skill comparison; no model calls or network access."""
-from collections import defaultdict
 from math import isfinite
 
 
@@ -45,8 +44,9 @@ def compare_skill_lift(baseline, with_skill, *, mode="fixture"):
         count = len(selected)
         base_pass = sum(left[item]["passed"] for item in selected)
         skill_pass = sum(right[item]["passed"] for item in selected)
-        base_scores = [left[item]["score"] for item in selected if left[item]["score"] is not None]
-        skill_scores = [right[item]["score"] for item in selected if right[item]["score"] is not None]
+        score_pairs = [(left[item]["score"], right[item]["score"]) for item in selected if left[item]["score"] is not None and right[item]["score"] is not None]
+        base_scores = [pair[0] for pair in score_pairs]
+        skill_scores = [pair[1] for pair in score_pairs]
         return {
             "n": count,
             "baseline_passes": base_pass,
