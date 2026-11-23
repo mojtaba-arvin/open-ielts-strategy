@@ -7,7 +7,7 @@ from pathlib import Path
 from open_ielts_strategy.knowledge_pack import load_knowledge_pack
 from open_ielts_strategy.published_learning import (
     create_published_study_plan, get_published_learning_path, get_published_concept,
-    explain_published_strategy, generate_published_strategy_example,
+    explain_published_strategy, generate_published_strategy_example, get_published_example,
 )
 from open_ielts_strategy.text_generation import GenerationError
 
@@ -106,6 +106,37 @@ class PublishedLearningTests(unittest.TestCase):
             pack = load_knowledge_pack(root)
             result = get_published_concept(pack, "speaking.fluency")
             self.assertEqual(result["related_strategies"][0]["id"], "speaking.answer-development")
+
+    def test_standalone_example_lookup_resolves_its_published_strategy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            make_pack(root)
+            example = {
+                "id": "speaking.example.direct-answer-01", "schema_version": "1.0",
+                "strategy_id": "speaking.answer-development", "skill": "speaking",
+                "task": "Describe a recent learning experience.",
+                "content": "I learned to cook a new dish.",
+                "strategy_application": "The opening sentence answers directly.",
+                "learning_note": "Add one relevant supporting detail.",
+                "provenance": {"basis": "original", "public_references": []},
+                "review": {"content_status": "approved", "publication_status": "approved"},
+                "version": "1.0.0",
+            }
+            path = root / "examples/speaking/speaking.example.direct-answer-01.json"
+            path.parent.mkdir(parents=True)
+            payload = json.dumps(example, sort_keys=True, separators=(",", ":")).encode()
+            path.write_bytes(payload)
+            manifest_path = root / "manifest.json"
+            manifest = json.loads(manifest_path.read_text())
+            manifest["schema_version"] = "1.1"
+            manifest["files"].append({"path": "examples/speaking/speaking.example.direct-answer-01.json",
+                                      "sha256": hashlib.sha256(payload).hexdigest()})
+            manifest["files"].sort(key=lambda item: item["path"])
+            manifest_path.write_text(json.dumps(manifest))
+            pack = load_knowledge_pack(root)
+            result = get_published_example(pack, "speaking.example.direct-answer-01")
+            self.assertEqual(result["strategy"]["id"], "speaking.answer-development")
+            self.assertEqual(result["schema_version"], "1.1")
 
     def test_study_plan_handles_missing_published_paths(self):
         with tempfile.TemporaryDirectory() as tmp:
