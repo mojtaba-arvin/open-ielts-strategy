@@ -7,6 +7,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, quote, urlparse
 
 from .knowledge_store import CARD_STATUSES, KnowledgeStore, RIGHTS_STATUSES, SOURCE_TYPES
+from .knowledge_pipeline import list_semantic_items, review_semantic_item
 
 MAX_POST_BYTES = 5 * 1024 * 1024
 
@@ -119,6 +120,26 @@ def make_handler(db_path: str):
                                 + "</select><input name='note' maxlength='4000' placeholder='Review note'>"
                                 + "<button>Save review</button></form></li>"
                             )
+                        content += "</ol><h3>Semantic extraction items</h3><ol>"
+                        for item in list_semantic_items(store, source_id):
+                            content += (
+                                "<li><p>" + html.escape(item["text"]) + "</p><small>"
+                                + html.escape(item["kind"]) + " · " + html.escape(item["status"])
+                                + " · " + html.escape(item["model_name"]) + " / " + html.escape(item["prompt_version"])
+                                + " · chars " + str(item["start_char"]) + "–" + str(item["end_char"])
+                                + "</small><p><small>Extraction rationale: " + html.escape(item["rationale"])
+                                + " · Review note: " + html.escape(item["review_note"]) + "</small></p>"
+                                + "<form method='post' action='/review-semantic'>"
+                                + f"<input type='hidden' name='token' value='{token}'>"
+                                + "<input type='hidden' name='item_id' value='" + html.escape(item["item_id"], quote=True) + "'>"
+                                + "<select name='status'>"
+                                + "".join(
+                                    "<option" + (" selected" if status == item["status"] else "") + ">"
+                                    + html.escape(status) + "</option>" for status in sorted(CARD_STATUSES)
+                                )
+                                + "</select><input name='note' maxlength='4000' placeholder='Review note'>"
+                                + "<button>Save semantic review</button></form></li>"
+                            )
                         content += "</ol><h3>Delete source</h3><form method='post' action='/delete-source'>"
                         content += f"<input type='hidden' name='token' value='{token}'>"
                         content += "<input type='hidden' name='source_id' value='" + html.escape(source_id, quote=True) + "'>"
@@ -160,6 +181,12 @@ def make_handler(db_path: str):
                             values.get("note", "")[:4000],
                         )
                         message = "Review saved for " + result["card_id"]
+                    elif self.path == "/review-semantic":
+                        result = review_semantic_item(
+                            store, values.get("item_id", ""), values.get("status", ""),
+                            values.get("note", "")[:4000],
+                        )
+                        message = "Semantic review saved for " + result["item_id"]
                     elif self.path == "/delete-source":
                         if values.get("confirm") != "DELETE":
                             return self._send("Typed DELETE confirmation is required", 400)
