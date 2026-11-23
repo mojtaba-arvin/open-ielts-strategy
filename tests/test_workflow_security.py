@@ -34,8 +34,8 @@ class WorkflowSecurityTests(unittest.TestCase):
 
     def test_ci_exposes_exact_validate_job_on_every_pull_request(self):
         content = (WORKFLOWS / "ci.yml").read_text()
-        self.assertRegex(content, r"(?m)^  pull_request:\\s*$")
-        self.assertRegex(content, r"(?m)^jobs:\\n  validate:\\s*$")
+        self.assertRegex(content, r"(?m)^  pull_request:\s*$")
+        self.assertRegex(content, r"(?m)^jobs:\n  validate:\s*$")
         self.assertRegex(content, r"(?m)^    timeout-minutes: 15$")
 
     def test_core_and_runtime_fixture_workflows_do_not_receive_paid_secrets(self):
@@ -60,7 +60,7 @@ class WorkflowSecurityTests(unittest.TestCase):
 
     def test_release_gate_has_manual_candidate_preflight_and_tag_audit(self):
         content = (WORKFLOWS / "release.yml").read_text()
-        self.assertRegex(content, r"(?m)^  push:\\n    tags:")
+        self.assertRegex(content, r"(?m)^  push:\n    tags:")
         self.assertRegex(content, r"(?m)^  workflow_dispatch:")
         self.assertIn("RELEASE_TAG", content)
         self.assertIn("python scripts/validate_release.py", content)
