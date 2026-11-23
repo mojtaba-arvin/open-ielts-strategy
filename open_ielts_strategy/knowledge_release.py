@@ -146,10 +146,15 @@ def publish_pack(repo_path: str | Path, candidate_path: str | Path, target_relat
         raise ValueError("Git HEAD changed since the expected-head review")
     approval = json.loads(Path(approval_path).read_text(encoding="utf-8"))
     payload = verify_approval(approval, target, candidate_path, key=key)
+    candidate = Path(candidate_path).resolve()
+    if candidate == target or candidate.is_relative_to(target) or target.is_relative_to(candidate):
+        raise ValueError("candidate and published target must be separate directories")
     stage = Path(tempfile.mkdtemp(prefix=".knowledge-release-", dir=target.parent))
     staged_pack = stage / "pack"
     backup = stage / "backup"
     moved_old = False
+    committed = False
+    relative = target.relative_to(repo).as_posix()
     try:
         shutil.rmtree(staged_pack, ignore_errors=True)
         shutil.copytree(candidate_path, staged_pack, symlinks=True)
@@ -162,7 +167,6 @@ def publish_pack(repo_path: str | Path, candidate_path: str | Path, target_relat
             os.replace(backup, target)
             moved_old = False
             raise
-        relative = target.relative_to(repo).as_posix()
         _git(repo, "add", "--", relative)
         staged = _git(repo, "diff", "--cached", "--quiet", check=False)
         if staged.returncode == 0:
@@ -173,6 +177,7 @@ def publish_pack(repo_path: str | Path, candidate_path: str | Path, target_relat
         if not changed or any(not (name == relative or name.startswith(relative + "/")) for name in changed):
             raise ValueError("release staging escaped the configured Knowledge Pack directory")
         _git(repo, "commit", "-m", f"publish: Knowledge Pack {payload['candidate_pack_version']}")
+        committed = True
         commit_sha = _git(repo, "rev-parse", "HEAD").stdout.strip()
         push = _git(repo, "push", f"--force-with-lease=refs/heads/{branch}:{expected_head}",
                     "origin", f"HEAD:refs/heads/{branch}", check=False)
@@ -182,17 +187,22 @@ def publish_pack(repo_path: str | Path, candidate_path: str | Path, target_relat
                 "target": relative, "candidate_manifest_sha256": payload["candidate_manifest_sha256"],
                 "rollback_command_requires_explicit_confirmation": True}
     except Exception:
-        if moved_old and backup.exists():
-            if target.exists():
-                shutil.rmtree(target)
-            os.replace(backup, target)
+        if not committed:
+            try:
+                _git(repo, "reset", "--", relative, check=False)
+            except Exception:
+                pass
+            if moved_old and backup.exists():
+                if target.exists():
+                    shutil.rmtree(target)
+                os.replace(backup, target)
         raise
     finally:
         shutil.rmtree(stage, ignore_errors=True)
 
 
 def rollback_pack(repo_path: str | Path, commit_sha: str, *, branch: str,
-                 expected_head: str, confirm_rollback: bool) -> dict:
+                 expected_head: str, confirm_rollback: bool, target_relative: str = "knowledge") -> dict:
     if confirm_rollback is not True:
         raise ValueError("rollback requires explicit --confirm-rollback")
     _validate_branch(branch)
@@ -211,9 +221,13 @@ def rollback_pack(repo_path: str | Path, commit_sha: str, *, branch: str,
     if len(parents) != 2:
         raise ValueError("rollback currently supports only single-parent commits")
     _git(repo, "merge-base", "--is-ancestor", commit_sha, expected_head)
+    target_path = Path(target_relative)
+    if target_path.is_absolute() or ".." in target_path.parts or not target_path.parts:
+        raise ValueError("rollback target must be a safe repository-relative path")
+    target_name = target_path.as_posix()
     changed = _git(repo, "diff-tree", "--no-commit-id", "--name-only", "-r", commit_sha).stdout.splitlines()
-    if not changed or any(not (name == "knowledge" or name.startswith("knowledge/")) for name in changed):
-        raise ValueError("rollback commit must change only the top-level knowledge/ pack")
+    if not changed or any(not (name == target_name or name.startswith(target_name + "/")) for name in changed):
+        raise ValueError("rollback commit must change only the configured Knowledge Pack directory")
     _git(repo, "revert", "--no-edit", commit_sha)
     revert_sha = _git(repo, "rev-parse", "HEAD").stdout.strip()
     push = _git(repo, "push", f"--force-with-lease=refs/heads/{branch}:{expected_head}",
@@ -248,6 +262,7 @@ def main(argv=None):
     rollback.add_argument("--commit", required=True)
     rollback.add_argument("--branch", required=True)
     rollback.add_argument("--expected-head", required=True)
+    rollback.add_argument("--target", default="knowledge")
     rollback.add_argument("--confirm-rollback", action="store_true")
     args = parser.parse_args(argv)
     try:
@@ -280,7 +295,8 @@ def main(argv=None):
                 key=key, confirm_publish=args.confirm_publish), indent=2))
         else:
             print(json.dumps(rollback_pack(args.repo, args.commit, branch=args.branch,
-                expected_head=args.expected_head, confirm_rollback=args.confirm_rollback), indent=2))
+                expected_head=args.expected_head, confirm_rollback=args.confirm_rollback,
+                target_relative=args.target), indent=2))
     except (OSError, RuntimeError, ValueError, KeyError, json.JSONDecodeError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
