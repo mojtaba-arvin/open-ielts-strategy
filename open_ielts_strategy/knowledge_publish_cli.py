@@ -31,6 +31,7 @@ def main(argv=None):
     parser.add_argument("--source-item", action="append", type=_parse_source_item, default=[],
                         help="Map a source-derived record to a reviewed item: RECORD_ID=SITEM_ID")
     parser.add_argument("--db", default=DEFAULT_DB_PATH)
+    parser.add_argument("--semantic-embedding-model-path", help="Optional already-cached local model for semantic source-overlap screening")
     parser.add_argument("--confirm-human-review", action="store_true",
                         help="Confirm content, rights, and publication review were completed")
     args = parser.parse_args(argv)
@@ -48,6 +49,10 @@ def main(argv=None):
         concepts = read_records(args.concept, "concept")
         relationships = read_records(args.relationship, "relationship")
         learning_paths = read_records(args.learning_path, "learning path")
+        semantic_embeddings = None
+        if args.semantic_embedding_model_path:
+            from .hybrid_retrieval import LocalSentenceTransformer
+            semantic_embeddings = LocalSentenceTransformer(args.semantic_embedding_model_path)
         mappings: dict[str, list[str]] = {}
         for strategy_id, item_id in args.source_item:
             mappings.setdefault(strategy_id, []).append(item_id)
@@ -58,15 +63,17 @@ def main(argv=None):
                     human_confirmed=args.confirm_human_review, store=store,
                     source_item_ids_by_strategy=mappings, concepts=concepts,
                     relationships=relationships, learning_paths=learning_paths,
+                    semantic_embedding_provider=semantic_embeddings,
                 )
         else:
             result = build_knowledge_pack(
                 strategies, args.destination, pack_version=args.pack_version,
                 human_confirmed=args.confirm_human_review, concepts=concepts,
                 relationships=relationships, learning_paths=learning_paths,
+                semantic_embedding_provider=semantic_embeddings,
             )
         print(json.dumps(result, ensure_ascii=False, indent=2))
-    except (OSError, UnicodeError, json.JSONDecodeError, RuntimeError, ValueError, KeyError) as exc:
+    except (OSError, UnicodeError, json.JSONDecodeError, RuntimeError, ValueError, KeyError, ImportError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
     return 0
