@@ -16,14 +16,22 @@ If you use the ChatGPT desktop app's MCP settings, configure:
 - Arguments: `-m open_ielts_strategy.knowledge_mcp --db /absolute/path/to/.local/knowledge.sqlite3`
 - Working directory: the repository checkout (or install the package into the selected Python environment).
 
-The process uses MCP stdio transport. It does not open a listening TCP port. The database path is fixed when the process starts and must already exist.
+The process uses MCP stdio transport. It does not open a listening TCP port. In write-enabled mode, a transcript passed through ChatGPT is stored locally by the ingestion tool; the transcript is still visible to ChatGPT because it was supplied in that conversation. The database path is fixed when the process starts and must already exist.
 
 ## Exposed read-only tools
 
 - `search_ielts_knowledge(query, limit, status, topic)`: local lexical/hybrid retrieval with source IDs, segment anchors, offsets, rights declarations, and review states.
 - `prepare_ielts_practice_context(question, skill, include_unreviewed, limit, topic)`: retrieve a compact evidence pack for a Speaking/Writing/Reading/Listening practice prompt. By default, only `user_approved` and `supported` items are eligible. Unreviewed items require explicit opt-in.
 
-The MCP server does not expose ingest, review, delete, backup, or arbitrary SQL tools. Use the local CLI for those operations. This keeps the connected assistant read-only.
+By default, the MCP server is read-only and does not expose ingest, review, delete, backup, or arbitrary SQL tools. For an explicit ChatGPT-assisted ingestion workflow, start it with `--enable-write-tools`:
+
+```bash
+python -m open_ielts_strategy.knowledge_mcp \
+  --db /absolute/path/to/.local/knowledge.sqlite3 \
+  --enable-write-tools
+```
+
+That opt-in adds only three constrained write tools: `ingest_ielts_source` (text and metadata into the fixed DB path), `extract_ielts_source` (uses an already-installed local Ollama model over loopback), and `review_ielts_semantic_item` (updates one item status/note). It does not expose arbitrary file paths, SQL, source deletion, or raw-text purge. Keep the flag off unless you explicitly want the connected assistant to write to the private library. The local CLI remains available for destructive retention operations.
 
 ## ChatGPT connection
 
