@@ -89,9 +89,6 @@ class PublishedRetrievalTests(unittest.TestCase):
                 PublishedRetrievalEngine(load_knowledge_pack(root), embedding_provider=BadProvider())
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class CountingEmbeddings:
     def __init__(self):
@@ -191,3 +188,55 @@ class PublishedIndexIncrementalTests(unittest.TestCase):
                 ).fetchone()[0], 1)
             finally:
                 store.close()
+
+    def test_removed_records_are_pruned_without_reembedding_unchanged_records(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "pack"
+            make_pack(root)
+            add_second_strategy(root)
+            provider = CountingEmbeddings()
+            store = PublishedIndexStore(Path(tmp) / "index.sqlite")
+            try:
+                store.build(load_knowledge_pack(root), model_fingerprint="fake-v1", embedding_provider=provider)
+                manifest_path = root / "manifest.json"
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                manifest["pack_version"] = "3.4.0"
+                manifest["files"] = [
+                    item for item in manifest["files"]
+                    if item["path"] != "strategies/speaking/supporting-detail.json"
+                ]
+                (root / "strategies/speaking/supporting-detail.json").unlink()
+                manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+                result = store.build(load_knowledge_pack(root), model_fingerprint="fake-v1", embedding_provider=provider)
+                self.assertEqual(result["removed_documents"], 1)
+                self.assertEqual(result["reused_documents"], 1)
+                self.assertEqual(result["embedded_documents"], 0)
+                self.assertEqual(provider.batch_sizes, [2])
+                self.assertEqual(store.connection.execute(
+                    "SELECT COUNT(*) FROM indexed_documents"
+                ).fetchone()[0], 1)
+            finally:
+                store.close()
+
+    def test_model_fingerprint_change_reembeds_all_records(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "pack"
+            make_pack(root)
+            add_second_strategy(root)
+            provider = CountingEmbeddings()
+            store = PublishedIndexStore(Path(tmp) / "index.sqlite")
+            try:
+                pack = load_knowledge_pack(root)
+                store.build(pack, model_fingerprint="fake-v1", embedding_provider=provider)
+                result = store.build(pack, model_fingerprint="fake-v2", embedding_provider=provider)
+                self.assertEqual(provider.batch_sizes, [2, 2])
+                self.assertEqual(result["reused_documents"], 0)
+                self.assertEqual(result["updated_documents"], 2)
+                self.assertEqual(result["embedded_documents"], 2)
+            finally:
+                store.close()
+
+
+if __name__ == "__main__":
+    unittest.main()
