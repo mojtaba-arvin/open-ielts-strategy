@@ -65,6 +65,15 @@ class WorkflowSecurityTests(unittest.TestCase):
         self.assertIn("RELEASE_TAG", content)
         self.assertIn("python scripts/validate_release.py", content)
 
+    def test_runtime_concurrency_policy_matches_cost_documentation(self):
+        runtime = (WORKFLOWS / "runtime-evaluation.yml").read_text()
+        judge = (WORKFLOWS / "judge-calibration.yml").read_text()
+        docs = (ROOT / "docs" / "ci-cost-controls.md").read_text()
+        self.assertIn("cancel-in-progress: true", runtime)
+        self.assertIn("cancel-in-progress: false", judge)
+        self.assertIn("Runtime evaluation workflow uses `cancel-in-progress: true`", docs)
+        self.assertIn("Judge calibration uses `cancel-in-progress: false`", docs)
+
     def test_core_workflows_declare_explicit_permissions(self):
         for name in ("ci.yml", "runtime-evaluation.yml", "judge-calibration.yml", "nightly.yml", "source-crawl.yml"):
             content = (WORKFLOWS / name).read_text()
