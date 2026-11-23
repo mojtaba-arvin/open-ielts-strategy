@@ -76,6 +76,20 @@ The `--confirm-human-review` flag is an explicit operator attestation, not an au
 
 Retrieval defaults to in-memory BM25 and works without an embedding model. For local dense/hybrid retrieval, install `.[local-embeddings]` and pass an existing on-disk sentence-transformer directory with `--embedding-model-path /path/to/cached/model` to either `ielts-practice` or `ielts-published-knowledge-mcp`. The adapter uses `local_files_only=True`; it will not download model weights. The current hybrid fusion is BM25 plus cosine similarity; learned reranking and incremental persistent indexes remain future work.
 
+## Study, Mentor, and Example workflows
+
+Use the curated learning paths without a model, or explicitly select a model for teaching and original example generation:
+
+```bash
+ielts-learning study --pack ./knowledge --skill speaking
+ielts-learning mentor --pack ./knowledge --strategy-id speaking.answer-development \
+  --provider ollama --model qwen3:8b
+ielts-learning example --pack ./knowledge --strategy-id speaking.answer-development \
+  --task "Describe a useful skill" --provider ollama --model qwen3:8b
+```
+
+The Mentor and Example commands consume only the published pack. Example generation checks for long exact overlap with existing examples; this does not prove semantic originality. The published MCP server exposes `get_learning_path` and `create_study_plan` without a model. Configure `--provider` and `--model` on the MCP command to expose `explain_strategy` and `generate_strategy_example` tools as well.
+
 ## Published Knowledge MCP (stdio)
 
 Install the optional MCP dependency and run the published-only adapter against a checked-out pack:
