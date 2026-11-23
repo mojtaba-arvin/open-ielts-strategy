@@ -20,6 +20,12 @@ REQUIRED_FIELDS = {"kind", "text", "start_char", "end_char", "topic_tags", "rati
 MAX_OUTPUT_CHARS = 100_000
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+
 class ExtractionError(ValueError):
     """Raised when a model result cannot be safely tied back to source text."""
 
@@ -117,7 +123,7 @@ class OllamaLocalProvider:
             self.endpoint, data=body, headers={"Content-Type": "application/json"}, method="POST"
         )
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
+            with urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect()).open(request, timeout=self.timeout_seconds) as response:
                 raw = response.read(MAX_OUTPUT_CHARS + 1)
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise ExtractionError("local model request failed") from exc
