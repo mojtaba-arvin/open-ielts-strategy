@@ -92,6 +92,19 @@ After semantic extraction, review every extracted item. If you no longer want th
 
 This irreversible operation requires every semantic item to have left `needs_review`. It clears the source body, raw segment text, and generated segment summaries, deletes lexical cards that contain whole passages, and keeps reviewed semantic items, their source IDs/offsets, metadata, and the original SHA-256 fingerprint. It then runs SQLite VACUUM to reduce recoverable remnants in the database file. Semantic items remain searchable. Since the original body is gone, exact text-to-source re-verification is no longer possible; the retained hash and offsets are provenance metadata, not a recoverable copy. Backups made before purging may still contain the transcript and must be handled separately. VACUUM cannot guarantee erasure from SSD wear-leveling, filesystem snapshots, sync history, or other backups.
 
+## Separate publication approval
+
+Semantic item review and publication permission are separate decisions. A content reviewer may mark a candidate `user_approved` or `supported` for learning use; that does not make it publishable. Publication approval is stored in a separate private SQLite table with a reviewer, timestamp, rights-basis declaration, and private note.
+
+```bash
+python scripts/knowledge.py review-semantic sitem_ID --status user_approved --note "Content reviewed for personal learning"
+python scripts/knowledge.py review-publication sitem_ID --status approved \
+  --reviewer "maintainer" --rights-basis self_authored \
+  --note "Authorship and publication permission checked"
+```
+
+Publication approval is fail-closed: the semantic item must already have content approval and an explicit rights basis of `self_authored`, `permission_confirmed`, `public_domain`, or `independently_authored`. The source's import-time rights declaration alone is not sufficient. Private review notes and local source identifiers are not exported to a Knowledge Pack. The helper `assert_items_publishable` verifies both gates before a future pack builder can consume source-derived items.
+
 ## Outputs
 
 - **Source record:** immutable imported body, SHA-256, metadata, rights declaration, source ID, capture timestamp.
