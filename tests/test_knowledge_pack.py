@@ -226,3 +226,91 @@ class PublishedKnowledgePackTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StrategyRelationshipConsistencyTests(unittest.TestCase):
+    def make_multi_strategy_pack(self, root, records, relationship_records=None):
+        entries = []
+        for record in records:
+            filename = record["id"].split(".", 1)[1] + ".json"
+            relative = f"strategies/{record['skill']}/{filename}"
+            path = root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            payload = json.dumps(record, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
+            path.write_bytes(payload)
+            entries.append({"path": relative, "sha256": hashlib.sha256(payload).hexdigest()})
+        for record in relationship_records or []:
+            relative = f"relationships/{record['id']}.json"
+            path = root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            payload = json.dumps(record, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
+            path.write_bytes(payload)
+            entries.append({"path": relative, "sha256": hashlib.sha256(payload).hexdigest()})
+        entries.sort(key=lambda item: item["path"])
+        (root / "manifest.json").write_text(json.dumps({
+            "format": "open-ielts-knowledge-pack",
+            "schema_version": "1.0",
+            "pack_version": "0.1.0",
+            "files": entries,
+        }), encoding="utf-8")
+
+    def test_rejects_asymmetric_strategy_conflicts(self):
+        first = strategy(relationships={
+            "requires": [], "complements": [],
+            "conflicts_with": ["speaking.other"], "alternatives": [],
+        })
+        second = strategy(id="speaking.other", title="Other")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.make_multi_strategy_pack(root, [first, second])
+            with self.assertRaisesRegex(KnowledgePackError, "must be reciprocal"):
+                load_knowledge_pack(root)
+
+    def test_rejects_requires_dependency_cycles(self):
+        first = strategy(relationships={
+            "requires": ["speaking.other"], "complements": [],
+            "conflicts_with": [], "alternatives": [],
+        })
+        second = strategy(id="speaking.other", title="Other", relationships={
+            "requires": ["speaking.answer-development"], "complements": [],
+            "conflicts_with": [], "alternatives": [],
+        })
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.make_multi_strategy_pack(root, [first, second])
+            with self.assertRaisesRegex(KnowledgePackError, "dependency cycle"):
+                load_knowledge_pack(root)
+
+    def test_rejects_conflict_that_is_also_required(self):
+        first = strategy(relationships={
+            "requires": ["speaking.other"], "complements": [],
+            "conflicts_with": ["speaking.other"], "alternatives": [],
+        })
+        second = strategy(id="speaking.other", title="Other", relationships={
+            "requires": [], "complements": [],
+            "conflicts_with": ["speaking.answer-development"], "alternatives": [],
+        })
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.make_multi_strategy_pack(root, [first, second])
+            with self.assertRaisesRegex(KnowledgePackError, "contradictory relationships"):
+                load_knowledge_pack(root)
+
+    def test_accepts_symmetric_conflicts_and_acyclic_requirements(self):
+        first = strategy(relationships={
+            "requires": ["speaking.other"], "complements": [],
+            "conflicts_with": [], "alternatives": [],
+        })
+        second = strategy(id="speaking.other", title="Other", relationships={
+            "requires": [], "complements": [],
+            "conflicts_with": ["speaking.third"], "alternatives": [],
+        })
+        third = strategy(id="speaking.third", title="Third", relationships={
+            "requires": [], "complements": [],
+            "conflicts_with": ["speaking.other"], "alternatives": [],
+        })
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.make_multi_strategy_pack(root, [first, second, third])
+            pack = load_knowledge_pack(root)
+            self.assertEqual(len(pack.strategies), 3)
