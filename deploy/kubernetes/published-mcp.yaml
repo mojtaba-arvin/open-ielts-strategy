@@ -158,6 +158,8 @@ metadata:
   namespace: open-ielts
   annotations:
     cert-manager.io/cluster-issuer: REPLACE_WITH_CLUSTER_ISSUER
+    nginx.ingress.kubernetes.io/auth-url: "https://oauth2-proxy.example.com/oauth2/auth"
+    nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User,X-Auth-Request-Email"
     nginx.ingress.kubernetes.io/proxy-body-size: 1m
     nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
@@ -220,7 +222,7 @@ spec:
           port: 53
     - to:
         - ipBlock:
-            cidr: 0.0.0.0/0
+            cidr: 203.0.113.0/24
       ports:
         - protocol: TCP
           port: 6380
