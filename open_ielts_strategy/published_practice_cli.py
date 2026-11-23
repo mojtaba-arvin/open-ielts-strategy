@@ -11,6 +11,7 @@ from .text_generation import build_consumption_provider
 from .published_retrieval import PublishedRetrievalEngine
 from .hybrid_retrieval import LocalSentenceTransformer
 from .published_index import PublishedIndexStore
+from .enhanced_published_retrieval import (EnhancedPublishedRetrievalEngine, ModelQueryRewriter, LocalCrossEncoderReranker)
 
 
 def build_parser():
@@ -26,6 +27,8 @@ def build_parser():
     parser.add_argument("--embedding-model-path", help="Optional already-cached local sentence-transformer directory")
     parser.add_argument("--index-db", help="Optional persistent public-only embedding cache SQLite path")
     parser.add_argument("--embedding-model-fingerprint", help="Required stable model/version fingerprint when --index-db is used")
+    parser.add_argument("--query-rewriting", action="store_true", help="Opt in to model-assisted query expansion using the selected generation provider")
+    parser.add_argument("--reranker-model-path", help="Optional already-cached local cross-encoder model directory")
     return parser
 
 
@@ -60,6 +63,13 @@ def main(argv=None):
                 retriever = PublishedRetrievalEngine(pack, embedding_provider=cached_embeddings)
             else:
                 retriever = PublishedRetrievalEngine(pack, embedding_provider=embeddings)
+        if args.query_rewriting or args.reranker_model_path:
+            baseline = retriever or PublishedRetrievalEngine(pack)
+            retriever = EnhancedPublishedRetrievalEngine(
+                baseline,
+                query_rewriter=ModelQueryRewriter(provider) if args.query_rewriting else None,
+                reranker=LocalCrossEncoderReranker(args.reranker_model_path) if args.reranker_model_path else None,
+            )
         result = generate_published_practice_answer(
             pack, args.question, skill=args.skill, provider=provider,
             limit=args.limit, retriever=retriever,
