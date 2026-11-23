@@ -101,6 +101,30 @@ class ProvenanceTests(unittest.TestCase):
             [],
         )
 
+    def test_expired_permission_cannot_remain_licensed(self):
+        errors = validate_source_record(sample_source(
+            legal_status="licensed",
+            expiry="2020-01-01T00:00:00Z",
+        ))
+        self.assertIn("expired permission must use legal_status=expired", errors)
+
+    def test_expired_permission_cannot_allow_public_content(self):
+        permission = {
+            "private_evidence_ref": "private://evidence/record",
+            "reviewer": "reviewer",
+            "reviewed_at": "2026-11-22T10:00:00Z",
+            "notes": "Previously approved scope; now expired.",
+        }
+        errors = validate_source_record(sample_source(
+            legal_status="licensed",
+            public_content_allowed=True,
+            allowed_uses=["specific approved use"],
+            permission_record=permission,
+            expiry="2020-01-01T00:00:00Z",
+        ))
+        self.assertIn("expired permission must use legal_status=expired", errors)
+        self.assertIn("expired permission cannot allow public content", errors)
+
     def test_non_object_is_rejected(self):
         self.assertEqual(validate_source_record(None), ["source record must be an object"])
 
