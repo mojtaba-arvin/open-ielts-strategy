@@ -108,7 +108,7 @@ def main(argv=None):
                 )
                 attempt = store.record_attempt(
                     session["id"], result["answer"],
-                    feedback=result["reasoning_explanation"] + "\\n\\n" + result["practice_suggestion"],
+                    feedback=(result["reasoning_explanation"] + "\\n\\n" + result["practice_suggestion"])[:12000],
                     strategy_ids=[item["strategy_id"] for item in result["strategy_attribution"]],
                 )
                 result["persistence"] = {
