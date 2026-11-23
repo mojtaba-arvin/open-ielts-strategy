@@ -6,6 +6,7 @@ from pathlib import Path
 
 from open_ielts_strategy.knowledge_pack import load_knowledge_pack
 from open_ielts_strategy.published_practice import generate_published_practice_answer
+from open_ielts_strategy.published_retrieval import PublishedRetrievalEngine
 from open_ielts_strategy.text_generation import GenerationError, build_consumption_provider
 from open_ielts_strategy.published_practice_cli import build_parser
 
@@ -74,6 +75,8 @@ class PublishedPracticeTests(unittest.TestCase):
             root = Path(tmp)
             pack_fixture(root)
             pack = load_knowledge_pack(root)
+            retrieved = PublishedRetrievalEngine(pack).search("useful skill", skill="speaking")
+            self.assertEqual(retrieved[0]["strategy_id"], "speaking.answer-development")
             provider = FakeProvider(json.dumps({
                 "answer": "I would describe a meaningful journey.",
                 "strategy_ids_used": ["speaking.answer-development"],
