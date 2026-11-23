@@ -9,7 +9,8 @@ from pathlib import Path
 from .knowledge_pack import KnowledgePack, KnowledgePackError, load_knowledge_pack
 from .published_retrieval import PublishedRetrievalEngine
 from .published_learning import (get_published_learning_path, get_published_concept, create_published_study_plan,
-                                 explain_published_strategy, generate_published_strategy_example)
+                                 explain_published_strategy, generate_published_strategy_example,
+                                 get_published_example)
 from .text_generation import build_consumption_provider
 from .published_practice import generate_published_practice_answer
 
@@ -125,6 +126,11 @@ def build_server(pack_path: str | Path, *, embedding_model_path: str | None = No
     def get_concept(concept_id: str) -> dict:
         """Get a published concept and its linked strategy records."""
         return get_published_concept(pack, concept_id)
+
+    @server.tool()
+    def get_example(example_id: str) -> dict:
+        """Get one separately reviewed published learning example."""
+        return get_published_example(pack, example_id)
 
     @server.tool()
     def get_learning_path(path_id: str) -> dict:
