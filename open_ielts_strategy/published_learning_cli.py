@@ -8,7 +8,7 @@ import sys
 from .knowledge_pack import load_knowledge_pack
 from .published_learning import (
     create_published_study_plan, explain_published_strategy,
-    generate_published_strategy_example,
+    generate_published_strategy_example, get_published_example,
 )
 from .text_generation import build_consumption_provider
 
@@ -21,6 +21,10 @@ def build_parser():
     study.add_argument("--pack", default="knowledge")
     study.add_argument("--skill", choices=("speaking", "writing", "reading", "listening", "general"), required=True)
     study.add_argument("--limit", type=int, default=5)
+
+    get_example = commands.add_parser("get-example", help="Retrieve a separately reviewed published example")
+    get_example.add_argument("--pack", default="knowledge")
+    get_example.add_argument("--example-id", required=True)
 
     mentor = commands.add_parser("mentor", help="Explain a published strategy")
     mentor.add_argument("--pack", default="knowledge")
@@ -48,6 +52,8 @@ def main(argv=None):
         pack = load_knowledge_pack(args.pack)
         if args.command == "study":
             result = create_published_study_plan(pack, skill=args.skill, limit=args.limit)
+        elif args.command == "get-example":
+            result = get_published_example(pack, args.example_id)
         else:
             config = {"model": args.model}
             if args.endpoint:
