@@ -358,6 +358,12 @@ def _validate_strategy_consistency(strategies: list[dict], relationships: list[d
         elif relation_type == "complements":
             complement_pairs.add(pair)
 
+    for source, target, relation_type in seen_relationships:
+        if relation_type == "conflicts_with" and (target, source, relation_type) not in seen_relationships:
+            raise KnowledgePackError(
+                f"conflicts_with relationship must be reciprocal for {source} and {target}"
+            )
+
     contradictions = conflict_pairs & (required_pairs | complement_pairs)
     if contradictions:
         pair = sorted(next(iter(contradictions)))
