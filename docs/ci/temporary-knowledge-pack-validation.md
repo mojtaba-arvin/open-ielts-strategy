@@ -5,3 +5,5 @@ This file exists only to open a pull request against the Knowledge Pack feature 
 A second validation run is required because the feature base branch gained additional publication-scan and builder changes after the first successful run.
 
 A third validation run includes schema meta-validation and the latest publication leakage scanner changes.
+
+A fourth validation run includes the rolling-hash private-source scanner, local pack builder gate integration, and schema CI checks.
