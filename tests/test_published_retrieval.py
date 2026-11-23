@@ -77,10 +77,10 @@ class PublishedRetrievalTests(unittest.TestCase):
             self.assertEqual(engine.search("direct answer", skill="writing"), [])
             self.assertEqual(engine.search("unrelated xyz", skill="speaking"), [])
 
-    def test_inconsistent_embedding_vectors_are_rejected(self):
+    def test_unexpected_embedding_vector_count_is_rejected(self):
         class BadProvider:
             def encode(self, texts):
-                return [[1.0], [1.0, 2.0]][:len(texts)]
+                return []
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             make_pack(root)
