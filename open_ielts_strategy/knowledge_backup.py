@@ -1,7 +1,6 @@
 """Private SQLite backup/restore helpers. Backups are not encrypted."""
 from __future__ import annotations
 
-import os
 import sqlite3
 from pathlib import Path
 
@@ -42,7 +41,7 @@ def restore_database(backup_path: str | Path, destination_path: str | Path) -> d
     if destination.parent.resolve() == Path.cwd().resolve():
         raise ValueError("restore into a private local directory, not repository root")
     try:
-        with sqlite3.connect(str(backup) + "?mode=ro", uri=True) as src, sqlite3.connect(str(destination)) as dst:
+        with sqlite3.connect(backup.resolve().as_uri() + "?mode=ro", uri=True) as src, sqlite3.connect(str(destination)) as dst:
             if src.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
                 raise sqlite3.DatabaseError("backup integrity check failed")
             src.backup(dst)
