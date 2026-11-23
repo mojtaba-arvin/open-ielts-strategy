@@ -159,3 +159,24 @@ Loading validates structure and integrity. It does not grant rights, certify IEL
 ## Practice review and calibration
 
 Generated outputs can be registered and reviewed locally with `ielts-practice-eval --db .local/practice-reviews.sqlite`. Use `register`, `review`, and `report` subcommands; the rubric covers task relevance, evidence grounding, clarity, actionability, and factual safety. The report gives descriptive reviewer agreement only. See [Practice human review](../evaluation/practice-human-review.md). No human ratings, examiner equivalence, band calibration, or educational outcomes are implied.
+
+## Offline retrieval latency benchmark
+
+Run an aggregate, local-only latency benchmark against the current published pack:
+
+```bash
+ielts-knowledge-benchmark --pack ./knowledge --iterations 10 --warmup 3
+```
+
+For repeatable hybrid runs, supply a JSON array of queries, an already-cached embedding model, and optionally the persistent public index cache:
+
+```bash
+ielts-knowledge-benchmark --pack ./knowledge \
+  --queries-json ./.local/retrieval-queries.json \
+  --embedding-model-path /path/to/cached/model \
+  --index-db .local/published-index.sqlite \
+  --model-fingerprint sentence-transformers/model-name@revision \
+  --iterations 20 --warmup 5 --output ./.local/retrieval-benchmark.json
+```
+
+The report includes pack/model identity, engine/index initialization time, mean/p50/p95/max search latency, and throughput. It never includes query text or retrieved content. This measures runtime performance only; it does not measure ranking relevance, educational quality, or learner outcomes. Use a representative, rights-cleared local query set and compare results across the same machine/model configuration.
