@@ -14,7 +14,7 @@ from typing import Any
 
 FORMAT = "open-ielts-knowledge-pack"
 SUPPORTED_SCHEMA_VERSIONS = {"1.0"}
-_SEMVER = re.compile(r"^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$")
+_SEMVER = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$")
 _PRIVATE_KEYS = {
     "source_id", "source_ids", "extraction_id", "extraction_ids",
     "source_body", "transcript", "transcript_text", "private_source_path",
@@ -73,7 +73,7 @@ def _reject_private_fields(value: Any, path: str = "$") -> None:
 
 
 def _safe_pack_file(root: Path, relative: str) -> Path:
-    if not isinstance(relative, str) or not relative or "\\\\" in relative:
+    if not isinstance(relative, str) or not relative or "\\" in relative:
         raise KnowledgePackError("manifest paths must be non-empty POSIX relative paths")
     pure = PurePosixPath(relative)
     if pure.is_absolute() or any(part in {"", ".", ".."} for part in pure.parts):
@@ -107,7 +107,7 @@ def _validate_strategy(item: Any, relative: str) -> dict[str, Any]:
             raise KnowledgePackError(f"{relative}: {field} must be non-empty text")
     if not _SEMVER.fullmatch(item["version"]):
         raise KnowledgePackError(f"{relative}: version must be semantic version text")
-    if item["schema_version"] not in SUPPORTED_SCHEMA_VERSIONS:
+    if not isinstance(item["schema_version"], str) or item["schema_version"] not in SUPPORTED_SCHEMA_VERSIONS:
         raise KnowledgePackError(f"{relative}: unsupported strategy schema version")
     for field in ("purpose", "reasoning", "steps", "limitations", "common_mistakes", "examples"):
         if not isinstance(item[field], list) or any(not isinstance(v, str) or not v.strip() for v in item[field]):
@@ -129,7 +129,7 @@ def _validate_strategy(item: Any, relative: str) -> dict[str, Any]:
     provenance = item["provenance"]
     if not isinstance(provenance, dict) or set(provenance) != {"basis", "public_references"}:
         raise KnowledgePackError(f"{relative}: invalid public provenance object")
-    if provenance["basis"] not in {"original", "independently_authored", "public_domain", "permissioned"}:
+    if not isinstance(provenance["basis"], str) or provenance["basis"] not in {"original", "independently_authored", "public_domain", "permissioned"}:
         raise KnowledgePackError(f"{relative}: provenance basis is not publishable")
     if not isinstance(provenance["public_references"], list) or any(
         not isinstance(v, str) or not v.startswith("https://") for v in provenance["public_references"]
@@ -158,7 +158,7 @@ def load_knowledge_pack(path: str | Path) -> KnowledgePack:
         raise KnowledgePackError("manifest has an unsupported shape")
     if manifest["format"] != FORMAT:
         raise KnowledgePackError("unsupported knowledge pack format")
-    if manifest["schema_version"] not in SUPPORTED_SCHEMA_VERSIONS:
+    if not isinstance(manifest["schema_version"], str) or manifest["schema_version"] not in SUPPORTED_SCHEMA_VERSIONS:
         raise KnowledgePackError("unsupported knowledge pack schema version")
     if not isinstance(manifest["pack_version"], str) or not _SEMVER.fullmatch(manifest["pack_version"]):
         raise KnowledgePackError("pack_version must be semantic version text")
@@ -171,7 +171,7 @@ def load_knowledge_pack(path: str | Path) -> KnowledgePack:
         if not isinstance(entry, dict) or set(entry) != {"path", "sha256"}:
             raise KnowledgePackError("each manifest file entry must contain path and sha256")
         relative, expected = entry["path"], entry["sha256"]
-        if relative in seen:
+        if not isinstance(relative, str) or relative in seen:
             raise KnowledgePackError(f"duplicate manifest path: {relative!r}")
         seen.add(relative)
         if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{64}", expected):
