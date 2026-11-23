@@ -81,16 +81,25 @@ def validate_repository_data(lock, registry, root=ROOT):
             if not isinstance(data, list) or not data:
                 errors.append(f"{sid}: evaluation cases must be a non-empty JSON array")
             else:
+                if len(data) < 5:
+                    errors.append(f"{sid}: evaluation suite must contain at least five cases")
                 ids = set()
+                categories = set()
                 for case_index, case in enumerate(data):
                     for error in validate_case(case):
                         errors.append(f"{sid}: case[{case_index}]: {error}")
                     if isinstance(case, dict):
+                        category = case.get("category")
+                        if isinstance(category, str):
+                            categories.add(category)
                         case_id = case.get("id")
                         if isinstance(case_id, str) and case_id.strip():
                             if case_id in ids:
                                 errors.append(f"{sid}: duplicate eval ID: {case_id}")
                             ids.add(case_id)
+                for required_category in ("routing_positive", "routing_negative", "boundary", "behavioral"):
+                    if required_category not in categories:
+                        errors.append(f"{sid}: evaluation suite missing required category: {required_category}")
 
     try:
         resolve_dependencies(ordered_names, valid_entries)

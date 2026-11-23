@@ -48,7 +48,7 @@ class RepositoryValidatorShapeTests(unittest.TestCase):
         self.assertIn("skills.lock skills[0] must be an object", errors)
         self.assertIn("skills.lock skills[1] has an invalid skill name", errors)
 
-    def test_valid_minimal_repository_metadata_passes(self):
+    def test_skill_evaluation_requires_minimum_size_and_all_case_categories(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             skill_dir = root / "skills" / "sample-skill"
@@ -59,11 +59,40 @@ class RepositoryValidatorShapeTests(unittest.TestCase):
             )
             (skill_dir / "evals" / "cases.json").write_text(
                 json.dumps([{
-                    "id": "route",
+                    "id": "only-positive",
                     "category": "routing_positive",
                     "input": "synthetic input",
                     "expected": "synthetic expected behavior",
                 }]),
+                encoding="utf-8",
+            )
+            lock = {
+                "lockfile_version": 1,
+                "skills": [{"name": "sample-skill", "version": "1.0.0", "dependencies": []}],
+            }
+            errors, _, _ = validate_repository_data(lock, {"sources": []}, root)
+            self.assertIn("sample-skill: evaluation suite must contain at least five cases", errors)
+            for category in ("routing_negative", "boundary", "behavioral"):
+                self.assertIn(f"sample-skill: evaluation suite missing required category: {category}", errors)
+
+    def test_valid_minimal_repository_metadata_passes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            skill_dir = root / "skills" / "sample-skill"
+            (skill_dir / "evals").mkdir(parents=True)
+            (skill_dir / "SKILL.md").write_text(
+                "---\nname: sample-skill\ndescription: Sample\nlicense: LICENSE-CONTENT\nversion: 1.0.0\n---\n",
+                encoding="utf-8",
+            )
+            valid_cases = [
+                {"id": "positive", "category": "routing_positive", "input": "synthetic input", "expected": "synthetic expected behavior"},
+                {"id": "negative", "category": "routing_negative", "input": "synthetic input", "expected": "synthetic expected behavior"},
+                {"id": "boundary", "category": "boundary", "input": "synthetic input", "expected": "synthetic expected behavior"},
+                {"id": "behavior-a", "category": "behavioral", "input": "synthetic input", "expected": "synthetic expected behavior", "rubric": {"criterion": 1}},
+                {"id": "behavior-b", "category": "behavioral", "input": "synthetic input", "expected": "synthetic expected behavior", "rubric": {"criterion": 1}},
+            ]
+            (skill_dir / "evals" / "cases.json").write_text(
+                json.dumps(valid_cases),
                 encoding="utf-8",
             )
             lock = {
