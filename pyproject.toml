@@ -22,6 +22,8 @@ redis-rate-limit = ["redis>=5,<7"]
 schema-validation = ["jsonschema>=4.23,<5"]
 
 [project.scripts]
+ielts = "open_ielts_strategy.product_cli:main"
+ielts-knowledge-status = "open_ielts_strategy.knowledge_pack_status:main"
 ielts-knowledge-web = "open_ielts_strategy.knowledge_web:serve"
 ielts-knowledge-mcp = "open_ielts_strategy.knowledge_mcp:main"
 ielts-knowledge-answer = "open_ielts_strategy.knowledge_answer_cli:main"
