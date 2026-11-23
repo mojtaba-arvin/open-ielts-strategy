@@ -7,13 +7,17 @@ service credential, not per-user identity or a substitute for network policy.
 from __future__ import annotations
 
 import argparse
-import hmac
+import json
 import os
 import sys
 import time
+import uuid
+from datetime import datetime, timezone
 from collections import defaultdict
 from pathlib import Path
 from typing import Callable
+
+from .http_security import AuthTokenRegistry, RedisTokenBucket
 
 
 class _TokenBucket:
@@ -40,20 +44,24 @@ class _TokenBucket:
 class AuthenticatedMCPMiddleware:
     """Small ASGI boundary: host/origin allowlists, bearer auth, body cap, rate limit."""
 
-    def __init__(self, app, *, token: str, allowed_hosts: set[str],
-                 allowed_origins: set[str] | None = None, rate: float = 2.0,
-                 burst: int = 20, max_body_bytes: int = 1_000_000):
-        if not isinstance(token, str) or len(token) < 32:
-            raise ValueError("MCP bearer token must contain at least 32 characters")
+    def __init__(self, app, *, token: str | None = None, tokens_json: str | None = None,
+                 allowed_hosts: set[str], allowed_origins: set[str] | None = None,
+                 rate: float = 2.0, burst: int = 20, max_body_bytes: int = 1_000_000,
+                 rate_limiter=None, audit_sink: Callable[[dict], None] | None = None):
+        self.token_registry = AuthTokenRegistry.from_environment(token=token, tokens_json=tokens_json)
+        if audit_sink is not None and not callable(audit_sink):
+            raise ValueError("audit_sink must be callable")
         if not allowed_hosts:
             raise ValueError("at least one allowed Host value is required")
         if max_body_bytes < 1024:
             raise ValueError("max_body_bytes must be at least 1024")
-        self.app, self.token = app, token
+        self.app = app
         self.allowed_hosts = {value.casefold() for value in allowed_hosts}
         self.allowed_origins = set(allowed_origins or ())
-        self.limiter = _TokenBucket(rate, burst)
+        self.limiter = rate_limiter or _TokenBucket(rate, burst)
+        self.auth_failure_limiter = _TokenBucket(rate=1.0, burst=5)
         self.max_body_bytes = max_body_bytes
+        self.audit_sink = audit_sink or (lambda event: print(json.dumps(event, sort_keys=True), flush=True))
 
     @staticmethod
     async def _respond(send, status: int, message: str):
@@ -67,55 +75,103 @@ class AuthenticatedMCPMiddleware:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
+        started = time.monotonic()
+        request_id = uuid.uuid4().hex
         headers = {key.lower(): value for key, value in scope.get("headers", [])}
         path = scope.get("path", "")
-        host = headers.get(b"host", b"").decode("latin1").split(":", 1)[0].casefold()
-        if host not in self.allowed_hosts:
-            return await self._respond(send, 421, "host not allowed")
-        if path == "/healthz" and scope.get("method") == "GET":
-            return await self._respond(send, 200, "ok")
-        origin = headers.get(b"origin")
-        if origin and self.allowed_origins and origin.decode("latin1") not in self.allowed_origins:
-            return await self._respond(send, 403, "origin not allowed")
-        authorization = headers.get(b"authorization", b"")
-        expected = ("Bearer " + self.token).encode("utf-8")
-        if not hmac.compare_digest(authorization, expected):
-            return await self._respond(send, 401, "unauthorized")
+        method = scope.get("method", "")
         client = scope.get("client") or ("unknown", 0)
-        client_key = str(client[0])
-        if not self.limiter.allow(client_key):
-            return await self._respond(send, 429, "rate limit exceeded")
-        content_length = headers.get(b"content-length")
-        if content_length:
-            try:
-                if int(content_length) > self.max_body_bytes:
-                    return await self._respond(send, 413, "request body too large")
-            except ValueError:
-                return await self._respond(send, 400, "invalid content length")
-
+        client_ip = str(client[0])
+        subject = None
+        status = 500
         received = 0
-        exceeded = False
-        async def limited_receive():
-            nonlocal received, exceeded
-            message = await receive()
-            if message["type"] == "http.request":
-                received += len(message.get("body", b""))
-                if received > self.max_body_bytes:
-                    exceeded = True
-                    return {"type": "http.disconnect"}
-            return message
+        sent = 0
 
-        async def guarded_send(message):
-            if not exceeded:
-                await send(message)
+        async def audited_send(message):
+            nonlocal status, sent
+            if message["type"] == "http.response.start":
+                status = int(message["status"])
+            elif message["type"] == "http.response.body":
+                sent += len(message.get("body", b""))
+            await send(message)
 
-        await self.app(scope, limited_receive, guarded_send)
-        if exceeded:
-            await self._respond(send, 413, "request body too large")
-        return None
+        async def respond(code: int, message: str):
+            nonlocal status
+            status = code
+            await self._respond(audited_send, code, message)
+
+        try:
+            host = headers.get(b"host", b"").decode("latin1").split(":", 1)[0].casefold()
+            if host not in self.allowed_hosts:
+                return await respond(421, "host not allowed")
+            if path == "/healthz" and method == "GET":
+                subject = "health-check"
+                return await respond(200, "ok")
+            origin = headers.get(b"origin")
+            if origin and self.allowed_origins and origin.decode("latin1") not in self.allowed_origins:
+                return await respond(403, "origin not allowed")
+            principal = self.token_registry.authenticate(headers.get(b"authorization", b""))
+            if principal is None:
+                if not self.auth_failure_limiter.allow(client_ip):
+                    return await respond(429, "authentication rate limit exceeded")
+                return await respond(401, "unauthorized")
+            if "knowledge:read" not in principal["scopes"]:
+                return await respond(403, "insufficient scope")
+            subject = principal["subject"]
+            try:
+                allowed = self.limiter.allow("subject:" + subject)
+            except Exception:
+                return await respond(503, "rate limiter unavailable")
+            if not allowed:
+                return await respond(429, "rate limit exceeded")
+            content_length = headers.get(b"content-length")
+            if content_length:
+                try:
+                    if int(content_length) > self.max_body_bytes:
+                        return await respond(413, "request body too large")
+                except ValueError:
+                    return await respond(400, "invalid content length")
+
+            exceeded = False
+            async def limited_receive():
+                nonlocal received, exceeded
+                message = await receive()
+                if message["type"] == "http.request":
+                    received += len(message.get("body", b""))
+                    if received > self.max_body_bytes:
+                        exceeded = True
+                        return {"type": "http.disconnect"}
+                return message
+
+            async def guarded_send(message):
+                if not exceeded:
+                    await audited_send(message)
+
+            await self.app(scope, limited_receive, guarded_send)
+            if exceeded:
+                await respond(413, "request body too large")
+            return None
+        finally:
+            event = {
+                "event": "published_mcp_http_request",
+                "request_id": request_id,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "subject": subject,
+                "client_ip": client_ip,
+                "method": method,
+                "path": path,
+                "status": status,
+                "request_bytes": received,
+                "response_bytes": sent,
+                "elapsed_ms": round((time.monotonic() - started) * 1000, 3),
+            }
+            try:
+                self.audit_sink(event)
+            except Exception:
+                pass
 
 
-def create_http_app(pack_path: str | Path, *, token: str,
+def create_http_app(pack_path: str | Path, *, token: str | None = None, tokens_json: str | None = None,
                     embedding_model_path: str | None = None,
                     embedding_provider_name: str | None = None,
                     embedding_model_name: str | None = None,
@@ -126,7 +182,8 @@ def create_http_app(pack_path: str | Path, *, token: str,
                     allowed_hosts: set[str] | None = None,
                     allowed_origins: set[str] | None = None,
                     rate: float = 2.0, burst: int = 20,
-                    max_body_bytes: int = 1_000_000):
+                    max_body_bytes: int = 1_000_000, redis_url: str | None = None,
+                    audit_sink: Callable[[dict], None] | None = None):
     from .published_knowledge_mcp import build_server
     server = build_server(pack_path, embedding_model_path=embedding_model_path,
                           embedding_provider_name=embedding_provider_name,
@@ -139,10 +196,12 @@ def create_http_app(pack_path: str | Path, *, token: str,
     if not callable(app_factory):
         raise RuntimeError("installed MCP SDK does not expose streamable_http_app(); install the supported mcp extra")
     app = app_factory()
+    rate_limiter = RedisTokenBucket(redis_url, rate=rate, burst=burst) if redis_url else None
     return AuthenticatedMCPMiddleware(
-        app, token=token, allowed_hosts=allowed_hosts or {"localhost", "127.0.0.1"},
+        app, token=token, tokens_json=tokens_json,
+        allowed_hosts=allowed_hosts or {"localhost", "127.0.0.1"},
         allowed_origins=allowed_origins, rate=rate, burst=burst,
-        max_body_bytes=max_body_bytes,
+        max_body_bytes=max_body_bytes, rate_limiter=rate_limiter, audit_sink=audit_sink,
     )
 
 
@@ -152,9 +211,11 @@ def main(argv=None):
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--token-env", default="IELTS_MCP_BEARER_TOKEN")
+    parser.add_argument("--tokens-env", default="IELTS_MCP_TOKENS_JSON")
+    parser.add_argument("--redis-url-env", default="IELTS_MCP_REDIS_URL")
     parser.add_argument("--allowed-hosts", default="localhost,127.0.0.1")
     parser.add_argument("--allowed-origins", default="")
-    parser.add_argument("--rate", type=float, default=2.0, help="requests per second per client IP")
+    parser.add_argument("--rate", type=float, default=2.0, help="requests per second per authenticated subject")
     parser.add_argument("--burst", type=int, default=20)
     parser.add_argument("--max-body-bytes", type=int, default=1_000_000)
     parser.add_argument("--embedding-provider", choices=("local", "openai-compatible"))
@@ -169,13 +230,16 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         import uvicorn
-        token = os.environ.get(args.token_env, "")
-        if len(token) < 32:
-            raise ValueError(f"{args.token_env} must be set to a random secret of at least 32 characters")
+        token = os.environ.get(args.token_env) or None
+        tokens_json = os.environ.get(args.tokens_env) or None
+        if not token and not tokens_json:
+            raise ValueError(f"configure {args.token_env} or {args.tokens_env}")
+        redis_url = os.environ.get(args.redis_url_env) or None
         if not 1 <= args.port <= 65535:
             raise ValueError("port must be between 1 and 65535")
         app = create_http_app(
-            args.pack, token=token, embedding_model_path=args.embedding_model_path,
+            args.pack, token=token, tokens_json=tokens_json, redis_url=redis_url,
+            embedding_model_path=args.embedding_model_path,
             embedding_provider_name=args.embedding_provider, embedding_model_name=args.embedding_model_name,
             embedding_endpoint=args.embedding_endpoint, embedding_api_key_env=args.embedding_api_key_env,
             provider_name=args.provider, model=args.model, endpoint=args.endpoint,
