@@ -42,7 +42,7 @@ python scripts/knowledge.py semantic-items src_ID
 python scripts/knowledge.py review-semantic sitem_ID --status user_approved --note "Useful for my speaking practice"
 ```
 
-Review states are personal curation, not a validation of IELTS correctness. The local Ollama service must already be running. This adapter does not download models or install dependencies. No remote endpoint, paid API, or secret is supported.
+Review states and reviewer notes are stored separately from the model's extraction rationale. They are personal curation, not a validation of IELTS correctness. The local Ollama service must already be running. This adapter does not download models or install dependencies. No remote endpoint, paid API, or secret is supported.
 
 ## Acceptance boundary
 
