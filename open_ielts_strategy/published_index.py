@@ -7,6 +7,7 @@ Knowledge Pack manifest digest or embedding-model fingerprint.
 from __future__ import annotations
 
 import json
+import math
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -53,6 +54,10 @@ class PublishedIndexStore:
             raise ValueError("model_fingerprint must be non-empty bounded text")
         if type(batch_size) is not int or not 1 <= batch_size <= 512:
             raise ValueError("batch_size must be between 1 and 512")
+        if model_fingerprint == "bm25-only" and embedding_provider is not None:
+            raise ValueError("an embedding provider requires an explicit non-default model fingerprint")
+        if model_fingerprint != "bm25-only" and embedding_provider is None:
+            raise ValueError("a non-default model fingerprint requires an embedding provider")
         identity = {"pack_version": pack.pack_version,
                     "manifest_sha256": pack.manifest_sha256,
                     "model_fingerprint": model_fingerprint,
@@ -61,6 +66,7 @@ class PublishedIndexStore:
             return {**identity, "rebuilt": False}
         documents = [(item["id"], _document_text(item)) for item in pack.strategies]
         vectors: list[list[float] | None] = [None] * len(documents)
+        vector_dimensions = None
         if embedding_provider is not None:
             for start in range(0, len(documents), batch_size):
                 batch = [text for _, text in documents[start:start + batch_size]]
@@ -70,8 +76,12 @@ class PublishedIndexStore:
                 for offset, vector in enumerate(encoded):
                     if not isinstance(vector, (list, tuple)) or not vector:
                         raise ValueError("embedding provider returned an invalid vector")
-                    if any(type(value) not in (int, float) for value in vector):
-                        raise ValueError("embedding vector must contain only numeric values")
+                    if any(type(value) not in (int, float) or not math.isfinite(float(value)) for value in vector):
+                        raise ValueError("embedding vector must contain only finite numeric values")
+                    if vector_dimensions is None:
+                        vector_dimensions = len(vector)
+                    elif len(vector) != vector_dimensions:
+                        raise ValueError("embedding provider returned inconsistent vector dimensions")
                     vectors[start + offset] = [float(value) for value in vector]
         self.connection.execute("BEGIN IMMEDIATE")
         try:
