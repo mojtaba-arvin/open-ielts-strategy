@@ -30,3 +30,12 @@ For any release-blocking educational conclusion, require qualified human review 
 ## Judge-to-judge disagreement
 
 The optional pure-Python helper `open_ielts_strategy.judge_analysis.analyze_judge_disagreement` compares two or more independently produced judge scorecards. It intersects item IDs, reports exact agreement, mean absolute score difference, and maximum difference separately for each rubric dimension and model pair, and rejects malformed/duplicate records. It does not call a model, infer which judge is correct, or treat agreement as accuracy. Use it only with scorecards produced under documented model and prompt versions; it is descriptive analysis, not human calibration.
+
+
+## Deterministic non-LLM diagnostic judge
+
+The separate `open_ielts_strategy.rule_judge.evaluate_writing` helper uses only local text features and fixed thresholds. It is not a substitute for this optional model-judge protocol: its simulated heuristic indices are not IELTS bands, examiner judgments, or validated rubric scores. See [Rule-based Judge](rule-based-judge.md).
+
+## Offline calibration audit
+
+`open_ielts_strategy.calibration_audit.audit_calibration` compares versioned scorecards without model calls. It provides descriptive disagreement metrics and a review queue. It cannot establish judge accuracy, examiner equivalence, or educational validity. See [Calibration Audit](calibration-audit.md).
