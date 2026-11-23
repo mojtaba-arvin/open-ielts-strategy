@@ -130,6 +130,8 @@ A local pack builder (`ielts-knowledge-publish`) verifies the private content/pu
 
 The `ielts-practice` command can generate an evidence-attributed practice answer from the published pack with either a local Ollama model or an explicitly selected OpenAI-compatible API provider. It refuses to fabricate strategy attribution and makes no model call when no relevant published evidence is found; see [Published Knowledge Pack v1](docs/knowledge/published-knowledge-pack-v1.md).
 
+Knowledge Pack JSON Schemas are meta-validated and cross-reference checked in CI with the optional `schema-validation` extra; the runtime loader itself remains standard-library-only.
+
 ## Principles
 
 - Evaluation cases precede skill implementation.
