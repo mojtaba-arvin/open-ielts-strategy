@@ -26,9 +26,13 @@ class SemanticPlaybookCliTests(unittest.TestCase):
                     }]}, provider_name="test", model_name="fixture", prompt_version="v1",
                 )
                 item_id = result["item_ids"][0]
+                store._connection.execute(
+                    "UPDATE semantic_items SET status='user_approved' WHERE item_id=?", (item_id,)
+                )
+                store._connection.commit()
                 cards = load_cards(store, [item_id])
                 self.assertEqual(cards[0]["card_id"], item_id)
                 self.assertEqual(cards[0]["source_id"], source["source_id"])
                 playbook = build_playbook(cards, title="My Speaking approach")
                 self.assertEqual(playbook["steps"][0]["source"]["card_id"], item_id)
-                self.assertFalse(playbook["steps"][0]["requires_personal_review"] is False)
+                self.assertFalse(playbook["steps"][0]["requires_personal_review"])
