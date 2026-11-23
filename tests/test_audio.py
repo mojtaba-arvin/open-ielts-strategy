@@ -27,6 +27,10 @@ class AudioValidationTests(unittest.TestCase):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 inspect_audio(data, name)
 
+    def test_rejects_truncated_wav_payload(self):
+        with self.assertRaisesRegex(ValueError, "truncated WAV"):
+            inspect_audio(wav_bytes()[:-8], "truncated.wav")
+
     def test_rejects_size_and_duration_limits(self):
         with self.assertRaisesRegex(ValueError, "max_bytes"):
             inspect_audio(wav_bytes(), "a.wav", max_bytes=10)
