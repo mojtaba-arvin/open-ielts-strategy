@@ -56,6 +56,7 @@ class FakeEmbeddings:
 class FakePack:
     pack_version = "1.0.0"
     manifest_sha256 = "a" * 64
+    examples = ()
     strategies = [{
         "id": "speaking.direct-answer", "title": "Direct answer",
         "summary": "Answer directly", "purpose": ["Purpose"],
