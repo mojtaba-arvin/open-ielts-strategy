@@ -36,6 +36,10 @@ The comparison reports resolution rates and skill lift; it does not generate mod
 
 The Runtime Evaluation workflow supports paired baseline/skill fixture arms for all four skills (Writing, Speaking, Reading, and Listening). Pull requests evaluate only affected skills; manual and scheduled runs cover all four. It publishes one wiring-only scorecard per evaluated skill. Each arm records SHA-256 fingerprints for its canonical evaluation-case suite and exact skill file; aggregation rejects mismatched fingerprints. All GitHub Actions triggers (pull requests, manual dispatches, and scheduled runs) are fixture-only and make zero model calls; the workflow exposes no paid/live-model input. Fixture scores are wiring checks, not quality judgments, and do not establish educational effectiveness or Skill Lift.
 
+## Optional semantic routing
+
+The deterministic router remains the default. An opt-in loopback-only Ollama adapter can classify requests into existing skill IDs, abstain on low confidence, and fall back to deterministic routing on provider errors. Its confidence is uncalibrated; see [Semantic Routing](docs/semantic-routing.md).
+
 ## Private knowledge library
 
 The local knowledge library now has optional modules for structured local-model extraction, hybrid retrieval, source-grounded playbook drafts, a loopback-only paste UI, and bounded local document import. Start the private UI with:
