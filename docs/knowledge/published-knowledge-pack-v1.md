@@ -89,6 +89,8 @@ ielts-practice "How can I structure a direct answer?" --pack ./knowledge \
   --index-db .local/published-index.sqlite \
   --embedding-model-fingerprint sentence-transformers/model-name@revision
 ```
+
+For opt-in model-assisted query expansion and local cross-encoder reranking, add `--query-rewriting` and/or `--reranker-model-path /path/to/cached/cross-encoder`. Query rewriting uses the explicitly selected Practice generation provider and requires a valid JSON array response; it does not silently fall back. If the provider is an API service, the learner query is sent to that service. The cross-encoder loads only from the supplied local model directory. Both are optional; the deterministic baseline remains BM25/hybrid retrieval.
  Use a stable fingerprint that identifies the exact local model revision; changing either the pack manifest or model fingerprint triggers a rebuild. The index contains only published strategy text and vectors, never private source or learner data. Remote embedding providers and production benchmark calibration remain future work.
 
 ## Study, Mentor, and Example workflows
