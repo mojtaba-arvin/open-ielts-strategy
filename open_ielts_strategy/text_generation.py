@@ -7,7 +7,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Callable, Protocol
 from urllib.parse import urlparse
 
 
@@ -157,3 +157,54 @@ def build_consumption_provider(name: str, **config):
         return factories[name](**config)
     except KeyError as exc:
         raise ValueError(f"unknown consumption provider: {name}") from exc
+
+
+class FallbackTextGenerationProvider:
+    """Explicit ordered provider chain; never adds a cloud fallback implicitly.
+
+    A caller may supply a response validator (for example, a JSON contract
+    validator) so malformed structured output can trigger the next provider.
+    Remote API fallback is denied unless the caller opts in explicitly.
+    """
+
+    def __init__(self, providers: list[TextGenerationProvider], *,
+                 response_validator: Callable[[str], bool] | None = None,
+                 allow_remote_fallback: bool = False):
+        if not isinstance(providers, (list, tuple)) or not 2 <= len(providers) <= 5:
+            raise ValueError("fallback chain must contain 2..5 providers")
+        if any(not callable(getattr(provider, "generate", None)) for provider in providers):
+            raise ValueError("every fallback provider must implement generate(prompt)")
+        if response_validator is not None and not callable(response_validator):
+            raise ValueError("response_validator must be callable")
+        if type(allow_remote_fallback) is not bool:
+            raise ValueError("allow_remote_fallback must be boolean")
+        if not allow_remote_fallback and any(
+            isinstance(provider, OpenAICompatibleTextProvider) for provider in providers[1:]
+        ):
+            raise ValueError("remote API fallback requires explicit allow_remote_fallback=True")
+        self.providers = tuple(providers)
+        self.response_validator = response_validator
+
+    def generate(self, prompt: str) -> str:
+        failures = []
+        last_error = None
+        for provider in self.providers:
+            try:
+                result = provider.generate(prompt)
+                if not isinstance(result, str) or not result.strip():
+                    raise GenerationError("provider returned empty or non-text output")
+                if self.response_validator is not None:
+                    try:
+                        valid = self.response_validator(result)
+                    except (TypeError, ValueError, json.JSONDecodeError):
+                        valid = False
+                    if valid is not True:
+                        raise GenerationError("provider output failed the response contract")
+                return result
+            except (GenerationError, TimeoutError, OSError) as exc:
+                failures.append(type(exc).__name__)
+                last_error = exc
+        summary = ", ".join(failures)
+        raise GenerationError(
+            f"all configured generation providers failed ({len(failures)} attempts: {summary})"
+        ) from last_error
