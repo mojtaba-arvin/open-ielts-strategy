@@ -9,7 +9,7 @@ from pathlib import Path
 from open_ielts_strategy.enhanced_published_retrieval import EnhancedPublishedRetrievalEngine, ModelQueryRewriter
 from open_ielts_strategy.practice_evaluation import PracticeReviewStore
 from open_ielts_strategy.published_index import PublishedIndexStore
-from open_ielts_strategy.published_retrieval import _document_text
+from open_ielts_strategy.published_retrieval import _document_text, PublishedRetrievalEngine
 from open_ielts_strategy.published_mcp_http import AuthenticatedMCPMiddleware
 from open_ielts_strategy.semantic_publication_scan import scan_semantic_publication_leaks
 
@@ -75,6 +75,22 @@ class FakePack:
 
 
 class NewInfrastructureTests(unittest.TestCase):
+    def test_published_retrieval_batches_large_document_sets(self):
+        class BatchProvider:
+            def __init__(self):
+                self.batch_sizes = []
+            def encode(self, texts):
+                self.batch_sizes.append(len(texts))
+                return [[1.0, 0.0] for _ in texts]
+        pack = FakePack()
+        pack.strategies = [
+            {**FakePack.strategies[0], "id": f"speaking.strategy-{index:03d}"}
+            for index in range(130)
+        ]
+        provider = BatchProvider()
+        PublishedRetrievalEngine(pack, embedding_provider=provider)
+        self.assertEqual(provider.batch_sizes, [64, 64, 2])
+
     def test_query_expansion_and_reranking_are_explicit_and_versioned(self):
         engine = EnhancedPublishedRetrievalEngine(
             FakeBaseline(), query_rewriter=FakeRewriter(), reranker=FakeReranker()
