@@ -52,11 +52,28 @@ def get_related_published_strategies(pack: KnowledgePack, strategy_id: str) -> d
         related[relation_type] = [
             pack.get_strategy(identifier) for identifier in identifiers
         ]
+    typed_relationships = []
+    for relationship in pack.relationships:
+        if relationship["from_id"] == strategy_id:
+            related_id, direction = relationship["to_id"], "outgoing"
+        elif relationship["to_id"] == strategy_id:
+            related_id, direction = relationship["from_id"], "incoming"
+        else:
+            continue
+        related_entity = pack.get_strategy(related_id) or pack.get_concept(related_id)
+        typed_relationships.append({
+            "relationship_id": relationship["id"],
+            "type": relationship["type"],
+            "direction": direction,
+            "rationale": relationship["rationale"],
+            "related_entity": related_entity,
+        })
     return {
         "strategy_id": strategy_id,
         "pack_version": pack.pack_version,
         "manifest_sha256": pack.manifest_sha256,
         "relationships": related,
+        "typed_relationships": typed_relationships,
     }
 
 
