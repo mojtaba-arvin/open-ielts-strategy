@@ -168,7 +168,7 @@ Run an aggregate, local-only latency benchmark against the current published pac
 ielts-knowledge-benchmark --pack ./knowledge --iterations 10 --warmup 3
 ```
 
-For repeatable hybrid runs, supply a JSON array of queries, an already-cached embedding model, and optionally the persistent public index cache:
+For repeatable hybrid runs, supply a JSON array of queries, an already-cached local embedding model or the optional HTTPS OpenAI-compatible provider, and optionally the persistent public index cache:
 
 ```bash
 ielts-knowledge-benchmark --pack ./knowledge \
@@ -186,3 +186,5 @@ The report includes pack/model identity, engine/index initialization time, mean/
 An example is a separately versioned, reviewed record linked to exactly one strategy. Its contract is in `schemas/example.schema.json`; the record includes `strategy_id`, `skill`, the task, example content, strategy application, learning note, public provenance, two approval states, and its own record version. The builder checks that the referenced strategy exists and that the skill matches.
 
 Pass one or more reviewed example JSON drafts with `ielts-knowledge-publish --example ./drafts/example.json`. Retrieve a published example by ID with `ielts-learning get-example --pack ./knowledge --example-id speaking.example.direct-answer-01` or the published MCP `get_example` tool. Supplying at least one example produces a manifest with `schema_version: "1.1"`; packs without standalone examples remain schema 1.0. Source-derived examples must pass the same private rights/publication approval mapping as other records. Unreviewed model output is not automatically accepted or published. The diff and release workflow includes standalone example additions, changes, and removals, and published MCP exposes `get_example`.
+
+The alternative remote configuration uses `--embedding-provider openai-compatible --embedding-model-name text-embedding-3-small --embedding-api-key-env OPENAI_API_KEY` and, when using the persistent cache, a matching stable `--model-fingerprint`. The remote provider requires HTTPS, reads its credential only from the environment, disables redirects, bounds input/response sizes, and uses bounded retries. It sends the published pack text and search queries to the configured provider; choose this only when that data transfer is acceptable.
