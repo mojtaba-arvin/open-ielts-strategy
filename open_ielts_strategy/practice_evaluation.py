@@ -6,7 +6,7 @@ predict IELTS bands, certify examiner equivalence, or infer learner outcomes.
 from __future__ import annotations
 
 import json
-import math
+import re
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -57,11 +57,16 @@ class PracticeReviewStore:
                             (manifest_sha256, "manifest_sha256"), (output_sha256, "output_sha256")):
             if not isinstance(value, str) or not value.strip() or len(value) > 200:
                 raise ValueError(f"{name} must be non-empty bounded text")
-        self.connection.execute(
-            "INSERT INTO practice_review_items(item_id,pack_version,manifest_sha256,output_sha256) VALUES(?,?,?,?)",
-            (item_id, pack_version, manifest_sha256, output_sha256),
-        )
-        self.connection.commit()
+        if not re.fullmatch(r"[0-9a-f]{64}", manifest_sha256) or not re.fullmatch(r"[0-9a-f]{64}", output_sha256):
+            raise ValueError("manifest_sha256 and output_sha256 must be lowercase SHA-256 hex digests")
+        try:
+            self.connection.execute(
+                "INSERT INTO practice_review_items(item_id,pack_version,manifest_sha256,output_sha256) VALUES(?,?,?,?)",
+                (item_id, pack_version, manifest_sha256, output_sha256),
+            )
+            self.connection.commit()
+        except sqlite3.IntegrityError as exc:
+            raise ValueError("review item already exists or violates the local review schema") from exc
 
     def submit_review(self, item_id: str, reviewer_id: str, scores: dict[str, int], *, rationale: str = ""):
         if not isinstance(reviewer_id, str) or not reviewer_id.strip() or len(reviewer_id) > 120:
@@ -73,12 +78,15 @@ class PracticeReviewStore:
                 raise ValueError(f"{key} must be an integer from 1 to 5")
         if not isinstance(rationale, str) or len(rationale) > 4000:
             raise ValueError("rationale must be text of at most 4000 characters")
-        cursor = self.connection.execute(
-            "INSERT INTO practice_reviews(item_id,reviewer_id,rubric_json,rationale) VALUES(?,?,?,?)",
-            (item_id, reviewer_id, json.dumps(scores, sort_keys=True), rationale),
-        )
-        self.connection.commit()
-        return cursor.rowcount == 1
+        try:
+            cursor = self.connection.execute(
+                "INSERT INTO practice_reviews(item_id,reviewer_id,rubric_json,rationale) VALUES(?,?,?,?)",
+                (item_id, reviewer_id, json.dumps(scores, sort_keys=True), rationale),
+            )
+            self.connection.commit()
+            return cursor.rowcount == 1
+        except sqlite3.IntegrityError as exc:
+            raise ValueError("unknown review item or reviewer has already submitted a rating") from exc
 
     def calibration_report(self) -> dict[str, Any]:
         rows = self.connection.execute(
