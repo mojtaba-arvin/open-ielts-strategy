@@ -6,6 +6,7 @@ from pathlib import Path
 
 from open_ielts_strategy.knowledge_pack import load_knowledge_pack
 from open_ielts_strategy.published_retrieval import PublishedRetrievalEngine
+from open_ielts_strategy.published_index import PublishedIndexStore
 
 
 class FakeEmbeddings:
@@ -90,9 +91,6 @@ class PublishedRetrievalTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
-from open_ielts_strategy.published_index import PublishedIndexStore
 
 
 class CountingEmbeddings:
