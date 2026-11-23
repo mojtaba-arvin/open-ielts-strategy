@@ -4,10 +4,16 @@ import argparse
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="ielts", description="Open IELTS Strategy product command line.")
-    parser.add_argument("command", choices=("knowledge-status", "study", "mentor", "mentor-chat", "practice", "practice-evaluate", "mcp"))
+    parser.add_argument("command", choices=("knowledge-status", "knowledge-publish", "knowledge-diff", "knowledge-release", "study", "mentor", "mentor-chat", "practice", "practice-evaluate", "mcp"))
     args, remainder = parser.parse_known_args(argv)
     if args.command == "knowledge-status":
         from .knowledge_pack_status import main as run
+    elif args.command == "knowledge-publish":
+        from .knowledge_publish_cli import main as run
+    elif args.command == "knowledge-diff":
+        from .knowledge_diff_cli import main as run
+    elif args.command == "knowledge-release":
+        from .knowledge_release import main as run
     elif args.command in {"study", "mentor", "mentor-chat"}:
         from .published_learning_cli import main as run
         remainder.insert(0, args.command)

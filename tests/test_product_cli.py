@@ -11,6 +11,21 @@ class ProductCliTests(unittest.TestCase):
         with patch("open_ielts_strategy.published_practice_cli.main", return_value=0) as run:
             self.assertEqual(main(["practice", "question", "--model", "local"]), 0)
             run.assert_called_once_with(["question", "--model", "local"])
+    def test_knowledge_publish_delegates(self):
+        with patch("open_ielts_strategy.knowledge_publish_cli.main", return_value=0) as run:
+            self.assertEqual(main(["knowledge-publish", "--strategy", "draft.json"]), 0)
+            run.assert_called_once_with(["--strategy", "draft.json"])
+
+    def test_knowledge_diff_delegates(self):
+        with patch("open_ielts_strategy.knowledge_diff_cli.main", return_value=0) as run:
+            self.assertEqual(main(["knowledge-diff", "--current", "a", "--candidate", "b"]), 0)
+            run.assert_called_once_with(["--current", "a", "--candidate", "b"])
+
+    def test_knowledge_release_delegates(self):
+        with patch("open_ielts_strategy.knowledge_release.main", return_value=0) as run:
+            self.assertEqual(main(["knowledge-release", "approve"]), 0)
+            run.assert_called_once_with(["approve"])
+
     def test_unknown_command_is_rejected(self):
         with self.assertRaises(SystemExit):
             main(["not-a-command"])
