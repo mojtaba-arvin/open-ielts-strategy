@@ -69,3 +69,47 @@ def validate_annotation_set(source_text: str, annotations: list[dict]) -> list[d
             raise ValueError("annotation text does not match source offsets")
         result.append(dict(item))
     return result
+
+
+def evaluate_source_extraction(store, source_id: str, annotations: list[dict], *,
+                               model_name: str | None = None,
+                               prompt_version: str | None = None) -> dict:
+    """Evaluate the latest matching local extraction per segment; return metrics, never source text."""
+    from .knowledge_pipeline import list_semantic_items
+
+    source = store.get_source(source_id, include_body=True)
+    if not source["body"]:
+        raise ValueError("source body was purged; exact-span evaluation is no longer possible")
+    gold = validate_annotation_set(source["body"], annotations)
+    items = list_semantic_items(store, source_id)
+    if model_name is not None:
+        items = [item for item in items if item["model_name"] == model_name]
+    if prompt_version is not None:
+        items = [item for item in items if item["prompt_version"] == prompt_version]
+    if not items:
+        raise ValueError("no semantic extraction items match the requested source/model/prompt")
+    latest_by_segment = {}
+    for item in items:
+        current = latest_by_segment.get(item["segment_id"])
+        if current is None or item["created_at"] > current["created_at"]:
+            latest_by_segment[item["segment_id"]] = item
+    selected = list(latest_by_segment.values())
+    model_names = sorted({item["model_name"] for item in selected})
+    prompt_versions = sorted({item["prompt_version"] for item in selected})
+    if len(model_names) != 1 or len(prompt_versions) != 1:
+        raise ValueError("selected extraction items span multiple models or prompt versions; filter explicitly")
+    predicted = [{
+        "kind": item["kind"], "text": item["text"],
+        "start_char": item["start_char"], "end_char": item["end_char"],
+    } for item in selected]
+    metrics = evaluate_extraction(predicted, gold)
+    return {
+        "source_id": source_id,
+        "source_sha256": source["content_sha256"],
+        "model_name": model_names[0],
+        "prompt_version": prompt_versions[0],
+        "evaluated_item_count": len(predicted),
+        "annotation_count": len(gold),
+        "metrics": metrics,
+        "source_text_included_in_output": False,
+    }
