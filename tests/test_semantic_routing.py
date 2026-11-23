@@ -46,6 +46,12 @@ class SemanticRoutingTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_route({"skill_id": None, "confidence": float("nan"), "reason": ""})
 
+    def test_unhashable_skill_and_overflowing_confidence_are_rejected(self):
+        with self.assertRaises(ValueError):
+            validate_route({"skill_id": [], "confidence": 0.9, "reason": ""})
+        with self.assertRaises(ValueError):
+            validate_route({"skill_id": None, "confidence": 10 ** 1000, "reason": ""})
+
     def test_remote_endpoint_is_rejected(self):
         with self.assertRaises(ValueError):
             OllamaRoutingProvider("qwen", "https://remote.example/api/generate")
