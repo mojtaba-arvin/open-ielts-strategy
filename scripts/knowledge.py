@@ -10,6 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from open_ielts_strategy.document_import import import_document
+from open_ielts_strategy.knowledge_pipeline import list_semantic_items, review_semantic_item
 from open_ielts_strategy.knowledge_store import (
     DEFAULT_DB_PATH,
     CARD_STATUSES,
@@ -72,6 +73,14 @@ def build_parser():
     delete = commands.add_parser("delete-source", help="Delete a source and all derived cards/relations")
     delete.add_argument("source_id")
     delete.add_argument("--confirm", action="store_true", help="Required confirmation for destructive deletion")
+
+    semantic = commands.add_parser("semantic-items", help="List semantic extraction drafts for a source")
+    semantic.add_argument("source_id")
+
+    semantic_review = commands.add_parser("review-semantic", help="Review one semantic extraction item")
+    semantic_review.add_argument("item_id")
+    semantic_review.add_argument("--status", required=True, choices=sorted(CARD_STATUSES))
+    semantic_review.add_argument("--note", default="")
     return parser
 
 
@@ -117,6 +126,10 @@ def main(argv=None):
                 if not args.confirm:
                     raise ValueError("source deletion is destructive; pass --confirm to proceed")
                 emit(store.delete_source(args.source_id))
+            elif args.command == "semantic-items":
+                emit(list_semantic_items(store, args.source_id))
+            elif args.command == "review-semantic":
+                emit(review_semantic_item(store, args.item_id, args.status, args.note))
     except (OSError, UnicodeError, ValueError, KeyError, RuntimeError, sqlite3.Error) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
