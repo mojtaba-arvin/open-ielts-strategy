@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -19,7 +20,13 @@ from .knowledge_pack import KnowledgePack
 class PublishedIndexStore:
     def __init__(self, path: str | Path):
         self.path = str(path)
+        if self.path != ":memory:":
+            db_path = Path(self.path).expanduser()
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            self.path = str(db_path)
         self.connection = sqlite3.connect(self.path)
+        if self.path != ":memory:":
+            os.chmod(self.path, 0o600)
         self.connection.execute("PRAGMA journal_mode=WAL")
         self.connection.execute("PRAGMA synchronous=FULL")
         self.connection.executescript("""
