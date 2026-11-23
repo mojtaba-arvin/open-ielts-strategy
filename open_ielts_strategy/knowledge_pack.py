@@ -299,6 +299,95 @@ def _validate_example(item: Any, relative: str) -> dict[str, Any]:
     return item
 
 
+
+def _validate_strategy_consistency(strategies: list[dict], relationships: list[dict],
+                                   entity_ids: set[str]) -> None:
+    """Reject contradictory or cyclic published strategy relationships."""
+    strategies_by_id = {item["id"]: item for item in strategies}
+    conflict_pairs: set[frozenset[str]] = set()
+    required_pairs: set[frozenset[str]] = set()
+    complement_pairs: set[frozenset[str]] = set()
+    graph: dict[str, set[str]] = {identifier: set() for identifier in entity_ids}
+
+    for item in strategies:
+        source = item["id"]
+        relation_map = item["relationships"]
+        for relation_type, targets in relation_map.items():
+            if len(targets) != len(set(targets)):
+                raise KnowledgePackError(
+                    f"{source}: duplicate {relation_type} relationship"
+                )
+            if source in targets:
+                raise KnowledgePackError(
+                    f"{source}: a strategy cannot relate to itself ({relation_type})"
+                )
+            for target in targets:
+                pair = frozenset((source, target))
+                if relation_type == "conflicts_with":
+                    conflict_pairs.add(pair)
+                    reverse = strategies_by_id[target]["relationships"]["conflicts_with"]
+                    if source not in reverse:
+                        raise KnowledgePackError(
+                            f"{source}: conflicts_with must be reciprocal with {target}"
+                        )
+                elif relation_type == "requires":
+                    required_pairs.add(pair)
+                    graph[source].add(target)
+                elif relation_type == "complements":
+                    complement_pairs.add(pair)
+
+    seen_relationships: set[tuple[str, str, str]] = set()
+    for item in relationships:
+        source, target, relation_type = item["from_id"], item["to_id"], item["type"]
+        if source == target:
+            raise KnowledgePackError(
+                f"{item['id']}: a relationship cannot connect an entity to itself"
+            )
+        key = (source, target, relation_type)
+        if key in seen_relationships:
+            raise KnowledgePackError(
+                f"{item['id']}: duplicate {relation_type} relationship for {source} -> {target}"
+            )
+        seen_relationships.add(key)
+        pair = frozenset((source, target))
+        if relation_type == "conflicts_with":
+            conflict_pairs.add(pair)
+        elif relation_type == "requires":
+            required_pairs.add(pair)
+            graph[source].add(target)
+        elif relation_type == "complements":
+            complement_pairs.add(pair)
+
+    for source, target, relation_type in seen_relationships:
+        if relation_type == "conflicts_with" and (target, source, relation_type) not in seen_relationships:
+            raise KnowledgePackError(
+                f"conflicts_with relationship must be reciprocal for {source} and {target}"
+            )
+
+    contradictions = conflict_pairs & (required_pairs | complement_pairs)
+    if contradictions:
+        pair = sorted(next(iter(contradictions)))
+        raise KnowledgePackError(
+            f"contradictory relationships: entities {pair} cannot both conflict and require/complement each other"
+        )
+
+    indegree = {identifier: 0 for identifier in graph}
+    for targets in graph.values():
+        for target in targets:
+            indegree[target] += 1
+    ready = [identifier for identifier, degree in indegree.items() if degree == 0]
+    visited = 0
+    while ready:
+        source = ready.pop()
+        visited += 1
+        for target in graph[source]:
+            indegree[target] -= 1
+            if indegree[target] == 0:
+                ready.append(target)
+    if visited != len(graph):
+        raise KnowledgePackError("requires relationships contain a dependency cycle")
+
+
 def load_knowledge_pack(path: str | Path) -> KnowledgePack:
     """Load and verify a directory pack; no database, network, or LLM is required."""
     root = Path(path).expanduser().resolve(strict=True)
@@ -409,6 +498,7 @@ def load_knowledge_pack(path: str | Path) -> KnowledgePack:
     for item in relationships:
         if item["from_id"] not in entity_ids or item["to_id"] not in entity_ids:
             raise KnowledgePackError(f"{item['id']}: relationship references an unknown entity")
+    _validate_strategy_consistency(strategies, relationships, entity_ids)
     for item in learning_paths:
         missing = sorted({step["strategy_id"] for step in item["steps"]} - strategy_ids)
         if missing:
