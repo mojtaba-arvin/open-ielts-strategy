@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -74,7 +75,8 @@ def main(argv=None):
                 if args.input == "-":
                     body = sys.stdin.read()
                 else:
-                    body = Path(args.input).read_text(encoding="utf-8")
+                    with Path(args.input).open("r", encoding="utf-8", newline="") as source_file:
+                        body = source_file.read()
                 result = store.ingest_text(
                     body,
                     title=args.title,
@@ -97,7 +99,7 @@ def main(argv=None):
                 emit(store.review_card(args.card_id, args.status, args.note))
             elif args.command == "link":
                 emit(store.link_cards(args.from_card_id, args.to_card_id, args.relation, args.note))
-    except (OSError, UnicodeError, ValueError, KeyError, RuntimeError) as exc:
+    except (OSError, UnicodeError, ValueError, KeyError, RuntimeError, sqlite3.Error) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
     return 0
