@@ -42,7 +42,7 @@ The deterministic router remains the default. An opt-in loopback-only Ollama ada
 
 ## Private knowledge library
 
-The local knowledge library now has optional modules for structured local-model extraction, hybrid retrieval, source-grounded playbook drafts, a loopback-only paste UI, and bounded local document import. Start the private UI with:
+The local knowledge library now has optional modules for structured local-model extraction, hybrid retrieval, source-grounded playbook drafts, a loopback-only paste UI, bounded local document import, and a private extraction-evaluation CLI. Start the private UI with:
 
 ```bash
 python scripts/knowledge_web.py --port 8765

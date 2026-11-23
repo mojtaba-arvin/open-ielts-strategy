@@ -18,7 +18,17 @@ Before reporting a human-reviewed benchmark:
 6. Report sample size, confidence intervals, disagreements, exclusions, and known selection bias.
 7. Do not publish source text or private reviewer identity/evidence without explicit rights and privacy approval.
 
-No reviewer credentials are authenticated by this code. No human ratings are present in the repository. Until the protocol is completed, use only synthetic regression metrics and do not make educational or score-improvement claims.
+A local CLI can evaluate stored semantic items against a private JSON annotation file without printing source text:
+
+```bash
+python scripts/evaluate_knowledge_extraction.py \
+  --source-id src_ID \
+  --annotations ~/PrivateIELTS/annotations/source-01.json \
+  --model-name qwen3:8b \
+  --prompt-version knowledge-extract-v1
+```
+
+The command selects the latest matching extraction per segment, emits only counts, hashes, model/prompt identifiers, and exact-match metrics, and refuses to evaluate after the raw source body has been purged. Keep annotation JSON outside Git. No reviewer credentials are authenticated by this code. No human ratings are present in the repository. Until the protocol is completed, use only synthetic regression metrics and do not make educational or score-improvement claims.
 
 ## Security and privacy review
 
