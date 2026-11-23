@@ -1,5 +1,7 @@
 import hashlib
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -92,6 +94,43 @@ class PublishedKnowledgePackTests(unittest.TestCase):
             manifest = json.loads((root / "manifest.json").read_text())
             manifest["files"][0]["path"] = "../outside.json"
             (root / "manifest.json").write_text(json.dumps(manifest))
+            with self.assertRaises(KnowledgePackError):
+                load_knowledge_pack(root)
+
+
+    def test_loader_import_does_not_load_private_database_or_extraction_modules(self):
+        code = (
+            "import sys; import open_ielts_strategy.knowledge_pack; "
+            "assert 'sqlite3' not in sys.modules; "
+            "assert 'open_ielts_strategy.knowledge_store' not in sys.modules; "
+            "assert 'open_ielts_strategy.semantic_extraction' not in sys.modules"
+        )
+        result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_rejects_malformed_field_types_without_leaking_type_errors(self):
+        for record in (strategy(skill=[]), strategy(id=[]), strategy(schema_version=[])):
+            with self.subTest(record=record), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                self.make_pack(root, record)
+                with self.assertRaises(KnowledgePackError):
+                    load_knowledge_pack(root)
+
+    def test_rejects_symlinked_pack_entries(self):
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as outside:
+            root = Path(tmp)
+            self.make_pack(root)
+            target = Path(outside) / "external.json"
+            target.write_text(json.dumps(strategy()), encoding="utf-8")
+            item = root / "strategies/speaking/answer-development.json"
+            item.unlink()
+            try:
+                item.symlink_to(target)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks are unavailable on this platform")
+            manifest = json.loads((root / "manifest.json").read_text())
+            manifest["files"][0]["sha256"] = hashlib.sha256(target.read_bytes()).hexdigest()
+            (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
             with self.assertRaises(KnowledgePackError):
                 load_knowledge_pack(root)
 
