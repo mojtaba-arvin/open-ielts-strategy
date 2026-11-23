@@ -74,7 +74,7 @@ class KnowledgeReleaseApprovalTests(unittest.TestCase):
         self.assertIn('"rolled_back": true', output.getvalue())
 
     def test_direct_default_branch_publication_is_rejected(self):
-        with self.assertRaisesRegex(ValueError, "non-default release branch"):
+        with self.assertRaisesRegex(ValueError, "dedicated release branch"):
             publish_pack(
                 ".", "candidate", "knowledge", approval_path="approval.json",
                 branch="main", expected_head="a" * 40, key=self.key,
