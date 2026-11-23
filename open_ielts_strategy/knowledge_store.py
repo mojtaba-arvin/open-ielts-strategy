@@ -114,15 +114,19 @@ def segment_text(text: str, max_chars: int = MAX_SEGMENT_CHARS) -> list[dict]:
         raise ValueError("max_chars must be an integer of at least 200")
 
     spans = []
-    paragraph_matches = re.finditer(r"\S.*?(?=\n[ \t]*\n|\Z)", text, re.DOTALL)
+    paragraph_matches = re.finditer(r"\\S.*?(?=\\n[ \\t]*\\n|\\Z)", text, re.DOTALL)
     for paragraph_number, match in enumerate(paragraph_matches, start=1):
-        spans.extend(_split_long_span(text, match.start(), match.end(), max_chars))
+        paragraph_spans = _split_long_span(text, match.start(), match.end(), max_chars)
+        for part_number, (start, end) in enumerate(paragraph_spans, start=1):
+            spans.append((paragraph_number, part_number, start, end))
 
     segments = []
-    for ordinal, (start, end) in enumerate(spans, start=1):
+    for ordinal, (paragraph_number, part_number, start, end) in enumerate(spans, start=1):
         passage = text[start:end]
         timestamp_match = TIMESTAMP_RE.match(passage)
-        locator = {"paragraph": ordinal}
+        locator = {"paragraph": paragraph_number}
+        if part_number > 1:
+            locator["part"] = part_number
         if timestamp_match:
             locator["timestamp"] = timestamp_match.group(1)
         segments.append({
