@@ -199,3 +199,121 @@ def purge_source_text(store, source_id: str, *, confirm: bool = False) -> dict:
         "raw_body_retained": False,
         "note": "Exact source text cannot be re-verified after purge; item offsets and original hash remain as provenance metadata.",
     }
+
+
+PUBLICATION_REVIEW_STATUSES = {"pending", "approved", "rejected"}
+PUBLICATION_RIGHTS_BASES = {
+    "self_authored", "permission_confirmed", "public_domain", "independently_authored",
+}
+
+
+def _ensure_publication_schema(store):
+    """Create private publication-review metadata without changing content-review state."""
+    _ensure_schema(store)
+    store._connection.executescript("""
+    CREATE TABLE IF NOT EXISTS publication_reviews (
+        item_id TEXT PRIMARY KEY REFERENCES semantic_items(item_id) ON DELETE CASCADE,
+        publication_status TEXT NOT NULL CHECK(publication_status IN ('pending', 'approved', 'rejected')),
+        rights_basis TEXT,
+        reviewer TEXT NOT NULL,
+        note TEXT NOT NULL DEFAULT '',
+        reviewed_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_publication_reviews_status
+        ON publication_reviews(publication_status);
+    """)
+    store._connection.commit()
+
+
+def review_publication_item(store, item_id: str, status: str, *,
+                            reviewer: str, rights_basis: str | None = None,
+                            note: str = "") -> dict:
+    """Record publication permission separately from educational/content approval.
+
+    Rights evidence and reviewer notes remain private SQLite metadata and are never
+    copied into the public Knowledge Pack.
+    """
+    if not isinstance(item_id, str) or not item_id.startswith("sitem_"):
+        raise ValueError("item_id must identify a semantic extraction item")
+    if status not in PUBLICATION_REVIEW_STATUSES:
+        raise ValueError("invalid publication review status")
+    if not isinstance(reviewer, str) or not reviewer.strip() or len(reviewer) > 200:
+        raise ValueError("reviewer must be non-empty text no longer than 200 characters")
+    if not isinstance(note, str) or len(note) > 4000:
+        raise ValueError("publication review note must be text no longer than 4000 characters")
+    if status == "approved" and rights_basis not in PUBLICATION_RIGHTS_BASES:
+        raise ValueError("publication approval requires an explicit publishable rights basis")
+    if rights_basis is not None and rights_basis not in PUBLICATION_RIGHTS_BASES:
+        raise ValueError("unsupported publication rights basis")
+    _ensure_publication_schema(store)
+    item = store._connection.execute(
+        "SELECT status FROM semantic_items WHERE item_id=?", (item_id,)
+    ).fetchone()
+    if item is None:
+        raise KeyError(f"unknown semantic item: {item_id}")
+    if status == "approved" and item["status"] not in {"user_approved", "supported"}:
+        raise ValueError("content approval must be completed before publication approval")
+    reviewed_at = _now()
+    with store._connection:
+        store._connection.execute(
+            """INSERT INTO publication_reviews
+               (item_id, publication_status, rights_basis, reviewer, note, reviewed_at)
+               VALUES (?, ?, ?, ?, ?, ?)
+               ON CONFLICT(item_id) DO UPDATE SET
+                 publication_status=excluded.publication_status,
+                 rights_basis=excluded.rights_basis,
+                 reviewer=excluded.reviewer,
+                 note=excluded.note,
+                 reviewed_at=excluded.reviewed_at""",
+            (item_id, status, rights_basis, reviewer.strip(), note, reviewed_at),
+        )
+    return {
+        "item_id": item_id,
+        "content_status": item["status"],
+        "publication_status": status,
+        "rights_basis": rights_basis,
+        "reviewer": reviewer.strip(),
+        "reviewed_at": reviewed_at,
+        "private_note_stored": bool(note),
+    }
+
+
+def get_publication_review(store, item_id: str) -> dict:
+    _ensure_publication_schema(store)
+    row = store._connection.execute(
+        """SELECT item_id, publication_status, rights_basis, reviewer, note, reviewed_at
+           FROM publication_reviews WHERE item_id=?""",
+        (item_id,),
+    ).fetchone()
+    if row is None:
+        raise KeyError(f"no publication review exists for semantic item: {item_id}")
+    return dict(row)
+
+
+def assert_items_publishable(store, item_ids: list[str]) -> list[dict]:
+    """Fail closed unless every source-derived item has both approvals and rights basis."""
+    if not isinstance(item_ids, list) or not item_ids or any(not isinstance(x, str) for x in item_ids):
+        raise ValueError("item_ids must be a non-empty list of semantic item IDs")
+    if len(item_ids) != len(set(item_ids)):
+        raise ValueError("item_ids must be unique")
+    _ensure_publication_schema(store)
+    approved = []
+    for item_id in item_ids:
+        row = store._connection.execute(
+            """SELECT i.item_id, i.status AS content_status,
+                      p.publication_status, p.rights_basis, p.reviewer, p.reviewed_at
+               FROM semantic_items i
+               LEFT JOIN publication_reviews p ON p.item_id=i.item_id
+               WHERE i.item_id=?""",
+            (item_id,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(f"unknown semantic item: {item_id}")
+        if row["content_status"] not in {"user_approved", "supported"}:
+            raise ValueError(f"content approval is missing for semantic item: {item_id}")
+        if row["publication_status"] != "approved":
+            raise ValueError(f"publication approval is missing for semantic item: {item_id}")
+        if row["rights_basis"] not in PUBLICATION_RIGHTS_BASES:
+            raise ValueError(f"publishable rights basis is missing for semantic item: {item_id}")
+        approved.append(dict(row))
+    return approved
