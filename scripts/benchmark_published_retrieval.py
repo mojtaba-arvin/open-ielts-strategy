@@ -62,7 +62,9 @@ def benchmark(pack_path: str, *, queries: list[str] | None = None,
                 pack, model_fingerprint=model_fingerprint,
                 query_provider=embedding_provider,
             )
+        engine_started = time.perf_counter()
         engine = PublishedRetrievalEngine(pack, embedding_provider=embedding_provider)
+        engine_build_seconds = time.perf_counter() - engine_started
         for _ in range(warmup):
             for query in queries:
                 engine.search(query, limit=10)
@@ -86,6 +88,7 @@ def benchmark(pack_path: str, *, queries: list[str] | None = None,
             "warmup_iterations": warmup,
             "measured_searches": total,
             "index_build_seconds": round(index_build_seconds, 6) if index_build_seconds is not None else None,
+            "engine_build_seconds": round(engine_build_seconds, 6),
             "latency_seconds": {
                 "mean": round(statistics.fmean(samples), 6),
                 "p50": round(percentile(samples, .50), 6),
