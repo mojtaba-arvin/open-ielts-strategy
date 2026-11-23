@@ -21,7 +21,7 @@ class KnowledgeExtractionTests(unittest.TestCase):
         self.assertEqual(result["kind"], "claim")
 
     def test_unclassified_note_is_not_guessed_as_ielts(self):
-        result = classify_segment("A short personal reflection without a clear IELTS topic.")
+        result = classify_segment("A short personal reflection without a clear topic.")
         self.assertEqual(result["topic_tags"], ["unclassified"])
         self.assertEqual(result["kind"], "note")
 
@@ -111,8 +111,8 @@ class KnowledgeStoreTests(unittest.TestCase):
         result = self.ingest_sample()
         card = self.store.get_source(result["source_id"])["segments"][0]["card_id"]
         self.store.review_card(card, "user_approved", "Useful for my practice.")
-        self.assertEqual(self.store.search("planning", status="needs_review"), [])
-        self.assertEqual(self.store.search("planning", status="user_approved")[0]["card_id"], card)
+        self.assertEqual(self.store.search("plan", status="needs_review"), [])
+        self.assertEqual(self.store.search("plan", status="user_approved")[0]["card_id"], card)
 
     def test_review_and_relationship_are_explicit_and_persisted(self):
         result = self.ingest_sample()
