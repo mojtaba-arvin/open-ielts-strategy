@@ -52,19 +52,30 @@ def build_knowledge_pack(strategies: list[dict[str, Any]], destination: str | Pa
     unknown_mappings = set(source_item_ids_by_strategy) - known
     if unknown_mappings:
         raise KnowledgePackError(f"source approval mapping references unknown strategies: {sorted(unknown_mappings)}")
-    all_source_items = []
-    for strategy_id, item_ids in source_item_ids_by_strategy.items():
-        if not isinstance(item_ids, list) or not item_ids:
-            raise KnowledgePackError(f"{strategy_id}: source item mapping must be a non-empty list")
-        all_source_items.extend(item_ids)
-    if all_source_items:
-        if store is None:
-            raise KnowledgePackError("private SQLite store is required to verify source-derived approvals")
-        from .knowledge_pipeline import assert_items_publishable
-        try:
-            assert_items_publishable(store, all_source_items)
-        except (ValueError, KeyError) as exc:
-            raise KnowledgePackError("one or more source-derived items failed publication approval") from exc
+    expected_rights_basis = {
+        "original": "self_authored",
+        "independently_authored": "independently_authored",
+        "public_domain": "public_domain",
+        "permissioned": "permission_confirmed",
+    }
+    from .knowledge_pipeline import assert_items_publishable
+    for item in validated:
+        strategy_id = item["id"]
+        item_ids = source_item_ids_by_strategy.get(strategy_id, [])
+        if item["provenance"]["basis"] != "original" and not item_ids:
+            raise KnowledgePackError(f"{strategy_id}: source-derived provenance requires private publication-review IDs")
+        if item_ids:
+            if not isinstance(item_ids, list) or any(not isinstance(value, str) for value in item_ids):
+                raise KnowledgePackError(f"{strategy_id}: source item mapping must be a list of IDs")
+            if store is None:
+                raise KnowledgePackError("private SQLite store is required to verify source-derived approvals")
+            try:
+                approvals = assert_items_publishable(store, list(dict.fromkeys(item_ids)))
+            except (ValueError, KeyError) as exc:
+                raise KnowledgePackError(f"{strategy_id}: source-derived items failed publication approval") from exc
+            required_basis = expected_rights_basis[item["provenance"]["basis"]]
+            if any(record["rights_basis"] != required_basis for record in approvals):
+                raise KnowledgePackError(f"{strategy_id}: private publication rights basis does not match public provenance")
 
     root = Path(destination).expanduser().absolute()
     if root.exists():
