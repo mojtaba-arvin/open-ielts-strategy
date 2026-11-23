@@ -203,6 +203,15 @@ class PublishedKnowledgePackTests(unittest.TestCase):
             with self.assertRaisesRegex(KnowledgePackError, "unknown strategies"):
                 load_knowledge_pack(root)
 
+
+    def test_rejects_unmanifested_private_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.make_pack(root)
+            (root / "private-transcript.txt").write_text("private transcript must not be in the pack")
+            with self.assertRaisesRegex(KnowledgePackError, "manifest/file-set mismatch"):
+                load_knowledge_pack(root)
+
     def test_rejects_unknown_relationship_targets(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
