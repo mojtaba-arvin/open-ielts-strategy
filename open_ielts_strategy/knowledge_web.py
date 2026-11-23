@@ -172,8 +172,8 @@ def make_handler(db_path: str):
                 self._send(html.escape(str(exc)), 400)
 
         def log_message(self, fmt, *args):
-            # Never log request bodies or learner source text.
-            super().log_message(fmt, *args)
+            # Default HTTP logging includes the request target, which may contain private search terms.
+            return
 
     return Handler
 
