@@ -30,7 +30,7 @@ jobs:
         run: python -m pip install --no-deps .
       - name: Validate optional Streamable HTTP MCP transport
         run: |
-          python -m pip install '.[http-mcp]'
+          python -m pip install '.[http-mcp,redis-rate-limit]'
           python -c "from mcp.server.fastmcp import FastMCP; server = FastMCP('ci'); assert callable(server.streamable_http_app)"
       - name: Build published MCP container
         run: docker build -f Dockerfile.published-mcp -t open-ielts-strategy/published-mcp:ci .
