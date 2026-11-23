@@ -1,5 +1,6 @@
 """Fail-closed release claim register validation; no model or network access."""
 import ast
+import os
 import re
 import tomllib
 from datetime import datetime
@@ -85,11 +86,16 @@ def validate_release_preflight(root: Path, release_tag: str | None = None) -> li
     except OSError as exc:
         errors.append(f"package __init__.py is missing or unreadable: {exc}")
     else:
-        match = re.search(r"^__version__\s*=\s*['\\"]([^'\\"]+)['\\"]", init_text, re.MULTILINE)
-        if match is None:
+        version_line = next(
+            (line for line in init_text.splitlines() if line.strip().startswith("__version__")),
+            None,
+        )
+        if version_line is None or "=" not in version_line:
             errors.append("package __init__.py must declare __version__")
-        elif version is not None and match.group(1) != version:
-            errors.append("package __version__ does not match project.version")
+        else:
+            declared_version = version_line.split("=", 1)[1].strip().strip("'\\\"")
+            if version is not None and declared_version != version:
+                errors.append("package __version__ does not match project.version")
 
     if release_tag is not None:
         if not isinstance(release_tag, str) or not re.fullmatch(r"v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", release_tag):
@@ -153,7 +159,7 @@ def main():
         print(f"RELEASE GATE FAILED: {exc}")
         return 1
     errors = validate_claim_registry(data)
-    errors.extend(validate_release_preflight(Path(__file__).resolve().parents[1], __import__("os").environ.get("RELEASE_TAG")))
+    errors.extend(validate_release_preflight(Path(__file__).resolve().parents[1], os.environ.get("RELEASE_TAG")))
     if errors:
         print("RELEASE GATE FAILED\n" + "\n".join("- " + error for error in errors))
         return 1
