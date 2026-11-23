@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import uuid
 from pathlib import Path
@@ -14,6 +15,8 @@ class PracticeSessionStore:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._connection = sqlite3.connect(str(self.path))
+        if os.name != "nt":
+            os.chmod(self.path, 0o600)
         self._connection.row_factory = sqlite3.Row
         self._connection.execute("PRAGMA foreign_keys = ON")
         self._connection.executescript("""

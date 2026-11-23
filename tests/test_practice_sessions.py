@@ -1,3 +1,4 @@
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -17,6 +18,8 @@ class PracticeSessionStoreTests(unittest.TestCase):
                 )
                 self.assertEqual(attempt["assessment"]["review_status"], "pending")
                 self.assertEqual(store.get_session(session["id"])["attempt_count"], 1)
+                if os.name != "nt":
+                    self.assertEqual(path.stat().st_mode & 0o777, 0o600)
             with PracticeSessionStore(path) as reopened:
                 self.assertEqual(reopened.get_session(session["id"])["attempts"][0]["answer"],
                                  "I like the park because...")
