@@ -145,6 +145,27 @@ class NewInfrastructureTests(unittest.TestCase):
         self.assertEqual(asyncio.run(request()), 204)
         self.assertEqual(asyncio.run(request()), 429)
 
+    def test_http_middleware_rejects_chunked_body_over_limit(self):
+        async def app(scope, receive, send):
+            await receive()
+            await send({"type": "http.response.start", "status": 204, "headers": []})
+            await send({"type": "http.response.body", "body": b""})
+        middleware = AuthenticatedMCPMiddleware(
+            app, token="b" * 40, allowed_hosts={"localhost"}, max_body_bytes=1024,
+        )
+        async def run():
+            messages = []
+            async def receive():
+                return {"type": "http.request", "body": b"x" * 1025, "more_body": False}
+            async def send(message):
+                messages.append(message)
+            await middleware({"type": "http", "method": "POST", "path": "/mcp",
+                              "headers": [(b"authorization", b"Bearer " + b"b" * 40),
+                                          (b"host", b"localhost")],
+                              "client": ("127.0.0.1", 1)}, receive, send)
+            return messages[0]["status"]
+        self.assertEqual(asyncio.run(run()), 413)
+
     def test_http_middleware_exposes_only_health_without_token(self):
         async def app(scope, receive, send):
             await send({"type": "http.response.start", "status": 204, "headers": []})
