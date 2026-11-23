@@ -119,3 +119,23 @@ def list_semantic_items(store, source_id: str) -> list[dict]:
         {**dict(row), "topic_tags": json.loads(row["topic_tags_json"])}
         for row in rows
     ]
+
+
+def review_semantic_item(store, item_id: str, status: str, note: str = "") -> dict:
+    """Human-review one extracted semantic item without changing its source text."""
+    allowed = {"needs_review", "supported", "conflicting", "user_approved", "superseded", "rejected"}
+    if not isinstance(item_id, str) or not item_id.startswith("sitem_"):
+        raise ValueError("item_id must identify a semantic item")
+    if status not in allowed:
+        raise ValueError("invalid semantic review status")
+    if not isinstance(note, str) or len(note) > 4000:
+        raise ValueError("review note must be text no longer than 4000 characters")
+    _ensure_schema(store)
+    with store._connection:
+        cursor = store._connection.execute(
+            "UPDATE semantic_items SET status=?, rationale=CASE WHEN ?='' THEN rationale ELSE ? END WHERE item_id=?",
+            (status, note, note, item_id),
+        )
+        if cursor.rowcount != 1:
+            raise KeyError(f"unknown semantic item: {item_id}")
+    return {"item_id": item_id, "status": status, "review_note_updated": bool(note)}
