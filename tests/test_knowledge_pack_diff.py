@@ -45,6 +45,15 @@ class PublicationDiffTests(unittest.TestCase):
             self.assertFalse(result["git_commit_created"])
             self.assertTrue(result["requires_human_review"])
 
+
+    def test_diff_requires_version_bump_when_records_change(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            make_pack(root / "current", "1.0.0", "Develop a direct answer.")
+            make_pack(root / "candidate", "1.0.0", "Develop a direct answer with detail.")
+            with self.assertRaisesRegex(ValueError, "version must change"):
+                diff_pack_directories(str(root / "current"), str(root / "candidate"))
+
     def test_diff_blocks_secret_like_candidate_content(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
