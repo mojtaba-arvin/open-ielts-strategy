@@ -31,3 +31,13 @@ All third-party actions are pinned to full commit SHAs. Workflows must declare e
 The knowledge importer stores learner-supplied text only in an ignored local SQLite database. It makes no network requests and never executes commands, links, markup, macros, or instructions found in source text. The database and source text must not be uploaded to CI artifacts, issues, logs, or public fixtures. File permissions are best-effort and are not encryption; use disk encryption and private backups.
 
 Any future LLM extraction or retrieval stage must keep source text in a data-only context, deny source-controlled tool execution and secret access, require schema-constrained output, and attach every generated item to a verifiable source span. Generated recommendations remain untrusted drafts until human review.
+
+
+## Expanded local knowledge controls
+
+- The optional Ollama adapter rejects non-loopback endpoints, has bounded request/output sizes, and validates exact source spans. It is never invoked by default CI.
+- The local embedding adapter loads only a model path already present on disk with remote code disabled; no model download is performed.
+- The local browser UI binds to 127.0.0.1 only, checks Host/Origin and a per-process CSRF token, escapes rendered source text, limits request size, and sends restrictive response headers. It is single-user tooling, not a hardened multi-user web application.
+- TXT/Markdown/DOCX/PDF imports are bounded; macro-bearing DOCX and encrypted/oversized PDFs are rejected. OCR is not supported.
+- SQLite backup/restore performs integrity checks and restrictive best-effort file permissions. Backups are not encrypted. Use full-disk encryption and protect backup destinations.
+- Synthetic extraction benchmark labels are not independent reviewer ratings. No learner outcome or educational-effectiveness claim is supported.
