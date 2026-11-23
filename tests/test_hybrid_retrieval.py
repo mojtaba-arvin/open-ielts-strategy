@@ -101,12 +101,12 @@ class HybridRetrievalTests(unittest.TestCase):
         self.assertEqual(result["answer_generation"], "not_performed")
 
     def test_practice_context_excludes_unreviewed_by_default(self):
-        self.store.ingest_text("For IELTS Speaking, structure your answer clearly.", title="Speaking guide")
+        source = self.store.ingest_text("For IELTS Speaking, structure your answer clearly.", title="Speaking guide")
         result = prepare_practice_context(self.store, "How should I answer?", skill="speaking")
         self.assertEqual(result["evidence_count"], 0)
         draft = prepare_practice_context(self.store, "How should I answer?", skill="speaking", include_unreviewed=True)
         self.assertGreaterEqual(draft["evidence_count"], 1)
-        self.assertTrue(any(item["source"]["source_id"] for item in draft["evidence"]))
+        self.assertTrue(any(item["source"]["source_id"] == source["source_id"] for item in draft["evidence"]))
 
     def test_threshold_validation(self):
         with self.assertRaises(ValueError):
