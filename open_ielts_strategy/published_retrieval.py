@@ -92,7 +92,7 @@ class PublishedRetrievalEngine:
     def search(self, query: str, *, skill: str | None = None, limit: int = 10) -> list[dict]:
         if not isinstance(query, str) or not query.strip() or len(query) > 1000:
             raise ValueError("query must contain 1..1000 characters")
-        if skill is not None and skill not in {"speaking", "writing", "reading", "listening", "general"}:
+        if skill is not None and (not isinstance(skill, str) or skill not in {"speaking", "writing", "reading", "listening", "general"}):
             raise ValueError("unsupported IELTS skill")
         if type(limit) is not int or not 1 <= limit <= 100:
             raise ValueError("limit must be between 1 and 100")
