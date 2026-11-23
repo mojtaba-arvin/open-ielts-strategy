@@ -397,7 +397,7 @@ class KnowledgeStore:
         terms = list(dict.fromkeys(re.findall(r"[^\W_]+", query.casefold(), flags=re.UNICODE)))
         if not terms:
             raise ValueError("query must contain searchable terms")
-        sql = """SELECT c.card_id, c.kind, c.title, c.topic_tags_json, c.status,
+        sql = """SELECT c.card_id, g.segment_id, c.kind, c.title, c.topic_tags_json, c.status,
                         c.review_reason, c.review_note, g.text, g.ordinal, g.start_char,
                         g.end_char, g.locator_json, s.source_id, s.title AS source_title,
                         s.source_type, s.author, s.source_url, s.rights_status
@@ -428,6 +428,7 @@ class KnowledgeStore:
             results.append({
                 "score": score,
                 "card_id": row["card_id"],
+                "segment_id": row["segment_id"],
                 "kind": row["kind"],
                 "title": row["title"],
                 "topic_tags": tags,
