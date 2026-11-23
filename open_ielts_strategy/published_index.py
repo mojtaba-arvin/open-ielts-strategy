@@ -96,9 +96,6 @@ class PublishedIndexStore:
                     "model_fingerprint": model_fingerprint,
                     "document_count": len(pack.strategies)}
         current_identity = self.identity()
-        if current_identity == identity:
-            return {**identity, "rebuilt": False, "reused_documents": len(pack.strategies),
-                    "updated_documents": 0, "removed_documents": 0, "embedded_documents": 0}
 
         examples_by_strategy = {}
         for example in pack.examples:
@@ -119,6 +116,19 @@ class PublishedIndexStore:
             current_identity is not None
             and current_identity["model_fingerprint"] == model_fingerprint
         )
+        if current_identity == identity and len(existing_rows) == len(documents):
+            complete = all(
+                identifier in existing_rows
+                and existing_rows[identifier][0] == document_text
+                and (
+                    embedding_provider is None
+                    or _validated_cached_vector(existing_rows[identifier][1]) is not None
+                )
+                for identifier, document_text in documents
+            )
+            if complete:
+                return {**identity, "rebuilt": False, "reused_documents": len(pack.strategies),
+                        "updated_documents": 0, "removed_documents": 0, "embedded_documents": 0}
 
         vectors: list[list[float] | None] = [None] * len(documents)
         to_embed: list[str] = []
@@ -159,14 +169,11 @@ class PublishedIndexStore:
 
         self.connection.execute("BEGIN IMMEDIATE")
         try:
-            if new_ids:
-                placeholders = ",".join("?" for _ in new_ids)
-                self.connection.execute(
-                    f"DELETE FROM indexed_documents WHERE strategy_id NOT IN ({placeholders})",
-                    tuple(sorted(new_ids)),
-                )
-            else:
-                self.connection.execute("DELETE FROM indexed_documents")
+            removed_ids = sorted(set(existing_rows) - new_ids)
+            self.connection.executemany(
+                "DELETE FROM indexed_documents WHERE strategy_id=?",
+                [(identifier,) for identifier in removed_ids],
+            )
             self.connection.executemany(
                 """INSERT INTO indexed_documents(strategy_id,document_text,embedding_json)
                    VALUES(?,?,?)
