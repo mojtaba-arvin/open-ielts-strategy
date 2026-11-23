@@ -6,7 +6,7 @@ import sqlite3
 from open_ielts_strategy.knowledge_store import KnowledgeStore
 from open_ielts_strategy.knowledge_mcp import (
     ReadOnlyKnowledgeStore, search_private_knowledge, prepare_private_practice_context,
-    ingest_private_source, review_private_semantic_item,
+    ingest_private_source, review_private_semantic_item, list_private_semantic_items,
 )
 
 
@@ -79,6 +79,29 @@ class KnowledgeMCPTests(unittest.TestCase):
                 str(path), persisted["item_ids"][0], "user_approved", "Personal preference."
             )
             self.assertEqual(result["status"], "user_approved")
+
+
+    def test_mcp_lists_semantic_items_without_exposing_source_body(self):
+        from open_ielts_strategy.knowledge_pipeline import persist_segment_extraction
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "private.sqlite3"
+            with KnowledgeStore(path) as store:
+                source = store.ingest_text("For IELTS Speaking, use a clear opening.", title="Private podcast")
+                segment = store.get_source(source["source_id"])["segments"][0]
+                persist_segment_extraction(
+                    store, source["source_id"], segment["segment_id"],
+                    {"summary": "A useful opening.", "items": [{
+                        "kind": "recommendation", "text": segment["text"],
+                        "start_char": 0, "end_char": len(segment["text"]),
+                        "topic_tags": ["speaking"], "rationale": "The speaker recommends an opening.",
+                    }]}, provider_name="test", model_name="fixture", prompt_version="v1",
+                )
+            with ReadOnlyKnowledgeStore(path) as reader:
+                result = list_private_semantic_items(reader, source["source_id"])
+                self.assertEqual(result["item_count"], 1)
+                self.assertEqual(result["items"][0]["status"], "needs_review")
+                self.assertEqual(result["items"][0]["source_text_state"], "retained")
+                self.assertNotIn("body", result)
 
     def test_missing_database_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
