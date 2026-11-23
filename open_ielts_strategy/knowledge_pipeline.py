@@ -180,12 +180,17 @@ def purge_source_text(store, source_id: str, *, confirm: bool = False) -> dict:
         store._connection.execute("DELETE FROM knowledge_cards WHERE source_id=?", (source_id,))
         store._connection.execute("UPDATE segments SET text='' WHERE source_id=?", (source_id,))
         store._connection.execute("UPDATE sources SET body='' WHERE source_id=?", (source_id,))
+        # Segment-level summaries can also contain source-derived prose; retain only reviewed items.
+        store._connection.execute("UPDATE semantic_extractions SET summary='' WHERE source_id=?", (source_id,))
         store._connection.execute(
             """INSERT INTO source_retention(source_id, state, purged_at)
                VALUES (?, 'body_purged', ?) ON CONFLICT(source_id)
                DO UPDATE SET state='body_purged', purged_at=excluded.purged_at""",
             (source_id, _now()),
         )
+    # Rebuild SQLite pages after clearing text. This reduces recoverable remnants in the DB file,
+    # but cannot erase filesystem snapshots, SSD wear-leveling copies, or external backups.
+    store._connection.execute("VACUUM")
     return {
         "source_id": source_id,
         "state": "body_purged",
