@@ -118,15 +118,15 @@ Use only material you are entitled to import and process. Rights metadata is a d
 
 ## Published Knowledge Pack (v1 foundation)
 
-The repository now includes a dependency-free reader for versioned, published strategy packs. A cloned checkout can load approved strategy JSON files and perform deterministic lexical lookup without opening the private SQLite library, installing Ollama, or contacting a model/API provider.
+The repository now includes a dependency-free reader for versioned published Knowledge Packs. A cloned checkout can load approved strategies, concepts, typed relationships, and learning paths, then perform BM25 retrieval without opening the private SQLite library or contacting a model/API provider. Optional cached local embeddings enable dense/hybrid retrieval.
 
-The v1 pack contract uses `knowledge/manifest.json`, per-strategy JSON records, and SHA-256 file checksums. Content approval and publication approval are separate mandatory states. Published provenance excludes private source/extraction IDs, source bodies, transcript text, and private review notes. See [Published Knowledge Pack v1](docs/knowledge/published-knowledge-pack-v1.md) and [ADR-001](docs/architecture/adr-001-published-knowledge-pack.md).
+The v1 pack contract uses `knowledge/manifest.json`, typed JSON records, and SHA-256 file checksums. Content approval and publication approval are separate mandatory states. Published provenance excludes private source/extraction IDs, source bodies, transcript text, and private review notes. See [Published Knowledge Pack v1](docs/knowledge/published-knowledge-pack-v1.md) and [ADR-001](docs/architecture/adr-001-published-knowledge-pack.md).
 
-A published-only stdio MCP adapter is also available as `ielts-published-knowledge-mcp --pack ./knowledge`; it exposes strategy search, retrieval, and typed relationships without opening the private SQLite library. HTTP authentication and remote deployment are not yet implemented.
+A published-only stdio MCP adapter is also available as `ielts-published-knowledge-mcp --pack ./knowledge`; it exposes published search, strategy/concept lookup, typed relationships, learning paths, and study-plan tools without opening the private SQLite library. Model-backed practice, mentor, and example tools are enabled only when a provider/model is explicitly configured. HTTP authentication and remote deployment are not yet implemented.
 
-This is the portable-consumption foundation, not yet the complete publication workflow: pack authoring, rights review, leak scanning, diff generation, and human-authorized Git publication remain subsequent work.
+The portable-consumption and local publication foundations are implemented. Automated semantic-paraphrase leakage analysis, publication diff review, Git commit/push authorization, authenticated HTTP MCP, and release automation remain subsequent work.
 
-A local pack builder (`ielts-knowledge-publish`) verifies the private content/publication approvals for source-derived strategies, requires explicit human confirmation, writes a deterministic pack, and never commits or pushes it. See the [publishing guide](docs/knowledge/published-knowledge-pack-v1.md).
+A local pack builder (`ielts-knowledge-publish`) verifies the private content/publication approvals for source-derived records, checks rights-basis consistency and heuristic source/secret leakage, requires explicit human confirmation, writes a deterministic pack, and never commits or pushes it. See the [publishing guide](docs/knowledge/published-knowledge-pack-v1.md).
 
 The `ielts-practice` command can generate an evidence-attributed practice answer from the published pack with either a local Ollama model or an explicitly selected OpenAI-compatible API provider. It refuses to fabricate strategy attribution and makes no model call when no relevant published evidence is found; see [Published Knowledge Pack v1](docs/knowledge/published-knowledge-pack-v1.md).
 
