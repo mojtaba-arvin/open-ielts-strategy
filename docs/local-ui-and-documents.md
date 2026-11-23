@@ -8,7 +8,7 @@ Run:
 python scripts/knowledge_web.py --port 8765
 ```
 
-Open `http://127.0.0.1:8765`. The server refuses non-loopback bind addresses, checks Host and Origin, uses a per-process CSRF token, limits POST bodies, escapes all rendered user text, and sends restrictive security headers. It has no login system and is intended for a single-user local workstation only. Stop it when not in use; do not expose it through a tunnel, reverse proxy, LAN bind, or public host.
+Open `http://127.0.0.1:8765`. The server refuses non-loopback bind addresses, checks Host and same-origin POSTs, uses a per-process CSRF token, limits POST bodies/field counts, escapes all rendered user text, and sends restrictive security headers. The UI lists sources, opens source-linked passages, allows human review-state updates, and supports source deletion only after typing DELETE. It has no login system and is intended for a single-user local workstation only. Review statuses are personal curation, not educational validation. Stop it when not in use; do not expose it through a tunnel, reverse proxy, LAN bind, or public host.
 
 The UI stores source text in the same private SQLite database and does not upload it. Logs must not contain request bodies.
 
