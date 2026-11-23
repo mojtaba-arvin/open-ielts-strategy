@@ -10,6 +10,7 @@ from open_ielts_strategy.http_utils import read_limited_response
 
 ROOT = Path(__file__).resolve().parents[1]
 MAX_REQUESTS_PER_ARM = 16
+VALID_CASE_CATEGORIES = {"routing_positive", "routing_negative", "boundary", "behavioral"}
 
 
 def _chat(messages, model, key, base, json_mode=False):
@@ -53,6 +54,10 @@ def run_arm(arm, cases, mode, budget=0, skill_id="ielts-writing-feedback"):
         for field in ("input", "expected"):
             if not isinstance(case.get(field), str) or not case[field].strip():
                 raise ValueError(f"case {case_id} {field} must be non-empty text")
+        if "category" in case and (
+            not isinstance(case["category"], str) or case["category"] not in VALID_CASE_CATEGORIES
+        ):
+            raise ValueError(f"case {case_id} category must be one of the supported evaluation categories")
         if "rubric" in case and not isinstance(case["rubric"], dict):
             raise ValueError(f"case {case_id} rubric must be an object")
     if type(budget) is not int or budget < 0:
@@ -248,6 +253,9 @@ def _validate_scorecard(scorecard, expected_arm):
             raise ValueError("scorecard passed values must be booleans")
         if mode == "openai" and row["passed"] is not (score >= 0.7):
             raise ValueError("scorecard passed flag must match the configured score threshold")
+        category = row.get("category", "uncategorized")
+        if not isinstance(category, str) or category not in VALID_CASE_CATEGORIES | {"uncategorized"}:
+            raise ValueError("scorecard category must be a supported evaluation category")
         if not isinstance(row.get("rationale"), str) or not row["rationale"].strip():
             raise ValueError("scorecard rationale must be non-empty text")
         if not isinstance(row.get("output"), str) or not row["output"].strip():
@@ -275,6 +283,10 @@ def aggregate(base, skill):
         row["input_sha256"] for row in base["results"]
     ] != [row["input_sha256"] for row in skill["results"]]:
         raise ValueError("arms did not receive identical inputs")
+    if [row.get("category", "uncategorized") for row in base["results"]] != [
+        row.get("category", "uncategorized") for row in skill["results"]
+    ]:
+        raise ValueError("arms have inconsistent evaluation categories")
     if base["mode"] == "mock":
         return {
             "schema_version": 1,
