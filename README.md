@@ -52,6 +52,8 @@ Then open `http://127.0.0.1:8765`. For local DOCX/PDF import, see [Local UI and 
 
 Prepare a source-cited context pack for a new Speaking/Writing practice question with `python scripts/knowledge_practice.py "..." --skill speaking`. By default, only personally approved or explicitly supported cards are included; use `--include-unreviewed` to inspect drafts. The command prepares evidence for ChatGPT to write an answer; it does not generate an answer itself. See [Practice Context](docs/practice-context.md).
 
+An optional read-only stdio MCP bridge lets ChatGPT desktop or another compatible client search this local library and retrieve cited practice context. Install `.[mcp]`, then configure `python -m open_ielts_strategy.knowledge_mcp --db /absolute/path/.local/knowledge.sqlite3` as a local stdio server. It exposes no ingest/delete tools. Retrieved excerpts are shared with the connected model; use local Ollama for strict no-cloud processing. See [Private Knowledge MCP](docs/private-knowledge-mcp.md).
+
 Backup and restore helpers are available in `open_ielts_strategy.knowledge_backup`; backups are unencrypted and must be stored privately with full-disk encryption.
 
 ## Free offline evaluation foundations
