@@ -12,11 +12,17 @@ knowledge/
     writing/
     reading/
     listening/
+  concepts/
+  relationships/
+  learning-paths/
 schemas/
   strategy.schema.json
+  concept.schema.json
+  relationship.schema.json
+  learning-path.schema.json
 ```
 
-The v1 loader currently accepts a pack directory with `manifest.json` and strategy JSON files. The canonical manifest uses JSON to keep the consumer dependency-free and checksum inputs deterministic.
+The v1 loader accepts strategy, concept, typed relationship, and learning-path JSON records. Every record is listed in the manifest; unlisted files and symlinks are rejected. The canonical manifest uses JSON to keep the consumer dependency-free and checksum inputs deterministic.
 
 ## Manifest
 
@@ -54,9 +60,9 @@ strategy = pack.get_strategy("speaking.answer-development")
 matches = pack.search_strategies("describe a memorable journey", skill="speaking")
 ```
 
-No private database, network, extraction provider, embedding model, or LLM is imported by this API. Search is deterministic lexical matching in v1; hybrid retrieval and answer generation are separate layers.
+No private database, network, extraction provider, embedding model, or LLM is imported by the loader API. Its convenience search is deterministic lexical matching; the separate PublishedRetrievalEngine adds BM25 and optional dense cosine fusion without requiring the private SQLite library.
 
-Before writing the staged pack, the builder scans serialized strategy records against retained private source bodies (or retained semantic source spans when the body was purged) and checks common credential patterns. It blocks detected long exact overlaps and secret-like values. This is a heuristic leak detector, not a proof of non-disclosure, a semantic paraphrase detector, or legal clearance; the maintainer must still inspect the diff and confirm rights.
+Before writing the staged pack, the builder scans all serialized published records against retained private source bodies (or retained semantic source spans when the body was purged) and checks common credential patterns. It blocks detected long exact overlaps and secret-like values. This is a heuristic leak detector, not a proof of non-disclosure, a semantic paraphrase detector, or legal clearance; the maintainer must still inspect the diff and confirm rights.
 
 ## Local pack build and publication gate
 
@@ -90,7 +96,7 @@ ielts-learning example --pack ./knowledge --strategy-id speaking.answer-developm
 
 The Mentor and Example commands consume only the published pack. Example generation checks for long exact overlap with existing examples; this does not prove semantic originality. The published MCP server exposes `get_learning_path` and `create_study_plan` without a model. Configure `--provider` and `--model` on the MCP command to expose `explain_strategy` and `generate_strategy_example` tools as well.
 
-The builder also accepts repeated `--concept`, `--relationship`, and `--learning-path` draft files. All record types are validated, cross-references are checked, and source-derived records can be mapped to private review items with `--source-item RECORD_ID=SITEM_ID`. Concepts and learning paths are included in the same manifest and checksummed build.
+The builder also accepts repeated `--concept`, `--relationship`, and `--learning-path` draft files. All record types are validated, cross-references are checked, and source-derived records can be mapped to private review items with `--source-item RECORD_ID=SITEM_ID`. All records are included in the same manifest and checksummed build.
 
 ## Review the publication diff
 
