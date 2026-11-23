@@ -1,5 +1,7 @@
 import hashlib
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -41,6 +43,20 @@ def make_pack(root):
 
 
 class PublishedKnowledgeMCPTests(unittest.TestCase):
+
+    def test_published_consumption_imports_without_private_sqlite_modules(self):
+        code = (
+            "import sys; "
+            "import open_ielts_strategy.published_knowledge_mcp; "
+            "import open_ielts_strategy.published_practice_cli; "
+            "import open_ielts_strategy.published_learning_cli; "
+            "assert 'sqlite3' not in sys.modules; "
+            "assert 'open_ielts_strategy.knowledge_store' not in sys.modules; "
+            "assert 'open_ielts_strategy.knowledge_pipeline' not in sys.modules"
+        )
+        result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_search_and_get_tools_use_pack_version_and_no_private_db(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
