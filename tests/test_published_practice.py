@@ -90,7 +90,7 @@ class PublishedPracticeTests(unittest.TestCase):
             }))
             with self.assertRaises(GenerationError):
                 generate_published_practice_answer(
-                    pack, "Describe a memorable journey", skill="speaking", provider=provider
+                    pack, "How can I give a direct answer?", skill="speaking", provider=provider
                 )
 
     def test_consumption_registry_is_independent_from_extraction_registry(self):
