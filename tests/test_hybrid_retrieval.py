@@ -108,6 +108,17 @@ class HybridRetrievalTests(unittest.TestCase):
         self.assertGreaterEqual(draft["evidence_count"], 1)
         self.assertTrue(any(item["source"]["source_id"] == source["source_id"] for item in draft["evidence"]))
 
+
+    def test_practice_context_surfaces_conflicting_items_separately(self):
+        self.store.ingest_text("For IELTS Speaking, write a full script before answering.", title="Script advice")
+        card = self.store.search("full script")[0]
+        self.store.review_card(card["card_id"], "conflicting", "Conflicts with another reviewed recommendation.")
+        result = prepare_practice_context(
+            self.store, "Should I write a full script?", skill="speaking"
+        )
+        self.assertEqual(result["evidence_count"], 0)
+        self.assertTrue(any(item["item_id"] == card["card_id"] for item in result["conflicting_candidates"]))
+
     def test_threshold_validation(self):
         with self.assertRaises(ValueError):
             suggest_overlaps([], threshold=2)
