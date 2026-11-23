@@ -180,3 +180,9 @@ ielts-knowledge-benchmark --pack ./knowledge \
 ```
 
 The report includes pack/model identity, engine/index initialization time, mean/p50/p95/max search latency, and throughput. It never includes query text or retrieved content. This measures runtime performance only; it does not measure ranking relevance, educational quality, or learner outcomes. Use a representative, rights-cleared local query set and compare results across the same machine/model configuration.
+
+## Standalone reviewed examples (manifest schema 1.1)
+
+An example is a separately versioned, reviewed record linked to exactly one strategy. Its contract is in `schemas/example.schema.json`; the record includes `strategy_id`, `skill`, the task, example content, strategy application, learning note, public provenance, two approval states, and its own record version. The builder checks that the referenced strategy exists and that the skill matches.
+
+Pass one or more reviewed example JSON drafts with `ielts-knowledge-publish --example ./drafts/example.json`. Supplying at least one example produces a manifest with `schema_version: "1.1"`; packs without standalone examples remain schema 1.0. Source-derived examples must pass the same private rights/publication approval mapping as other records. Unreviewed model output is not automatically accepted or published. The diff and release workflow includes standalone example additions, changes, and removals, and published MCP exposes `get_example`.
