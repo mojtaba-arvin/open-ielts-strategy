@@ -16,6 +16,7 @@ dependencies = []
 documents = ["pypdf>=5,<7"]
 local-embeddings = ["sentence-transformers>=3,<6"]
 mcp = ["mcp>=1.9,<2"]
+http-mcp = ["mcp>=1.9,<2", "uvicorn>=0.30,<1"]
 schema-validation = ["jsonschema>=4.23,<5"]
 
 [project.scripts]
@@ -23,7 +24,9 @@ ielts-knowledge-web = "open_ielts_strategy.knowledge_web:serve"
 ielts-knowledge-mcp = "open_ielts_strategy.knowledge_mcp:main"
 ielts-knowledge-answer = "open_ielts_strategy.knowledge_answer_cli:main"
 ielts-published-knowledge-mcp = "open_ielts_strategy.published_knowledge_mcp:main"
+ielts-published-knowledge-mcp-http = "open_ielts_strategy.published_mcp_http:main"
 ielts-practice = "open_ielts_strategy.published_practice_cli:main"
+ielts-practice-eval = "open_ielts_strategy.practice_evaluation_cli:main"
 ielts-knowledge-publish = "open_ielts_strategy.knowledge_publish_cli:main"
 ielts-learning = "open_ielts_strategy.published_learning_cli:main"
 ielts-knowledge-diff = "open_ielts_strategy.knowledge_diff_cli:main"
