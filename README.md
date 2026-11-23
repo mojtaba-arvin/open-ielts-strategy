@@ -50,6 +50,8 @@ python scripts/knowledge_web.py --port 8765
 
 Then open `http://127.0.0.1:8765`. For local DOCX/PDF import, see [Local UI and Documents](docs/local-ui-and-documents.md). Optional local Ollama extraction, embeddings, hybrid retrieval, and playbooks are documented in [Semantic Extraction](docs/semantic-extraction.md), [Hybrid Retrieval](docs/hybrid-retrieval.md), and [Strategy Playbooks](docs/strategy-playbooks.md). These features produce reviewable drafts, not validated IELTS advice.
 
+An optional read-only stdio MCP bridge lets a compatible client search this local library and retrieve cited practice context: install `.[mcp]`, then run `python -m open_ielts_strategy.knowledge_mcp --db .local/knowledge.sqlite3`. It exposes no ingest/delete tools. Retrieved excerpts are shared with the connected model, so strict local-only workflows should use local Ollama instead. See [Private Knowledge MCP](docs/private-knowledge-mcp.md).
+
 Backup and restore helpers are available in `open_ielts_strategy.knowledge_backup`; backups are unencrypted and must be stored privately with full-disk encryption.
 
 ## Free offline evaluation foundations
