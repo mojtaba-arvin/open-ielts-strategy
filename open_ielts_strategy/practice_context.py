@@ -27,12 +27,13 @@ def prepare_practice_context(store, question: str, *, skill: str = "general",
     selected = [item for item in candidates if item["status"] in allowed][:limit]
     conflicts = [item for item in candidates if item["status"] == "conflicting"][:limit]
     selected_ids = [item["card_id"] for item in selected]
+    candidate_ids = selected_ids + [item["card_id"] for item in conflicts]
     curated_relations = []
     relation_table = store._connection.execute(
         "SELECT 1 FROM sqlite_master WHERE type='table' AND name='card_relations'"
     ).fetchone()
     if relation_table:
-        relation_ids = [value for value in selected_ids if value.startswith("card_")]
+        relation_ids = list(dict.fromkeys(value for value in candidate_ids if value.startswith("card_")))
         if relation_ids:
             placeholders = ",".join("?" for _ in relation_ids)
             curated_relations = [
