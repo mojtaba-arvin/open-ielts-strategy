@@ -41,14 +41,16 @@ def _validate_published_at(value):
         return None
     if not isinstance(value, str) or not value.strip():
         raise ValueError("published_at must be an ISO date or timezone-aware timestamp")
-    try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
+    if re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", value):
         try:
             date.fromisoformat(value)
         except ValueError as exc:
             raise ValueError("published_at must be an ISO date or timezone-aware timestamp") from exc
         return value
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("published_at must be an ISO date or timezone-aware timestamp") from exc
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise ValueError("published_at timestamp must include a timezone")
     return value
