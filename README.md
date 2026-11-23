@@ -122,6 +122,8 @@ The repository now includes a dependency-free reader for versioned, published st
 
 The v1 pack contract uses `knowledge/manifest.json`, per-strategy JSON records, and SHA-256 file checksums. Content approval and publication approval are separate mandatory states. Published provenance excludes private source/extraction IDs, source bodies, transcript text, and private review notes. See [Published Knowledge Pack v1](docs/knowledge/published-knowledge-pack-v1.md) and [ADR-001](docs/architecture/adr-001-published-knowledge-pack.md).
 
+A published-only stdio MCP adapter is also available as `ielts-published-knowledge-mcp --pack ./knowledge`; it exposes strategy search, retrieval, and typed relationships without opening the private SQLite library. HTTP authentication and remote deployment are not yet implemented.
+
 This is the portable-consumption foundation, not yet the complete publication workflow: pack authoring, rights review, leak scanning, diff generation, and human-authorized Git publication remain subsequent work.
 
 ## Principles
