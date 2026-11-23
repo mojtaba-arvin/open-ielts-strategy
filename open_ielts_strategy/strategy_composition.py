@@ -4,12 +4,17 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-
 PREFERENCE_KEYS = {"time_budget_minutes", "preferred_skills", "constraints", "practice_context"}
 
 
 def _validate_preferences(preferences: dict | None) -> dict:
-    prefs = _validate_preferences(preferences)
+    prefs = {} if preferences is None else preferences
+    if not isinstance(prefs, dict) or set(prefs) - PREFERENCE_KEYS:
+        raise ValueError("preferences contain unsupported fields")
+    if "time_budget_minutes" in prefs and (
+        type(prefs["time_budget_minutes"]) is not int or not 1 <= prefs["time_budget_minutes"] <= 240
+    ):
+        raise ValueError("time_budget_minutes must be between 1 and 240")
     for key in ("preferred_skills", "constraints"):
         if key in prefs and (
             not isinstance(prefs[key], list) or len(prefs[key]) > 30
@@ -31,6 +36,8 @@ def _validate_card(card: dict) -> None:
         raise ValueError("card text must be non-empty")
     if type(card["start_char"]) is not int or type(card["end_char"]) is not int or card["start_char"] < 0 or card["end_char"] <= card["start_char"]:
         raise ValueError("card offsets are invalid")
+    if card["status"] not in {"needs_review", "supported", "conflicting", "user_approved", "superseded", "rejected"}:
+        raise ValueError("card review status is invalid")
 
 
 def compare_recommendations(cards: list[dict], relations: list[dict] | None = None) -> dict:
@@ -71,13 +78,7 @@ def build_playbook(cards: list[dict], *, title: str,
         raise ValueError("at least one selected card is required")
     for card in cards:
         _validate_card(card)
-    prefs = preferences or {}
-    if not isinstance(prefs, dict) or set(prefs) - PREFERENCE_KEYS:
-        raise ValueError("preferences contain unsupported fields")
-    if "time_budget_minutes" in prefs and (
-        type(prefs["time_budget_minutes"]) is not int or not 1 <= prefs["time_budget_minutes"] <= 240
-    ):
-        raise ValueError("time_budget_minutes must be between 1 and 240")
+    prefs = _validate_preferences(preferences)
     steps = []
     for index, card in enumerate(cards, start=1):
         steps.append({
@@ -106,11 +107,11 @@ def build_playbook(cards: list[dict], *, title: str,
 
 def save_preferences(path: str | Path, preferences: dict) -> Path:
     """Store learner constraints separately from source-derived claims."""
-    preferences = _validate_preferences(preferences)
+    prefs = _validate_preferences(preferences)
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     temp = destination.with_suffix(destination.suffix + ".tmp")
-    temp.write_text(json.dumps(preferences, ensure_ascii=False, indent=2), encoding="utf-8")
+    temp.write_text(json.dumps(prefs, ensure_ascii=False, indent=2), encoding="utf-8")
     try:
         temp.chmod(0o600)
     except OSError:
