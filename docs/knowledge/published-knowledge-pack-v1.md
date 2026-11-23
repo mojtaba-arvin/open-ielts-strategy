@@ -56,6 +56,8 @@ matches = pack.search_strategies("describe a memorable journey", skill="speaking
 
 No private database, network, extraction provider, embedding model, or LLM is imported by this API. Search is deterministic lexical matching in v1; hybrid retrieval and answer generation are separate layers.
 
+Before writing the staged pack, the builder scans serialized strategy records against retained private source bodies (or retained semantic source spans when the body was purged) and checks common credential patterns. It blocks detected long exact overlaps and secret-like values. This is a heuristic leak detector, not a proof of non-disclosure, a semantic paraphrase detector, or legal clearance; the maintainer must still inspect the diff and confirm rights.
+
 ## Local pack build and publication gate
 
 After authoring strategy JSON drafts in private local storage, build a pack with explicit maintainer confirmation:
