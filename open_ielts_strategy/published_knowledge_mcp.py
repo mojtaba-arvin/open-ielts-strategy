@@ -8,9 +8,10 @@ from pathlib import Path
 
 from .knowledge_pack import KnowledgePack, KnowledgePackError, load_knowledge_pack
 from .published_retrieval import PublishedRetrievalEngine
-from .published_learning import (get_published_learning_path, create_published_study_plan,
+from .published_learning import (get_published_learning_path, get_published_concept, create_published_study_plan,
                                  explain_published_strategy, generate_published_strategy_example)
 from .text_generation import build_consumption_provider
+from .published_practice import generate_published_practice_answer
 
 
 def search_published_strategies(pack: KnowledgePack, query: str, *,
@@ -102,6 +103,12 @@ def build_server(pack_path: str | Path, *, embedding_model_path: str | None = No
         return get_related_published_strategies(pack, strategy_id)
 
 
+
+    @server.tool()
+    def get_concept(concept_id: str) -> dict:
+        """Get a published concept and its linked strategy records."""
+        return get_published_concept(pack, concept_id)
+
     @server.tool()
     def get_learning_path(path_id: str) -> dict:
         """Get a curated learning path with its strategy steps resolved."""
@@ -113,6 +120,15 @@ def build_server(pack_path: str | Path, *, embedding_model_path: str | None = No
         return create_published_study_plan(pack, skill=skill, limit=limit)
 
     if text_provider is not None:
+
+        @server.tool()
+        def answer_ielts_question(question: str, skill: str = "general", limit: int = 6) -> dict:
+            """Generate an IELTS practice answer grounded in retrieved published strategies."""
+            return generate_published_practice_answer(
+                pack, question, skill=skill, provider=text_provider,
+                limit=limit, retriever=retriever,
+            )
+
         @server.tool()
         def explain_strategy(strategy_id: str, learner_question: str | None = None) -> dict:
             """Teach one published strategy with its limitations and an exercise."""
