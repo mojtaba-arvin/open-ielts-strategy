@@ -127,6 +127,44 @@ class KnowledgePackBuilderTests(unittest.TestCase):
                         source_item_ids_by_strategy={"speaking.answer-development": [item_id]},
                     )
 
+
+    def test_builder_writes_concepts_relationships_and_learning_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            provenance = {"basis": "original", "public_references": []}
+            review = {"content_status": "approved", "publication_status": "approved"}
+            concepts = [{
+                "id": "speaking.fluency", "schema_version": "1.0",
+                "title": "Fluency", "definition": "Communicate smoothly.",
+                "related_strategies": ["speaking.answer-development"],
+                "provenance": provenance, "review": review, "version": "1.0.0",
+            }]
+            relationships = [{
+                "id": "relation.answer-fluency", "schema_version": "1.0",
+                "from_id": "speaking.answer-development", "to_id": "speaking.fluency",
+                "type": "illustrates", "rationale": "The strategy demonstrates clear communication.",
+                "provenance": provenance, "review": review,
+            }]
+            learning_paths = [{
+                "id": "speaking.foundations", "schema_version": "1.0",
+                "title": "Speaking Foundations", "skill": "speaking",
+                "description": "A short introduction.", "objectives": ["Answer clearly."],
+                "steps": [{"order": 1, "strategy_id": "speaking.answer-development",
+                           "activity": "Practice direct answers."}],
+                "prerequisites": [], "provenance": provenance, "review": review,
+                "version": "1.0.0",
+            }]
+            result = build_knowledge_pack(
+                [strategy()], root / "complete-pack", pack_version="1.0.0",
+                human_confirmed=True, concepts=concepts,
+                relationships=relationships, learning_paths=learning_paths,
+            )
+            self.assertEqual(result["concept_count"], 1)
+            self.assertEqual(result["relationship_count"], 1)
+            self.assertEqual(result["learning_path_count"], 1)
+            pack = load_knowledge_pack(root / "complete-pack")
+            self.assertEqual(pack.get_learning_path("speaking.foundations")["title"], "Speaking Foundations")
+
     def test_source_derived_pack_requires_private_publication_gate(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
