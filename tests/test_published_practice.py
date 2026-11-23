@@ -7,7 +7,9 @@ from pathlib import Path
 from open_ielts_strategy.knowledge_pack import load_knowledge_pack
 from open_ielts_strategy.published_practice import generate_published_practice_answer
 from open_ielts_strategy.published_retrieval import PublishedRetrievalEngine
-from open_ielts_strategy.text_generation import (\n    FallbackTextGenerationProvider, GenerationError, OpenAICompatibleTextProvider, build_consumption_provider,\n)
+from open_ielts_strategy.text_generation import (
+    FallbackTextGenerationProvider, GenerationError, OpenAICompatibleTextProvider, build_consumption_provider,
+)
 from open_ielts_strategy.published_practice_cli import build_parser
 
 
