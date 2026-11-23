@@ -58,12 +58,12 @@ class ExtractionProviderTests(unittest.TestCase):
         source = "Use a direct answer."
         provider = OpenAICompatibleProvider("model", api_key_env="TEST_IOS_API_KEY", max_retries=0)
         with patch.dict(os.environ, {"TEST_IOS_API_KEY": "test-secret"}):
-            with patch("open_ielts_strategy.api_extraction.urllib.request.urlopen",
-                       return_value=FakeResponse(response_for(source))) as call:
+            with patch("open_ielts_strategy.api_extraction.urllib.request.build_opener") as build_opener:
+                build_opener.return_value.open.return_value = FakeResponse(response_for(source))
                 result = provider.extract(source)
+                request = build_opener.return_value.open.call_args.args[0]
         self.assertEqual(result["items"][0]["status"], "needs_review")
         self.assertFalse(result["claim_eligible"])
-        request = call.call_args.args[0]
         self.assertEqual(request.get_header("Authorization"), "Bearer test-secret")
         self.assertNotIn("test-secret", request.data.decode())
 
@@ -77,8 +77,8 @@ class ExtractionProviderTests(unittest.TestCase):
         )
         provider = OpenAICompatibleProvider("model", api_key_env="TEST_IOS_API_KEY", max_retries=0)
         with patch.dict(os.environ, {"TEST_IOS_API_KEY": "secret"}):
-            with patch("open_ielts_strategy.api_extraction.urllib.request.urlopen",
-                       return_value=FakeResponse(payload)):
+            with patch("open_ielts_strategy.api_extraction.urllib.request.build_opener") as build_opener:
+                build_opener.return_value.open.return_value = FakeResponse(payload)
                 with self.assertRaises(ExtractionError):
                     provider.extract(source)
 
@@ -88,12 +88,12 @@ class ExtractionProviderTests(unittest.TestCase):
         from urllib.error import HTTPError
         error = HTTPError(provider.endpoint, 503, "unavailable", {}, None)
         with patch.dict(os.environ, {"TEST_IOS_API_KEY": "secret"}):
-            with patch("open_ielts_strategy.api_extraction.urllib.request.urlopen",
-                       side_effect=[error, FakeResponse(response_for(source))]) as call:
+            with patch("open_ielts_strategy.api_extraction.urllib.request.build_opener") as build_opener:
+                build_opener.return_value.open.side_effect = [error, FakeResponse(response_for(source))]
                 with patch("open_ielts_strategy.api_extraction.time.sleep"):
                     result = provider.extract(source)
         self.assertEqual(result["items"][0]["text"], source)
-        self.assertEqual(call.call_count, 2)
+        self.assertEqual(build_opener.return_value.open.call_count, 2)
 
 
 if __name__ == "__main__":
