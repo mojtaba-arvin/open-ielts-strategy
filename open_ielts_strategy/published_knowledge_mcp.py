@@ -14,6 +14,7 @@ from .published_learning import (get_published_learning_path, get_published_conc
 from .text_generation import build_consumption_provider
 from .embedding_providers import OpenAICompatibleEmbeddingProvider
 from .published_practice import generate_published_practice_answer
+from .study_progression import build_study_progression
 
 
 def search_published_strategies(pack: KnowledgePack, query: str, *,
@@ -158,6 +159,14 @@ def build_server(pack_path: str | Path, *, embedding_model_path: str | None = No
     def create_study_plan(skill: str, limit: int = 5) -> dict:
         """Find published learning paths for an IELTS skill."""
         return create_published_study_plan(pack, skill=skill, limit=limit)
+
+    @server.tool()
+    def build_study_progression_tool(skill: str, completed_path_ids: list[str] | None = None,
+                                     limit: int = 20) -> dict:
+        """Build a prerequisite-aware Study plan; completion is caller-reported, not inferred."""
+        return build_study_progression(
+            pack, skill=skill, completed_path_ids=completed_path_ids or (), limit=limit
+        )
 
     if text_provider is not None:
 

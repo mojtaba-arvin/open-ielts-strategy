@@ -11,6 +11,7 @@ from .published_learning import (
     generate_published_strategy_example, get_published_example,
 )
 from .text_generation import build_consumption_provider
+from .study_progression import build_study_progression
 
 
 def build_parser():
@@ -20,7 +21,8 @@ def build_parser():
     study = commands.add_parser("study", help="List curated published learning paths")
     study.add_argument("--pack", default="knowledge")
     study.add_argument("--skill", choices=("speaking", "writing", "reading", "listening", "general"), required=True)
-    study.add_argument("--limit", type=int, default=5)
+    study.add_argument("--limit", type=int, default=20)
+    study.add_argument("--completed-path", action="append", default=[], help="Previously completed learning path ID; repeatable")
 
     get_example = commands.add_parser("get-example", help="Retrieve a separately reviewed published example")
     get_example.add_argument("--pack", default="knowledge")
@@ -51,7 +53,8 @@ def main(argv=None):
     try:
         pack = load_knowledge_pack(args.pack)
         if args.command == "study":
-            result = create_published_study_plan(pack, skill=args.skill, limit=args.limit)
+            result = build_study_progression(pack, skill=args.skill, limit=args.limit,
+                                               completed_path_ids=args.completed_path)
         elif args.command == "get-example":
             result = get_published_example(pack, args.example_id)
         else:
