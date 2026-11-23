@@ -10,7 +10,6 @@ from .published_practice import generate_published_practice_answer
 from .text_generation import build_consumption_provider
 from .published_retrieval import PublishedRetrievalEngine
 from .hybrid_retrieval import LocalSentenceTransformer
-from .published_index import PublishedIndexStore
 from .embedding_providers import OpenAICompatibleEmbeddingProvider
 from .enhanced_published_retrieval import (EnhancedPublishedRetrievalEngine, ModelQueryRewriter, LocalCrossEncoderReranker)
 
@@ -76,6 +75,7 @@ def main(argv=None):
             raise ValueError("--embedding-model-fingerprint requires --index-db")
         if embeddings is not None:
             if args.index_db:
+                from .published_index import PublishedIndexStore
                 index_store = PublishedIndexStore(args.index_db)
                 index_store.build(
                     pack, model_fingerprint=args.embedding_model_fingerprint,
