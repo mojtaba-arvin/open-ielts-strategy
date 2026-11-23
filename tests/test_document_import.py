@@ -19,7 +19,7 @@ class DocumentImportTests(unittest.TestCase):
         import hashlib
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "notes.txt"
-            original = b"First paragraph.\\r\\n\\r\\nSecond paragraph."
+            original = b"First paragraph.\r\n\r\nSecond paragraph."
             path.write_bytes(original)
             result = import_document(path)
             self.assertEqual(result["text"].encode("utf-8"), original)
