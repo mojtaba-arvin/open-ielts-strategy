@@ -70,7 +70,9 @@ def evaluate_published_response(pack, question: str, answer: str, *, skill: str,
         raise GenerationError("evaluation must include every required criterion exactly once")
     allowed_ids = {item["strategy_id"] for item in evidence}
     used = result["strategy_ids_used"]
-    if not isinstance(used, list) or not used or len(used) != len(set(used)) or any(x not in allowed_ids for x in used):
+    if (not isinstance(used, list) or not used
+            or any(not isinstance(x, str) or x not in allowed_ids for x in used)
+            or len(used) != len(set(used))):
         raise GenerationError("evaluation references missing, duplicate, or unavailable strategy IDs")
     normalized = {}
     for key in criteria:
@@ -82,7 +84,9 @@ def evaluate_published_response(pack, question: str, answer: str, *, skill: str,
         if not isinstance(item["observation"], str) or not item["observation"].strip():
             raise GenerationError(f"criterion observation must be non-empty text: {key}")
         ids = item["strategy_ids"]
-        if not isinstance(ids, list) or any(x not in allowed_ids for x in ids) or len(ids) != len(set(ids)):
+        if (not isinstance(ids, list)
+                or any(not isinstance(x, str) or x not in allowed_ids for x in ids)
+                or len(ids) != len(set(ids))):
             raise GenerationError(f"invalid strategy attribution for criterion: {key}")
         normalized[key] = {"rating": item["rating"], "observation": item["observation"],
                             "strategy_ids": ids}
