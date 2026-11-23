@@ -9,6 +9,8 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from open_ielts_strategy.knowledge_web import make_handler, serve
+from open_ielts_strategy.knowledge_store import KnowledgeStore
+from open_ielts_strategy.knowledge_pipeline import extract_source
 
 
 class KnowledgeWebTests(unittest.TestCase):
@@ -42,11 +44,32 @@ class KnowledgeWebTests(unittest.TestCase):
                     saved = response.read().decode()
                 source_id = re.search(r"Source ID: (src_[a-f0-9]+)", saved).group(1)
 
+                class FakeProvider:
+                    def extract(self, text):
+                        return {"summary": "Candidate note.", "items": [{
+                            "kind": "recommendation", "text": text, "start_char": 0,
+                            "end_char": len(text), "topic_tags": ["writing"],
+                            "rationale": "Extracted from source.",
+                        }]}
+                with KnowledgeStore(db) as store:
+                    extract_source(store, source_id, FakeProvider(),
+                                   provider_name="test", model_name="fixture", prompt_version="v1")
+
                 with urlopen(base + "/?source=" + source_id) as response:
                     detail = response.read().decode()
                 self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", detail)
                 self.assertNotIn("<script>alert(1)</script>", detail)
                 card_id = re.search(r"name='card_id' value='([^']+)'", detail).group(1)
+                semantic_id = re.search(r"name='item_id' value='([^']+)'", detail).group(1)
+                self.assertIn("Semantic extraction items", detail)
+
+                semantic_review = urlencode({
+                    "token": token, "item_id": semantic_id, "status": "user_approved",
+                    "note": "Keep this strategy.",
+                }).encode()
+                request = Request(base + "/review-semantic", data=semantic_review, headers={"Content-Type": "application/x-www-form-urlencoded"})
+                with urlopen(request) as response:
+                    self.assertIn("Semantic review saved", response.read().decode())
 
                 review = urlencode({
                     "token": token, "card_id": card_id, "status": "user_approved",
