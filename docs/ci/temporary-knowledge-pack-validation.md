@@ -7,3 +7,5 @@ A second validation run is required because the feature base branch gained addit
 A third validation run includes schema meta-validation and the latest publication leakage scanner changes.
 
 A fourth validation run includes the rolling-hash private-source scanner, local pack builder gate integration, and schema CI checks.
+
+A fifth run validates BM25/dense retrieval integration and the new local embedding CLI option.
