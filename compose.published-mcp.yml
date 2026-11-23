@@ -1,0 +1,26 @@
+services:
+  published-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.published-mcp
+    image: open-ielts-strategy/published-mcp:local
+    restart: unless-stopped
+    environment:
+      IELTS_MCP_BEARER_TOKEN: ${IELTS_MCP_BEARER_TOKEN:?Set a random token of at least 32 characters}
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./knowledge:/app/knowledge:ro
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 15s
