@@ -43,3 +43,9 @@ class StrategyCompositionTests(unittest.TestCase):
     def test_unknown_preference_fields_are_rejected(self):
         with self.assertRaises(ValueError):
             build_playbook([card("a", "s1", "Practice.")], title="Test", preferences={"band": 9})
+
+    def test_preference_types_and_limits_are_validated(self):
+        with self.assertRaises(ValueError):
+            build_playbook([card("a", "s1", "Practice.")], title="Test", preferences={"preferred_skills": "writing"})
+        with self.assertRaises(ValueError):
+            build_playbook([card("a", "s1", "Practice.")], title="Test", preferences={"practice_context": ["not", "text"]})
