@@ -12,3 +12,4 @@ build/
 .env.*
 !.env.example
 .DS_Store
+\n# Private learner-provided source library\n.local/\n*.sqlite3\n*.sqlite3-*\n
