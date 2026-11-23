@@ -12,6 +12,15 @@ This module compares learner-selected cards and composes ordered drafts. It neve
 
 Preferences are a separate data structure and are never mixed into the source record. Supported fields are a time budget, preferred skills, constraints, and practice context. The optional JSON helper stores preferences locally with restrictive best-effort permissions.
 
+## CLI
+
+Select card IDs explicitly and preserve their supplied order:
+
+```bash
+python scripts/knowledge_playbook.py compare --card-id card_A --card-id card_B
+python scripts/knowledge_playbook.py playbook --title "My Task 2 routine" --card-id card_A --card-id card_B --preferences-json '{"time_budget_minutes":40,"preferred_skills":["writing"]}'
+```
+
 ## Example
 
 ```python
