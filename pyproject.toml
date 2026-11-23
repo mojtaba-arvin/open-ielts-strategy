@@ -26,6 +26,7 @@ ielts-published-knowledge-mcp = "open_ielts_strategy.published_knowledge_mcp:mai
 ielts-practice = "open_ielts_strategy.published_practice_cli:main"
 ielts-knowledge-publish = "open_ielts_strategy.knowledge_publish_cli:main"
 ielts-learning = "open_ielts_strategy.published_learning_cli:main"
+ielts-knowledge-diff = "open_ielts_strategy.knowledge_diff_cli:main"
 
 [tool.setuptools]
 packages = ["open_ielts_strategy"]
