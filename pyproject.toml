@@ -31,7 +31,7 @@ ielts-knowledge-publish = "open_ielts_strategy.knowledge_publish_cli:main"
 ielts-learning = "open_ielts_strategy.published_learning_cli:main"
 ielts-knowledge-diff = "open_ielts_strategy.knowledge_diff_cli:main"
 ielts-knowledge-release = "open_ielts_strategy.knowledge_release:main"
-ielts-knowledge-benchmark = "scripts.benchmark_published_retrieval:main"
+ielts-knowledge-benchmark = "open_ielts_strategy.retrieval_benchmark:main"
 
 [tool.setuptools]
 packages = ["open_ielts_strategy"]
