@@ -126,6 +126,8 @@ A published-only stdio MCP adapter is also available as `ielts-published-knowled
 
 This is the portable-consumption foundation, not yet the complete publication workflow: pack authoring, rights review, leak scanning, diff generation, and human-authorized Git publication remain subsequent work.
 
+The `ielts-practice` command can generate an evidence-attributed practice answer from the published pack with either a local Ollama model or an explicitly selected OpenAI-compatible API provider. It refuses to fabricate strategy attribution and makes no model call when no relevant published evidence is found; see [Published Knowledge Pack v1](docs/knowledge/published-knowledge-pack-v1.md).
+
 ## Principles
 
 - Evaluation cases precede skill implementation.
