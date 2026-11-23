@@ -142,6 +142,17 @@ class PublishedPracticeTests(unittest.TestCase):
         ])
         self.assertEqual(args.embedding_model_path, "/models/embedding")
 
+    def test_cli_parses_openai_compatible_embedding_provider(self):
+        args = build_parser().parse_args([
+            "Describe a memorable journey", "--model", "qwen3:8b",
+            "--embedding-provider", "openai-compatible",
+            "--embedding-model-name", "text-embedding-3-small",
+            "--embedding-api-key-env", "EMBEDDINGS_KEY",
+        ])
+        self.assertEqual(args.embedding_provider, "openai-compatible")
+        self.assertEqual(args.embedding_model_name, "text-embedding-3-small")
+        self.assertEqual(args.embedding_api_key_env, "EMBEDDINGS_KEY")
+
     def test_consumption_registry_is_independent_from_extraction_registry(self):
         provider = build_consumption_provider("ollama", model="qwen3:8b")
         self.assertEqual(provider.model, "qwen3:8b")
