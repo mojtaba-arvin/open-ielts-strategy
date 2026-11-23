@@ -8,6 +8,23 @@ An evaluation-first IELTS learning platform with a portable, versioned Knowledge
 
 Repository foundation with original Writing-feedback, Speaking-transcript-feedback, Reading-strategy, and Listening-strategy skills. Speaking feedback is text-only and does not assess pronunciation or audio delivery. Reading guidance uses learner-supplied material and original synthetic examples. Listening guidance is text-only and reviews learner-authored notes; it does not process audio or transcripts. A separate offline audio-validation foundation validates WAV/MP3 containers but does not transcribe speech or alter those skill contracts. No third-party source content is bundled. The optional knowledge library imports learner-supplied UTF-8 text into a private local SQLite database; it does not scrape or fetch source bodies.
 
+## Published Knowledge Pack readiness
+
+The repository does not fabricate or ship a default approved IELTS Knowledge
+Pack. A pack becomes usable only after its records have rights-reviewed content
+and both content and publication approval. Check the configured pack before
+starting Study, Mentor, Practice, or MCP:
+
+```bash
+ielts-knowledge-status --pack ./knowledge
+```
+
+The command distinguishes a missing directory, an incomplete manifest, an
+invalid pack, and a verified pack with record counts and manifest fingerprint.
+It never creates placeholder records or bypasses publication gates. Until a
+reviewed pack is supplied, pack-backed learning workflows correctly report that
+their knowledge source is unavailable.
+
 ## Quick start
 
 Python 3.11+:
