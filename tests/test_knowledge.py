@@ -46,6 +46,9 @@ class KnowledgeSegmentationTests(unittest.TestCase):
         for segment in segments:
             self.assertLessEqual(len(segment["text"]), 240)
             self.assertEqual(source[segment["start_char"]:segment["end_char"]], segment["text"])
+        self.assertEqual(segments[0]["locator"]["paragraph"], 1)
+        self.assertIn("part", segments[1]["locator"])
+        self.assertEqual(segments[-1]["locator"]["paragraph"], 2)
 
     def test_empty_input_and_invalid_segment_limit_are_rejected(self):
         with self.assertRaises(ValueError):
