@@ -80,7 +80,16 @@ For source-derived records, map each record to its private semantic item IDs wit
 
 The `--confirm-human-review` flag is an explicit operator attestation, not an automated legal determination. Rights metadata and model-generated content are never treated as self-approving.
 
-Retrieval defaults to in-memory BM25 and works without an embedding model. For local dense/hybrid retrieval, install `.[local-embeddings]` and pass an existing on-disk sentence-transformer directory with `--embedding-model-path /path/to/cached/model` to either `ielts-practice` or `ielts-published-knowledge-mcp`. The adapter uses `local_files_only=True`; it will not download model weights. The default hybrid fusion is BM25 plus cosine similarity. `PublishedIndexStore` can persist public-only document text/vectors in a separate SQLite cache; its identity includes the pack manifest digest and embedding-model fingerprint, and stale identities must be rebuilt. `EnhancedPublishedRetrievalEngine` accepts optional query-rewriter and reranker adapters, but neither is enabled unless explicitly injected. Remote embedding providers and production benchmark calibration remain future work.
+Retrieval defaults to in-memory BM25 and works without an embedding model. For local dense/hybrid retrieval, install `.[local-embeddings]` and pass an existing on-disk sentence-transformer directory with `--embedding-model-path /path/to/cached/model` to either `ielts-practice` or `ielts-published-knowledge-mcp`. The adapter uses `local_files_only=True`; it will not download model weights. The default hybrid fusion is BM25 plus cosine similarity. `PublishedIndexStore` can persist public-only document text/vectors in a separate SQLite cache; its identity includes the pack manifest digest and embedding-model fingerprint, and stale identities must be rebuilt. The Practice CLI can use that cache for repeat runs: `EnhancedPublishedRetrievalEngine` accepts optional query-rewriter and reranker adapters, but neither is enabled unless explicitly injected.
+
+```bash
+ielts-practice "How can I structure a direct answer?" --pack ./knowledge \
+  --provider ollama --model qwen3:8b \
+  --embedding-model-path /path/to/cached/model \
+  --index-db .local/published-index.sqlite \
+  --embedding-model-fingerprint sentence-transformers/model-name@revision
+```
+ Use a stable fingerprint that identifies the exact local model revision; changing either the pack manifest or model fingerprint triggers a rebuild. The index contains only published strategy text and vectors, never private source or learner data. Remote embedding providers and production benchmark calibration remain future work.
 
 ## Study, Mentor, and Example workflows
 
