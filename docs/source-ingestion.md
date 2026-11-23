@@ -44,3 +44,10 @@ Source registry entries are administrative metadata only. A status field is not 
 ## Permission record
 
 Capture a private evidence reference, reviewer, review date, rights holder, allowed use, commercial status, redistribution, modification, attribution, territory, expiry, and conditions. Keep this evidence outside Git.
+
+
+## Optional local document processing
+
+TXT and Markdown are read as UTF-8. DOCX extraction is performed from bounded XML package contents; macro-bearing archives are rejected. PDF text extraction requires the optional `documents` extra, rejects encrypted files, and enforces a page limit. Scanned PDF OCR, remote URL fetching, and cloud upload are not supported. See [Local UI and Documents](local-ui-and-documents.md).
+
+SQLite backup/restore helpers produce unencrypted copies. Backups must be stored privately and protected with full-disk encryption. See [Knowledge Evaluation](knowledge-evaluation.md) for the human-review protocol and benchmark limitations.
