@@ -89,8 +89,8 @@ class NewInfrastructureTests(unittest.TestCase):
 
     def test_semantic_scan_reports_similarity_without_private_text(self):
         report = scan_semantic_publication_leaks(
-            ["public wording that is sufficiently long to become a semantic chunk for review."],
-            [{"source_id": "private-17", "text": "private wording that is sufficiently long to become a semantic chunk for review."}],
+            ["public wording that is sufficiently long to become a semantic chunk for review and should be checked against retained source material."],
+            [{"source_id": "private-17", "text": "private wording that is sufficiently long to become a semantic chunk for review and should be checked against retained source material."}],
             FakeEmbeddings(), threshold=.9,
         )
         self.assertFalse(report["passed"])
