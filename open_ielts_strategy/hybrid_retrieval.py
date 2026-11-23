@@ -64,11 +64,12 @@ def hybrid_search(store, query: str, *, provider: EmbeddingProvider | None = Non
                     g.start_char, g.end_char, g.locator_json, s.source_id, s.title AS source_title,
                     s.source_type, s.author, s.source_url, s.rights_status
              FROM knowledge_cards c JOIN segments g ON g.segment_id=c.segment_id
-             JOIN sources s ON s.source_id=c.source_id LIMIT 5000"""
+             JOIN sources s ON s.source_id=c.source_id"""
     params = ()
     if status:
         sql += " WHERE c.status=?"
         params = (status,)
+    sql += " LIMIT 5000"
     rows = store._connection.execute(sql, params).fetchall()
     records = []
     qtokens = _tokens(query)
