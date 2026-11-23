@@ -17,6 +17,12 @@ class RuntimeTests(unittest.TestCase):
         result = run_arm("baseline", cases, "mock")
         self.assertEqual([row["category"] for row in result["results"]], ["routing_positive", "behavioral"])
 
+    def test_runtime_rejects_unsupported_case_categories(self):
+        for category in (None, True, 7, "other", []):
+            case = {**CASES[0], "category": category}
+            with self.subTest(category=category), self.assertRaisesRegex(ValueError, "category must be one of"):
+                run_arm("baseline", [case], "mock")
+
     def test_mock_arms_use_identical_inputs(self):
         baseline = run_arm("baseline", CASES, "mock")
         skill = run_arm("skill", CASES, "mock")
@@ -118,6 +124,20 @@ class RuntimeTests(unittest.TestCase):
                 row["mode"] = "openai"
                 row["score"] = 0.8
         return baseline, skill
+
+    def test_aggregate_rejects_malformed_scorecard_categories(self):
+        baseline, skill = self._paid_scorecards()
+        baseline["results"][0]["category"] = []
+        skill["results"][0]["category"] = []
+        with self.assertRaisesRegex(ValueError, "category must be a supported"):
+            aggregate(baseline, skill)
+
+    def test_aggregate_rejects_category_mismatch_between_arms(self):
+        baseline, skill = self._paid_scorecards()
+        baseline["results"][0]["category"] = "routing_positive"
+        skill["results"][0]["category"] = "behavioral"
+        with self.assertRaisesRegex(ValueError, "inconsistent evaluation categories"):
+            aggregate(baseline, skill)
 
     def test_aggregate_rejects_non_finite_scores(self):
         baseline, skill = self._paid_scorecards()
