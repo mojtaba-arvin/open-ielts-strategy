@@ -14,9 +14,18 @@ def _tokens(text: str) -> set[str]:
     return set(re.findall(r"[^\W_]+", text.casefold(), flags=re.UNICODE))
 
 
+def _validated_vector(vector) -> list[float]:
+    import math
+    if not isinstance(vector, (list, tuple)) or not vector:
+        raise ValueError("embedding vectors must be non-empty numeric sequences")
+    if any(type(value) not in (int, float) or not math.isfinite(value) for value in vector):
+        raise ValueError("embedding vectors must contain only finite numbers")
+    return [float(value) for value in vector]
+
+
 def _cosine(left: list[float], right: list[float]) -> float:
     if not left or len(left) != len(right):
-        return 0.0
+        raise ValueError("embedding vectors must have the same non-zero dimension")
     dot = sum(a * b for a, b in zip(left, right))
     norms = math.sqrt(sum(x * x for x in left)) * math.sqrt(sum(x * x for x in right))
     return dot / norms if norms else 0.0
@@ -78,6 +87,7 @@ def hybrid_search(store, query: str, *, provider: EmbeddingProvider | None = Non
         vectors = provider.encode([query] + [record[2] for record in records])
         if len(vectors) != len(records) + 1:
             raise ValueError("embedding provider returned an unexpected vector count")
+        vectors = [_validated_vector(vector) for vector in vectors]
         query_vector = vectors[0]
         semantic_scores = [_cosine(query_vector, vector) for vector in vectors[1:]]
     results = []
