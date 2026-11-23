@@ -21,3 +21,5 @@ A ninth validation run includes concept lookup, MCP answer tools, and stricter m
 A tenth validation run includes the latest consumption-provider contract tests and expanded published record APIs.
 
 An eleventh run validates the exact latest feature head (including the final typed-relationship and roadmap updates).
+
+A twelfth run includes the publication-diff CLI and final typed relationship lookup.
