@@ -19,3 +19,5 @@ An eighth validation run includes multi-record Knowledge Pack loading/building, 
 A ninth validation run includes concept lookup, MCP answer tools, and stricter manifest/file-set integrity checks.
 
 A tenth validation run includes the latest consumption-provider contract tests and expanded published record APIs.
+
+An eleventh run validates the exact latest feature head (including the final typed-relationship and roadmap updates).
