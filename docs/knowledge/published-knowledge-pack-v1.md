@@ -92,6 +92,16 @@ The Mentor and Example commands consume only the published pack. Example generat
 
 The builder also accepts repeated `--concept`, `--relationship`, and `--learning-path` draft files. All record types are validated, cross-references are checked, and source-derived records can be mapped to private review items with `--source-item RECORD_ID=SITEM_ID`. Concepts and learning paths are included in the same manifest and checksummed build.
 
+## Review the publication diff
+
+Compare the current public pack with a newly built candidate before any Git operation:
+
+```bash
+ielts-knowledge-diff --current ./knowledge --candidate ./.local/candidate-knowledge
+```
+
+The command verifies both packs, emits deterministic added/modified/removed record diffs with exact pack versions and manifest digests, and blocks candidate content containing common secret-like values. It is review output only: it does not create a commit, push, or release. A separate human review is mandatory. The diff scanner cannot compare against private source bodies; that check occurs during the local pack build.
+
 ## Published Knowledge MCP (stdio)
 
 Install the optional MCP dependency and run the published-only adapter against a checked-out pack:
