@@ -15,6 +15,7 @@ SCHEMA_NAMES = (
     "concept.schema.json",
     "relationship.schema.json",
     "learning-path.schema.json",
+    "example.schema.json",
     "knowledge-pack.schema.json",
 )
 
@@ -45,6 +46,15 @@ def fixtures():
             "type": "illustrates", "rationale": "The strategy supports the concept.",
             "provenance": provenance, "review": review,
         },
+        "example.schema.json": {
+            "id": "speaking.example.direct-answer-01", "schema_version": "1.0",
+            "strategy_id": "speaking.answer-development", "skill": "speaking",
+            "task": "Describe a recent learning experience.",
+            "content": "I recently learned to cook a new dish.",
+            "strategy_application": "The opening sentence answers the question directly.",
+            "learning_note": "Follow the answer with one relevant detail.",
+            "provenance": provenance, "review": review, "version": "1.0.0",
+        },
         "learning-path.schema.json": {
             "id": "speaking.foundations", "schema_version": "1.0",
             "title": "Speaking Foundations", "skill": "speaking",
@@ -53,9 +63,12 @@ def fixtures():
             "prerequisites": [], "provenance": provenance, "review": review, "version": "1.0.0",
         },
         "knowledge-pack.schema.json": {
-            "format": "open-ielts-knowledge-pack", "schema_version": "1.0",
+            "format": "open-ielts-knowledge-pack", "schema_version": "1.1",
             "pack_version": "1.0.0",
-            "files": [{"path": "strategies/speaking/speaking.answer-development.json", "sha256": "0" * 64}],
+            "files": [
+                {"path": "strategies/speaking/speaking.answer-development.json", "sha256": "0" * 64},
+                {"path": "examples/speaking/speaking.example.direct-answer-01.json", "sha256": "1" * 64},
+            ],
         },
     }
 
