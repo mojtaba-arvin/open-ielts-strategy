@@ -198,6 +198,27 @@ class NewInfrastructureTests(unittest.TestCase):
         self.assertEqual(asyncio.run(request()), 204)
         self.assertEqual(asyncio.run(request()), 429)
 
+    def test_http_middleware_rejects_negative_content_length(self):
+        async def app(scope, receive, send):
+            await send({"type": "http.response.start", "status": 204, "headers": []})
+            await send({"type": "http.response.body", "body": b""})
+        middleware = AuthenticatedMCPMiddleware(
+            app, token="d" * 40, allowed_hosts={"localhost"},
+            audit_sink=lambda event: None,
+        )
+        async def run():
+            messages = []
+            async def receive():
+                return {"type": "http.request", "body": b"", "more_body": False}
+            async def send(message):
+                messages.append(message)
+            await middleware({"type": "http", "method": "POST", "path": "/mcp",
+                              "headers": [(b"authorization", b"Bearer " + b"d" * 40),
+                                          (b"host", b"localhost"), (b"content-length", b"-1")],
+                              "client": ("127.0.0.1", 1)}, receive, send)
+            return messages[0]["status"]
+        self.assertEqual(asyncio.run(run()), 400)
+
     def test_http_middleware_rejects_chunked_body_over_limit(self):
         async def app(scope, receive, send):
             await receive()
