@@ -10,6 +10,11 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlparse
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
 from .semantic_extraction import (
     ALLOWED_KINDS, MAX_OUTPUT_CHARS, ExtractionError, validate_extraction,
 )
@@ -107,7 +112,7 @@ class OpenAICompatibleProvider:
         raw = None
         for attempt in range(self.max_retries + 1):
             try:
-                with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
+                with urllib.request.build_opener(_NoRedirect()).open(request, timeout=self.timeout_seconds) as response:
                     raw = response.read(MAX_OUTPUT_CHARS + 1)
                 break
             except urllib.error.HTTPError as exc:
