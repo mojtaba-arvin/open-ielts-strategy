@@ -11,3 +11,8 @@ For a live run, dispatch the **Judge calibration** workflow with the exact issue
 The live sample is selected deterministically by round-robin task stratification, so a budget of at least two includes both Task 1 and Task 2 when both groups are available; the previous corpus-order bias is removed. A budget of one cannot represent both task types.
 
 The workflow requires explicit live-run dispatch and a bounded item-call budget. The judge uses JUDGE_API_KEY and JUDGE_MODEL independently from the agent model. Spearman correlation is reported only with at least three matched human ratings and non-constant score vectors; zero-variance vectors are reported as undefined rather than being mislabeled as zero correlation. A deterministic bootstrap 95% interval is emitted at n >= 10 only when at least 800 of 1,000 resamples yield a defined estimate. Small samples are descriptive, not validation of examiner equivalence.
+
+
+## Versioned calibration audit
+
+The offline `open_ielts_strategy.calibration_audit.audit_calibration` helper compares versioned judge scorecards using a rubric fingerprint, reports per-dimension agreement and score deltas, and flags cases meeting a review threshold. Optional human-reference comparisons require provenance fields but do not authenticate reviewer identity or qualifications. Agreement is not accuracy; flagged differences are review candidates, not proof that either judge is correct. See [Calibration Audit](calibration-audit.md).
