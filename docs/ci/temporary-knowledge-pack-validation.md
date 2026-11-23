@@ -9,3 +9,5 @@ A third validation run includes schema meta-validation and the latest publicatio
 A fourth validation run includes the rolling-hash private-source scanner, local pack builder gate integration, and schema CI checks.
 
 A fifth run validates BM25/dense retrieval integration and the new local embedding CLI option.
+
+A sixth run validates BM25 and optional dense retrieval integration into published practice and MCP.
