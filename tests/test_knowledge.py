@@ -183,6 +183,18 @@ class KnowledgeStoreTests(unittest.TestCase):
         finally:
             reopened.close()
 
+    def test_existing_database_parent_permissions_are_not_changed(self):
+        if os.name != "posix":
+            self.skipTest("POSIX permission bits are not available")
+        shared_dir = Path(self.temp_dir.name) / "shared"
+        shared_dir.mkdir()
+        shared_dir.chmod(0o755)
+        separate = KnowledgeStore(shared_dir / "other.sqlite3")
+        try:
+            self.assertEqual(shared_dir.stat().st_mode & 0o777, 0o755)
+        finally:
+            separate.close()
+
 
 if __name__ == "__main__":
     unittest.main()
