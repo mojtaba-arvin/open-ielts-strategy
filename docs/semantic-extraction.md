@@ -35,7 +35,14 @@ with KnowledgeStore() as store:
     items = list_semantic_items(store, source_id)
 ```
 
-The local Ollama service must already be running. This adapter does not download models or install dependencies. No remote endpoint, paid API, or secret is supported.
+List and review the extracted items without exposing the original transcript in Git:
+
+```bash
+python scripts/knowledge.py semantic-items src_ID
+python scripts/knowledge.py review-semantic sitem_ID --status user_approved --note "Useful for my speaking practice"
+```
+
+Review states and reviewer notes are stored separately from the model's extraction rationale. They are personal curation, not a validation of IELTS correctness. The local Ollama service must already be running. This adapter does not download models or install dependencies. No remote endpoint, paid API, or secret is supported.
 
 ## Acceptance boundary
 
