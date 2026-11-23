@@ -67,6 +67,17 @@ ielts-published-knowledge-mcp --pack ./knowledge
 
 The server exposes only `search_strategies`, `get_strategy`, and `get_related_strategies`. It loads and verifies the pack at startup and returns the pack version and manifest digest with results. It does not import the private SQLite store, expose private ingestion/review tools, or contact a model. Restart the server after changing the checked-out pack. This v1 adapter supports stdio; authenticated Streamable HTTP remains a separate deployment task.
 
+## Practice against published knowledge
+
+A portable practice answer can be generated from the published pack without opening the private SQLite library:
+
+```bash
+ielts-practice "How can I give a direct answer?" --pack ./knowledge \
+  --skill speaking --provider ollama --model qwen3:8b
+```
+
+Choose `--provider openai-compatible` and configure the API key environment variable to use a remote model. This sends the retrieved public pack context and learner question to that service. The CLI does not silently switch providers. If retrieval finds no evidence, it returns without making a model call. Generated attribution IDs are checked against the retrieved strategy IDs, and every result carries the exact pack version and manifest digest.
+
 ## Governance boundary
 
 Loading validates structure and integrity. It does not grant rights, certify IELTS advice, or authorize publication. The publication workflow must independently enforce human content approval, rights approval, private-data leakage checks, deterministic build validation, diff review, and explicit maintainer authorization before commit/push.
