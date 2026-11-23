@@ -53,6 +53,8 @@ class KnowledgePipelineTests(unittest.TestCase):
                 refreshed = list_semantic_items(store, source["source_id"])[0]
                 self.assertEqual(refreshed["status"], "user_approved")
                 self.assertEqual(refreshed["text"], "Speaking answer structure.")
+                self.assertEqual(refreshed["rationale"], "A source recommendation.")
+                self.assertEqual(refreshed["review_note"], "Useful for my practice.")
 
     def test_unknown_semantic_item_review_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
