@@ -25,3 +25,5 @@ An eleventh run validates the exact latest feature head (including the final typ
 A twelfth run includes the publication-diff CLI and final typed relationship lookup.
 
 A thirteenth run validates the new publication-diff CLI and version-bump rule.
+
+A final run validates the latest version-bump regression test and package metadata description.
