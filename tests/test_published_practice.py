@@ -7,7 +7,7 @@ from pathlib import Path
 from open_ielts_strategy.knowledge_pack import load_knowledge_pack
 from open_ielts_strategy.published_practice import generate_published_practice_answer
 from open_ielts_strategy.published_retrieval import PublishedRetrievalEngine
-from open_ielts_strategy.text_generation import GenerationError, build_consumption_provider
+from open_ielts_strategy.text_generation import (\n    FallbackTextGenerationProvider, GenerationError, OpenAICompatibleTextProvider, build_consumption_provider,\n)
 from open_ielts_strategy.published_practice_cli import build_parser
 
 
@@ -162,3 +162,48 @@ class PublishedPracticeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ProviderFallbackTests(unittest.TestCase):
+    def test_provider_failure_uses_only_explicit_next_provider(self):
+        class Broken:
+            def generate(self, prompt):
+                raise GenerationError("primary unavailable")
+
+        fallback = FakeProvider('{"ok": true}')
+        chain = FallbackTextGenerationProvider([Broken(), fallback])
+        self.assertEqual(chain.generate("prompt"), '{"ok": true}')
+        self.assertEqual(fallback.calls, 1)
+
+    def test_invalid_structured_output_uses_next_provider(self):
+        invalid = FakeProvider("not-json")
+        valid = FakeProvider('{"answer": "grounded"}')
+        chain = FallbackTextGenerationProvider(
+            [invalid, valid], response_validator=lambda value: isinstance(json.loads(value), dict)
+        )
+        self.assertEqual(chain.generate("prompt"), '{"answer": "grounded"}')
+        self.assertEqual(invalid.calls, 1)
+        self.assertEqual(valid.calls, 1)
+
+    def test_remote_fallback_requires_explicit_data_egress_opt_in(self):
+        class Broken:
+            def generate(self, prompt):
+                raise GenerationError("local model unavailable")
+
+        remote = OpenAICompatibleTextProvider("model")
+        with self.assertRaisesRegex(ValueError, "allow_remote_fallback"):
+            FallbackTextGenerationProvider([Broken(), remote])
+        chain = FallbackTextGenerationProvider(
+            [Broken(), remote], allow_remote_fallback=True
+        )
+        self.assertEqual(len(chain.providers), 2)
+
+    def test_all_provider_failures_raise_sanitized_generation_error(self):
+        class Broken:
+            def generate(self, prompt):
+                raise GenerationError("secret endpoint detail")
+
+        chain = FallbackTextGenerationProvider([Broken(), Broken()])
+        with self.assertRaisesRegex(GenerationError, "2 attempts") as raised:
+            chain.generate("prompt")
+        self.assertNotIn("secret endpoint detail", str(raised.exception))
