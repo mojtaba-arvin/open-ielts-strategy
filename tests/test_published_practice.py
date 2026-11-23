@@ -7,6 +7,7 @@ from pathlib import Path
 from open_ielts_strategy.knowledge_pack import load_knowledge_pack
 from open_ielts_strategy.published_practice import generate_published_practice_answer
 from open_ielts_strategy.text_generation import GenerationError, build_consumption_provider
+from open_ielts_strategy.published_practice_cli import build_parser
 
 
 class FakeProvider:
@@ -107,6 +108,14 @@ class PublishedPracticeTests(unittest.TestCase):
                 generate_published_practice_answer(
                     pack, "How can I give a direct answer?", skill="speaking", provider=provider
                 )
+
+
+    def test_cli_accepts_explicit_local_embedding_model_path(self):
+        args = build_parser().parse_args([
+            "Describe a memorable journey", "--model", "qwen3:8b",
+            "--embedding-model-path", "/models/embedding",
+        ])
+        self.assertEqual(args.embedding_model_path, "/models/embedding")
 
     def test_consumption_registry_is_independent_from_extraction_registry(self):
         provider = build_consumption_provider("ollama", model="qwen3:8b")
