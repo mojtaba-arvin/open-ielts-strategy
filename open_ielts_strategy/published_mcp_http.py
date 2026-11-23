@@ -106,8 +106,11 @@ class AuthenticatedMCPMiddleware:
             host = headers.get(b"host", b"").decode("latin1").split(":", 1)[0].casefold()
             if host not in self.allowed_hosts:
                 return await respond(421, "host not allowed")
-            if path == "/healthz" and method == "GET":
-                subject = "health-check"
+            if path in {"/healthz", "/readyz"} and method == "GET":
+                # The published pack is fully loaded and integrity-checked before
+                # create_http_app returns. Reaching this middleware therefore
+                # means startup validation succeeded; keep both probes content-free.
+                subject = "health-check" if path == "/healthz" else "readiness-check"
                 return await respond(200, "ok")
             origin = headers.get(b"origin")
             if origin and self.allowed_origins and origin.decode("latin1") not in self.allowed_origins:
