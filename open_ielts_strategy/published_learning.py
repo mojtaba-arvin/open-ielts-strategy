@@ -115,7 +115,10 @@ def generate_published_strategy_example(pack: KnowledgePack, strategy_id: str, t
         "summary": strategy["summary"],
         "steps": strategy["steps"],
         "limitations": strategy["limitations"],
-        "existing_examples": strategy["examples"],
+        "existing_examples": strategy["examples"] + [
+            example["content"] for example in pack.examples
+            if example["strategy_id"] == strategy_id
+        ],
         "task": task,
         "pack_version": pack.pack_version,
     }
@@ -130,10 +133,14 @@ def generate_published_strategy_example(pack: KnowledgePack, strategy_id: str, t
     result = _parse_structured_text(
         provider.generate(prompt), {"example", "strategy_application", "learning_note"}
     )
+    existing_examples = strategy["examples"] + [
+        example["content"] for example in pack.examples
+        if example["strategy_id"] == strategy_id
+    ]
     scan = scan_publication_leaks(
         [result["example"]],
         [{"source_id": f"existing-example-{index}", "text": value}
-         for index, value in enumerate(strategy["examples"])],
+         for index, value in enumerate(existing_examples)],
     )
     if not scan["passed"]:
         raise GenerationError("generated example contains a long exact overlap with an existing example")
