@@ -103,6 +103,8 @@ class KnowledgeStoreTests(unittest.TestCase):
         hits = self.store.search("Writing Task 2 plan", topic="writing_task_2")
         self.assertTrue(hits)
         self.assertEqual(hits[0]["source_id"], result["source_id"])
+        self.assertTrue(hits[0]["segment_id"].startswith("seg_"))
+        self.assertTrue(hits[0]["card_id"].startswith("card_"))
         self.assertEqual(hits[0]["source_url"], "https://example.org/episode")
         self.assertGreater(hits[0]["end_char"], hits[0]["start_char"])
         self.assertIn("Writing Task 2", hits[0]["excerpt"])
