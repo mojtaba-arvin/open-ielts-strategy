@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import json
+import stat
 import tempfile
 import unittest
 from pathlib import Path
@@ -95,8 +96,9 @@ class NewInfrastructureTests(unittest.TestCase):
 
     def test_persistent_index_reuses_matching_pack_and_model_fingerprint(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "index.sqlite"
+            path = Path(tmp) / "nested" / "index.sqlite"
             store = PublishedIndexStore(path)
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
             first = store.build(FakePack(), model_fingerprint="local-model-v1", embedding_provider=FakeEmbeddings())
             second = store.build(FakePack(), model_fingerprint="local-model-v1", embedding_provider=FakeEmbeddings())
             self.assertTrue(first["rebuilt"])
@@ -129,7 +131,9 @@ class NewInfrastructureTests(unittest.TestCase):
 
     def test_practice_review_requires_complete_five_point_rubric_and_reports_agreement(self):
         with tempfile.TemporaryDirectory() as tmp:
-            store = PracticeReviewStore(Path(tmp) / "reviews.sqlite")
+            review_path = Path(tmp) / "private" / "reviews.sqlite"
+            store = PracticeReviewStore(review_path)
+            self.assertEqual(stat.S_IMODE(review_path.stat().st_mode), 0o600)
             store.register_output("answer-1", pack_version="1.0.0",
                                   manifest_sha256="a" * 64, output_sha256="b" * 64)
             scores = {key: 4 for key in (
