@@ -1,0 +1,23 @@
+{
+  "fixture_policy": "Original synthetic IELTS-learning examples only; these labels are author-created test annotations, not independent expert ratings.",
+  "cases": [
+    {
+      "source": "For IELTS Writing Task 2, plan before drafting.",
+      "annotations": [
+        {"kind": "recommendation", "text": "For IELTS Writing Task 2, plan before drafting.", "start_char": 0, "end_char": 49}
+      ]
+    },
+    {
+      "source": "For example, write one clear topic sentence.",
+      "annotations": [
+        {"kind": "example", "text": "For example, write one clear topic sentence.", "start_char": 0, "end_char": 44}
+      ]
+    },
+    {
+      "source": "Research shows that spaced practice can help retention.",
+      "annotations": [
+        {"kind": "claim", "text": "Research shows that spaced practice can help retention.", "start_char": 0, "end_char": 55}
+      ]
+    }
+  ]
+}
