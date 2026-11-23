@@ -21,7 +21,8 @@ def build_knowledge_pack(strategies: list[dict[str, Any]], destination: str | Pa
                          relationships: list[dict[str, Any]] | None = None,
                          learning_paths: list[dict[str, Any]] | None = None,
                          store=None,
-                         source_item_ids_by_strategy: dict[str, list[str]] | None = None) -> dict:
+                         source_item_ids_by_strategy: dict[str, list[str]] | None = None,
+                         semantic_embedding_provider=None) -> dict:
     """Build a new local pack; never commits or pushes to Git.
 
     The legacy source_item_ids_by_strategy mapping accepts any published record
@@ -127,6 +128,14 @@ def build_knowledge_pack(strategies: list[dict[str, Any]], destination: str | Pa
     leak_report = scan_publication_leaks(scan_payloads, list(private_sources_by_key.values()))
     if not leak_report["passed"]:
         raise KnowledgePackError("publication leak scan detected private source overlap or secret material")
+    semantic_leak_report = None
+    if semantic_embedding_provider is not None:
+        from .semantic_publication_scan import scan_semantic_publication_leaks
+        semantic_leak_report = scan_semantic_publication_leaks(
+            scan_payloads, list(private_sources_by_key.values()), semantic_embedding_provider,
+        )
+        if not semantic_leak_report["passed"]:
+            raise KnowledgePackError("semantic publication scan detected high-similarity private source overlap")
 
     root = Path(destination).expanduser().absolute()
     if root.exists():
@@ -166,6 +175,8 @@ def build_knowledge_pack(strategies: list[dict[str, Any]], destination: str | Pa
             "relationship_count": len(pack.relationships),
             "learning_path_count": len(pack.learning_paths),
             "manifest_sha256": pack.manifest_sha256,
+            "exact_leak_scan": leak_report,
+            "semantic_leak_scan": semantic_leak_report or {"status": "not_run", "reason": "no local semantic embedding provider configured"},
             "committed_to_git": False,
             "pushed_to_remote": False,
         }
