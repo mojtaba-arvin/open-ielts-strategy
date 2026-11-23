@@ -47,17 +47,21 @@ def list_private_semantic_items(store: ReadOnlyKnowledgeStore, source_id: str) -
     ).fetchone()
     if not table:
         return {"source_id": source_id, "items": [], "item_count": 0}
-    rows = store._connection.execute(
-        """SELECT i.item_id, i.kind, i.text, i.start_char, i.end_char,
-                  i.topic_tags_json, i.rationale, i.status, i.review_note,
-                  e.model_name, e.prompt_version, e.created_at,
-                  COALESCE(r.state, 'retained') AS source_text_state
-           FROM semantic_items i
-           JOIN semantic_extractions e ON e.extraction_id=i.extraction_id
-           LEFT JOIN source_retention r ON r.source_id=i.source_id
-           WHERE i.source_id=? ORDER BY i.start_char, i.item_id""",
-        (source_id,),
-    ).fetchall()
+    retention_table = store._connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='source_retention'"
+    ).fetchone()
+    retention_select = "COALESCE(r.state, 'retained')" if retention_table else "'retained'"
+    retention_join = "LEFT JOIN source_retention r ON r.source_id=i.source_id" if retention_table else ""
+    query = (
+        "SELECT i.item_id, i.kind, i.text, i.start_char, i.end_char, "
+        "i.topic_tags_json, i.rationale, i.status, i.review_note, "
+        "e.model_name, e.prompt_version, e.created_at, "
+        + retention_select + " AS source_text_state "
+        "FROM semantic_items i JOIN semantic_extractions e ON e.extraction_id=i.extraction_id "
+        + retention_join +
+        " WHERE i.source_id=? ORDER BY i.start_char, i.item_id"
+    )
+    rows = store._connection.execute(query, (source_id,)).fetchall()
     import json
     items = [{
         **dict(row), "topic_tags": json.loads(row["topic_tags_json"])
