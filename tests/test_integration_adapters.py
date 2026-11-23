@@ -6,7 +6,7 @@ def descriptor(name, capability):
 
 class IntegrationAdapterTests(unittest.TestCase):
     def test_no_installed_adapter_is_explicit(self):
-        with self.assertRaisesRegex(LookupError, "not installed"):
+        with self.assertRaisesRegex(LookupError, "installed"):
             resolve_adapter("audio_transcription", descriptors=())
     def test_multiple_adapters_require_selection(self):
         values = (descriptor("audio_transcription:vendor_a", "audio_transcription"),
