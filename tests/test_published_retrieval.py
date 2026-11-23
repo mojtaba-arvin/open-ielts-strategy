@@ -141,11 +141,11 @@ def revise_first_strategy(root):
 class PublishedIndexIncrementalTests(unittest.TestCase):
     def test_only_changed_records_are_reembedded_after_pack_revision(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp) / "pack"
             make_pack(root)
             add_second_strategy(root)
             provider = CountingEmbeddings()
-            store = PublishedIndexStore(root / "index.sqlite")
+            store = PublishedIndexStore(Path(tmp) / "index.sqlite")
             try:
                 first_pack = load_knowledge_pack(root)
                 first = store.build(first_pack, model_fingerprint="fake-v1", embedding_provider=provider)
@@ -168,9 +168,9 @@ class PublishedIndexIncrementalTests(unittest.TestCase):
 
     def test_embedding_failure_keeps_previous_index_and_metadata(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
+            root = Path(tmp) / "pack"
             make_pack(root)
-            store = PublishedIndexStore(root / "index.sqlite")
+            store = PublishedIndexStore(Path(tmp) / "index.sqlite")
             provider = CountingEmbeddings()
             try:
                 first_pack = load_knowledge_pack(root)
