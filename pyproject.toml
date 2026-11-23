@@ -21,6 +21,7 @@ mcp = ["mcp>=1.9,<2"]
 ielts-knowledge-web = "open_ielts_strategy.knowledge_web:serve"
 ielts-knowledge-mcp = "open_ielts_strategy.knowledge_mcp:main"
 ielts-knowledge-answer = "open_ielts_strategy.knowledge_answer_cli:main"
+ielts-published-knowledge-mcp = "open_ielts_strategy.published_knowledge_mcp:main"
 
 [tool.setuptools]
 packages = ["open_ielts_strategy"]
