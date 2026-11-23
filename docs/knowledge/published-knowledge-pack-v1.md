@@ -90,6 +90,8 @@ ielts-learning example --pack ./knowledge --strategy-id speaking.answer-developm
 
 The Mentor and Example commands consume only the published pack. Example generation checks for long exact overlap with existing examples; this does not prove semantic originality. The published MCP server exposes `get_learning_path` and `create_study_plan` without a model. Configure `--provider` and `--model` on the MCP command to expose `explain_strategy` and `generate_strategy_example` tools as well.
 
+The builder also accepts repeated `--concept`, `--relationship`, and `--learning-path` draft files. All record types are validated, cross-references are checked, and source-derived records can be mapped to private review items with `--source-item RECORD_ID=SITEM_ID`. Concepts and learning paths are included in the same manifest and checksummed build.
+
 ## Published Knowledge MCP (stdio)
 
 Install the optional MCP dependency and run the published-only adapter against a checked-out pack:
