@@ -70,5 +70,10 @@ class KnowledgeRetentionTests(unittest.TestCase):
                 store._connection.commit()
                 purge_source_text(store, source["source_id"], confirm=True)
                 from open_ielts_strategy.hybrid_retrieval import hybrid_search
-                results = hybrid_search(store, "IELTS Speaking answer")
+                retained = list_semantic_items(store, source["source_id"])
+                self.assertEqual(len(retained), 1)
+                self.assertEqual(retained[0]["text"], item["text"])
+                self.assertEqual(retained[0]["status"], "user_approved")
+                results = hybrid_search(store, item["text"])
+                self.assertTrue(results, "reviewed semantic item should remain in hybrid retrieval")
                 self.assertEqual(results[0]["card_id"], item["item_id"])
