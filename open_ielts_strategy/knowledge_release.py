@@ -125,6 +125,8 @@ def publish_pack(repo_path: str | Path, candidate_path: str | Path, target_relat
     if confirm_publish is not True:
         raise ValueError("publication requires explicit --confirm-publish")
     _validate_branch(branch)
+    if branch in {"main", "master"}:
+        raise ValueError("publish to a dedicated release branch and use a reviewed pull request for the protected default branch")
     if not re.fullmatch(r"[0-9a-f]{40,64}", expected_head):
         raise ValueError("expected_head must be a full Git commit SHA")
     repo = Path(repo_path).resolve()
