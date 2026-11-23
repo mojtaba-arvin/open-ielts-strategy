@@ -71,8 +71,8 @@ def ingest_private_source(db_path: str, text: str, title: str, *,
         )
     return {
         "source_id": result["source_id"], "content_sha256": result["content_sha256"],
-        "segment_count": result["segment_count"], "card_count": result["card_count"],
-        "stored_locally": True,
+        "segment_count": result["segment_count"], "candidate_count": result.get("candidate_count", result["segment_count"]),
+        "stored_locally": True, "duplicate": result.get("duplicate", False),
     }
 
 
