@@ -1,5 +1,5 @@
 """Fail-closed validation for metadata-only source provenance records."""
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 LEGAL_STATUSES = {"pending", "cleared", "licensed", "restricted", "blocked", "expired", "under_review"}
@@ -68,7 +68,13 @@ def validate_source_record(source):
     expiry = source.get("expiry")
     if expiry is not None:
         try:
-            _parse_timezone_aware(expiry)
+            expiry_at = _parse_timezone_aware(expiry)
         except (TypeError, ValueError):
             errors.append("expiry must be null or timezone-aware ISO-8601")
+        else:
+            if expiry_at <= datetime.now(timezone.utc):
+                if status != "expired":
+                    errors.append("expired permission must use legal_status=expired")
+                if allowed is True:
+                    errors.append("expired permission cannot allow public content")
     return errors
