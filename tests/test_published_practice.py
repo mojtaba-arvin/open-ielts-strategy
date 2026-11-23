@@ -93,6 +93,21 @@ class PublishedPracticeTests(unittest.TestCase):
                     pack, "How can I give a direct answer?", skill="speaking", provider=provider
                 )
 
+
+    def test_model_cannot_return_empty_strategy_attribution(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pack_fixture(root)
+            pack = load_knowledge_pack(root)
+            provider = FakeProvider(json.dumps({
+                "answer": "Sample.", "strategy_ids_used": [],
+                "reasoning_explanation": "No strategy used.", "practice_suggestion": "Try again.",
+            }))
+            with self.assertRaises(GenerationError):
+                generate_published_practice_answer(
+                    pack, "How can I give a direct answer?", skill="speaking", provider=provider
+                )
+
     def test_consumption_registry_is_independent_from_extraction_registry(self):
         provider = build_consumption_provider("ollama", model="qwen3:8b")
         self.assertEqual(provider.model, "qwen3:8b")
