@@ -16,7 +16,7 @@ ielts-published-knowledge-mcp-http \
   --allowed-hosts localhost,127.0.0.1
 ```
 
-The MCP endpoint is provided by the MCP SDK Streamable HTTP transport (normally `/mcp`); `/healthz` is a minimal unauthenticated liveness endpoint. Every MCP request requires `Authorization: Bearer <IELTS_MCP_BEARER_TOKEN>`. Tokens shorter than 32 characters are rejected. Never put the token in source control, command history, URLs, or client logs.
+The MCP endpoint is provided by the MCP SDK Streamable HTTP transport (normally `/mcp`); `/healthz` is a minimal unauthenticated liveness endpoint. Every MCP request requires `Authorization: Bearer <token>`. Configure either the legacy `IELTS_MCP_BEARER_TOKEN` or a JSON registry in `IELTS_MCP_TOKENS_JSON`. Each registry entry has exactly `token`, `subject`, and `scopes`; the only accepted scope is `knowledge:read`. Tokens shorter than 32 characters are rejected. Token values are hashed in memory and never written to audit logs. Remove a registry entry to revoke a token. Never put raw tokens in source control, command history, URLs, or client logs.
 
 ## Container deployment
 
@@ -31,7 +31,7 @@ Compose binds the published service to host loopback only, mounts `./knowledge` 
 
 Do not expose the container port directly to the public internet. Put it behind a TLS-terminating reverse proxy or private network gateway. Configure the exact proxy-facing Host values with `--allowed-hosts`; configure browser origins explicitly with `--allowed-origins` when browser clients are used. The app intentionally ignores forwarded client-IP headers. If a proxy is used, restrict direct access to the app port and apply trusted-proxy IP handling and connection limits at the proxy.
 
-The middleware applies a per-source-IP in-memory token bucket (default 2 requests/second, burst 20), checks Host and optional Origin allowlists, requires a constant-time bearer-token comparison, and enforces a request body limit (default 1 MiB for declared Content-Length). The limiter is process-local: multiple workers/replicas require a shared gateway rate limiter. This is a shared service token, not per-user identity, delegated authorization, or an audit principal. Rotate it by updating the secret and restarting clients/service.
+The middleware checks Host and optional Origin allowlists, validates bearer tokens using constant-time digest comparison, rate-limits by authenticated subject (default 2 requests/second, burst 20), enforces request body limits (default 1 MiB, including chunked bodies), and emits structured JSON audit events to stdout with request ID, subject, status, byte counts, and duration—but never request/response content or credentials. Authentication failures also receive a small per-IP in-memory throttle. The default limiter is process-local. For shared limits across workers/replicas, install the `redis-rate-limit` extra and configure `IELTS_MCP_REDIS_URL`; the Redis Lua token bucket uses Redis server time, hashed subject keys, and fails closed if Redis is unavailable. This is a shared service token, not per-user identity, delegated authorization, or an audit principal. Rotate it by updating the secret and restarting clients/service.
 
 ## Operational boundaries
 
