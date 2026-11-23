@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import hashlib
 import zipfile
 from pathlib import Path
 from xml.etree import ElementTree
@@ -27,7 +28,8 @@ def import_document(path: str | Path) -> dict:
     suffix = file_path.suffix.casefold()
     if suffix in {".txt", ".md"}:
         try:
-            text = file_path.read_text(encoding="utf-8")
+            with file_path.open("r", encoding="utf-8", newline="") as handle:
+                text = handle.read()
         except UnicodeError as exc:
             raise DocumentImportError("text files must be valid UTF-8") from exc
     elif suffix == ".docx":
@@ -38,7 +40,11 @@ def import_document(path: str | Path) -> dict:
         raise DocumentImportError("supported formats are TXT, Markdown, PDF, and DOCX")
     if not text.strip() or len(text) > MAX_EXTRACTED_CHARS:
         raise DocumentImportError("extracted text is empty or exceeds the 5-million-character limit")
-    return {"text": text, "filename": file_path.name, "format": suffix[1:], "characters": len(text)}
+    digest = hashlib.sha256(file_path.read_bytes()).hexdigest()
+    return {
+        "text": text, "filename": file_path.name, "format": suffix[1:],
+        "characters": len(text), "file_sha256": digest,
+    }
 
 
 def _read_docx(path: Path) -> str:
