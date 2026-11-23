@@ -18,6 +18,19 @@ ielts-published-knowledge-mcp-http \
 
 The MCP endpoint is provided by the MCP SDK Streamable HTTP transport (normally `/mcp`); `/healthz` is a minimal unauthenticated liveness endpoint. Every MCP request requires `Authorization: Bearer <token>`. Configure either the legacy `IELTS_MCP_BEARER_TOKEN` or a JSON registry in `IELTS_MCP_TOKENS_JSON`. Each registry entry has exactly `token`, `subject`, and `scopes`; the only accepted scope is `knowledge:read`. Tokens shorter than 32 characters are rejected. Token values are hashed in memory and never written to audit logs. Remove a registry entry to revoke a token. Never put raw tokens in source control, command history, URLs, or client logs.
 
+Example registry shape (replace the placeholder with a generated secret and inject it through a secret manager):
+
+```json
+[
+  {
+    "token": "<random-secret-at-least-32-characters>",
+    "subject": "learner-17",
+    "scopes": ["knowledge:read"]
+  }
+]
+```
+
+
 ## Container deployment
 
 ```bash
