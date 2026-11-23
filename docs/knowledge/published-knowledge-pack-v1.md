@@ -85,6 +85,17 @@ ielts-published-knowledge-mcp --pack ./knowledge
 
 The server exposes only `search_strategies`, `get_strategy`, and `get_related_strategies`. It loads and verifies the pack at startup and returns the pack version and manifest digest with results. It does not import the private SQLite store, expose private ingestion/review tools, or contact a model. Restart the server after changing the checked-out pack. This v1 adapter supports stdio; authenticated Streamable HTTP remains a separate deployment task.
 
+## Contract validation
+
+The repository validates every JSON Schema against the Draft 2020-12 meta-schema and resolves cross-schema references in CI:
+
+```bash
+python -m pip install '.[schema-validation]'
+python scripts/validate_knowledge_schemas.py
+```
+
+The runtime pack loader remains standard-library-only; `jsonschema` is a development/validation extra, not a consumer dependency.
+
 ## Practice against published knowledge
 
 A portable practice answer can be generated from the published pack without opening the private SQLite library:
