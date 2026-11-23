@@ -150,7 +150,7 @@ ielts-practice "How can I give a direct answer?" --pack ./knowledge \
   --skill speaking --provider ollama --model qwen3:8b
 ```
 
-Choose `--provider openai-compatible` and configure the API key environment variable to use a remote model. This sends the retrieved public pack context and learner question to that service. The CLI does not silently switch providers. If retrieval finds no evidence, it returns without making a model call. Generated attribution IDs are checked against the retrieved strategy IDs, and every result carries the exact pack version and manifest digest.
+Choose `--provider openai-compatible` and configure the API key environment variable to use a remote model. This sends the retrieved public pack context and learner question to that service. The CLI does not silently switch providers. If retrieval finds no evidence, it returns without making a model call. Generated attribution IDs are checked against the retrieved strategy IDs, and every result carries the exact pack version and manifest digest. For application integrations, `FallbackTextGenerationProvider` offers an explicit ordered chain and an optional response-contract validator; it can retry the next configured provider after a provider error or invalid structured output. No fallback is created automatically. A remote API used as a fallback is rejected unless the caller sets `allow_remote_fallback=True`, making learner-data egress an explicit application decision.
 
 ## Governance boundary
 
