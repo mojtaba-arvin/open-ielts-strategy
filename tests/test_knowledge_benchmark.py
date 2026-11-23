@@ -1,6 +1,10 @@
 import unittest
 
-from open_ielts_strategy.knowledge_benchmark import evaluate_extraction, validate_annotation_set
+from open_ielts_strategy.knowledge_benchmark import evaluate_extraction, validate_annotation_set, evaluate_source_extraction
+from open_ielts_strategy.knowledge_pipeline import extract_source
+from open_ielts_strategy.knowledge_store import KnowledgeStore
+import tempfile
+from pathlib import Path
 
 
 class KnowledgeBenchmarkTests(unittest.TestCase):
@@ -32,6 +36,41 @@ class KnowledgeBenchmarkTests(unittest.TestCase):
         self.assertEqual(validate_annotation_set(self.source, self.gold), self.gold)
         with self.assertRaises(ValueError):
             validate_annotation_set(self.source, [{**self.gold[0], "text": "different"}])
+
+
+    def test_private_source_evaluation_returns_metrics_without_source_text(self):
+        class Provider:
+            def extract(self, text):
+                return {"summary": "Advice.", "items": [{
+                    "kind": "recommendation", "text": text, "start_char": 0,
+                    "end_char": len(text), "topic_tags": ["speaking"],
+                    "rationale": "Source advice.",
+                }]}
+        with tempfile.TemporaryDirectory() as tmp:
+            with KnowledgeStore(Path(tmp) / "library.sqlite3") as store:
+                original = "For IELTS Speaking, answer the question directly."
+                source = store.ingest_text(original, title="Private podcast")
+                extract_source(store, source["source_id"], Provider(),
+                               provider_name="ollama", model_name="local-model",
+                               prompt_version="eval-v1")
+                result = evaluate_source_extraction(
+                    store, source["source_id"], [{
+                        "kind": "recommendation", "text": original,
+                        "start_char": 0, "end_char": len(original),
+                    }], model_name="local-model", prompt_version="eval-v1",
+                )
+                self.assertEqual(result["metrics"]["f1"], 1.0)
+                self.assertFalse(result["source_text_included_in_output"])
+                self.assertNotIn("source_text", result)
+
+    def test_private_source_evaluation_requires_original_body(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with KnowledgeStore(Path(tmp) / "library.sqlite3") as store:
+                source = store.ingest_text("A source sentence.", title="Private")
+                with store._connection:
+                    store._connection.execute("UPDATE sources SET body='' WHERE source_id=?", (source["source_id"],))
+                with self.assertRaises(ValueError):
+                    evaluate_source_extraction(store, source["source_id"], [])
 
     def test_invalid_kind_is_rejected(self):
         with self.assertRaises(ValueError):
