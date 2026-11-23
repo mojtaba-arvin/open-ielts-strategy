@@ -339,7 +339,7 @@ def load_knowledge_pack(path: str | Path) -> KnowledgePack:
     for candidate in root.rglob("*"):
         if candidate.is_symlink():
             raise KnowledgePackError(f"symlink entries are not allowed: {candidate.relative_to(root).as_posix()}")
-        if candidate.is_file() and candidate.name != "manifest.json":
+        if candidate.is_file() and candidate != manifest_path:
             actual_files.add(candidate.relative_to(root).as_posix())
     if actual_files != seen:
         unlisted = sorted(actual_files - seen)
