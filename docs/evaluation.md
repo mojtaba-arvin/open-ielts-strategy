@@ -33,3 +33,16 @@ LLM-as-judge is optional and is not part of the offline baseline. When added, pi
 
 ## Minimum coverage
 A new skill starts with at least five representative cases covering positive routing, negative routing, boundary routing, and at least one behavioral case. Repository validation enforces these four categories. Expand coverage as failure modes emerge. Public fixtures must be original/synthetic unless specifically cleared.
+
+
+## Deterministic writing diagnostics
+
+The optional `open_ielts_strategy.rule_judge.evaluate_writing` helper extracts transparent text features and emits a deterministic, simulated diagnostic index for four writing dimensions. It is an engineering regression aid, not an IELTS band score or validated writing assessment. See [Rule-based Judge](rule-based-judge.md).
+
+## Paired offline Skill Lift audit
+
+The optional `open_ielts_strategy.skill_lift.compare_skill_lift` helper pairs baseline and skill results by case ID, enforces matching categories, and reports numerator/denominator, overall and category-level deltas. Fixture mode is marked simulated and sets `claim_eligible=false`. Live descriptive output also remains non-claimable without independent educational validation. See [Skill Lift](skill-lift.md).
+
+## Audio foundation
+
+`open_ielts_strategy.audio.inspect_audio` validates WAV/MP3 containers and configured size/duration limits using only the Python standard library. This does not change the text-only Listening/Speaking skill contracts and does not perform transcription. See [Audio Processing](audio-processing.md).
