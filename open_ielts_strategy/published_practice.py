@@ -6,18 +6,20 @@ from typing import Any
 
 from .knowledge_pack import KnowledgePack
 from .text_generation import GenerationError, TextGenerationProvider
+from .published_retrieval import PublishedRetrievalEngine
 
 
 def prepare_published_practice_context(pack: KnowledgePack, question: str, *,
-                                       skill: str = "general", limit: int = 6) -> dict:
+                                       skill: str = "general", limit: int = 6,
+                                       retriever: PublishedRetrievalEngine | None = None) -> dict:
     if not isinstance(question, str) or not question.strip() or len(question) > 4000:
         raise ValueError("question must contain 1..4000 characters")
     if skill not in {"speaking", "writing", "reading", "listening", "general"}:
         raise ValueError("unsupported IELTS skill")
     if type(limit) is not int or not 1 <= limit <= 20:
         raise ValueError("limit must be between 1 and 20")
-    query = question if skill == "general" else question
-    strategies = pack.search_strategies(query, skill=None if skill == "general" else skill, limit=limit)
+    engine = retriever or PublishedRetrievalEngine(pack)
+    matches = engine.search(question, skill=None if skill == "general" else skill, limit=limit)
     return {
         "question": question,
         "skill": skill,
@@ -26,8 +28,10 @@ def prepare_published_practice_context(pack: KnowledgePack, question: str, *,
         "manifest_sha256": pack.manifest_sha256,
         "evidence": [
             {
-                "strategy_id": item["id"],
-                "strategy_version": item["version"],
+                "strategy_id": match["strategy_id"],
+                "strategy_version": match["strategy_version"],
+                "retrieval_score": match["score"],
+                "retrieval_mode": match["retrieval_mode"],
                 "title": item["title"],
                 "summary": item["summary"],
                 "purpose": item["purpose"],
@@ -37,9 +41,9 @@ def prepare_published_practice_context(pack: KnowledgePack, question: str, *,
                 "limitations": item["limitations"],
                 "common_mistakes": item["common_mistakes"],
                 "examples": item["examples"],
-            } for item in strategies
+            } for match in matches for item in [match["strategy"]]
         ],
-        "evidence_count": len(strategies),
+        "evidence_count": len(matches),
         "answer_generation": "not_performed",
     }
 
