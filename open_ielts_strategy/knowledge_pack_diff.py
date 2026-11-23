@@ -13,6 +13,7 @@ _RECORD_COLLECTIONS = {
     "concepts": "concepts",
     "relationships": "relationships",
     "learning_paths": "learning_paths",
+    "examples": "examples",
 }
 
 
