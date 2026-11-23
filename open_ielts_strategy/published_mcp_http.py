@@ -129,7 +129,10 @@ class AuthenticatedMCPMiddleware:
             content_length = headers.get(b"content-length")
             if content_length:
                 try:
-                    if int(content_length) > self.max_body_bytes:
+                    declared_length = int(content_length)
+                    if declared_length < 0:
+                        return await respond(400, "invalid content length")
+                    if declared_length > self.max_body_bytes:
                         return await respond(413, "request body too large")
                 except ValueError:
                     return await respond(400, "invalid content length")
