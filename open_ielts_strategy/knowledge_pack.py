@@ -38,6 +38,15 @@ class KnowledgePack:
     pack_version: str
     strategies: tuple[dict[str, Any], ...]
     manifest_sha256: str
+    concepts: tuple[dict[str, Any], ...] = ()
+    relationships: tuple[dict[str, Any], ...] = ()
+    learning_paths: tuple[dict[str, Any], ...] = ()
+
+    def get_concept(self, concept_id: str) -> dict[str, Any] | None:
+        return next((item for item in self.concepts if item["id"] == concept_id), None)
+
+    def get_learning_path(self, path_id: str) -> dict[str, Any] | None:
+        return next((item for item in self.learning_paths if item["id"] == path_id), None)
 
     def get_strategy(self, strategy_id: str) -> dict[str, Any] | None:
         return next((item for item in self.strategies if item["id"] == strategy_id), None)
@@ -157,6 +166,102 @@ def _validate_strategy(item: Any, relative: str) -> dict[str, Any]:
     review = item["review"]
     if review != {"content_status": "approved", "publication_status": "approved"}:
         raise KnowledgePackError(f"{relative}: both content and publication approval are required")
+    return item
+
+
+def _validate_public_provenance_and_review(item: dict, relative: str) -> None:
+    provenance = item.get("provenance")
+    if not isinstance(provenance, dict) or set(provenance) != {"basis", "public_references"}:
+        raise KnowledgePackError(f"{relative}: invalid public provenance object")
+    if not isinstance(provenance["basis"], str) or provenance["basis"] not in {
+        "original", "independently_authored", "public_domain", "permissioned"
+    }:
+        raise KnowledgePackError(f"{relative}: provenance basis is not publishable")
+    if not isinstance(provenance["public_references"], list):
+        raise KnowledgePackError(f"{relative}: public_references must be an array")
+    for reference in provenance["public_references"]:
+        try:
+            parsed = urlparse(reference) if isinstance(reference, str) else None
+        except ValueError as exc:
+            raise KnowledgePackError(f"{relative}: invalid public HTTPS reference") from exc
+        if parsed is None or parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+            raise KnowledgePackError(f"{relative}: public_references must contain credential-free HTTPS URLs")
+    if item.get("review") != {"content_status": "approved", "publication_status": "approved"}:
+        raise KnowledgePackError(f"{relative}: both content and publication approval are required")
+
+
+def _validate_concept(item: Any, relative: str) -> dict[str, Any]:
+    required = {"id", "schema_version", "title", "definition", "related_strategies",
+                "provenance", "review", "version"}
+    if not isinstance(item, dict) or set(item) != required:
+        raise KnowledgePackError(f"{relative}: invalid concept fields")
+    _reject_private_fields(item)
+    if any(not isinstance(item[key], str) or not item[key].strip()
+           for key in ("id", "schema_version", "title", "definition", "version")):
+        raise KnowledgePackError(f"{relative}: concept text fields must be non-empty")
+    if not re.fullmatch(r"[a-z][a-z0-9_.-]{2,127}", item["id"]):
+        raise KnowledgePackError(f"{relative}: invalid concept ID")
+    if item["schema_version"] not in SUPPORTED_SCHEMA_VERSIONS or not _SEMVER.fullmatch(item["version"]):
+        raise KnowledgePackError(f"{relative}: unsupported concept schema or version")
+    if not isinstance(item["related_strategies"], list) or any(
+        not isinstance(value, str) or not value for value in item["related_strategies"]
+    ):
+        raise KnowledgePackError(f"{relative}: related_strategies must be non-empty string IDs")
+    _validate_public_provenance_and_review(item, relative)
+    return item
+
+
+def _validate_relationship(item: Any, relative: str) -> dict[str, Any]:
+    required = {"id", "schema_version", "from_id", "to_id", "type", "rationale", "provenance", "review"}
+    if not isinstance(item, dict) or set(item) != required:
+        raise KnowledgePackError(f"{relative}: invalid relationship fields")
+    _reject_private_fields(item)
+    for key in ("id", "schema_version", "from_id", "to_id", "type", "rationale"):
+        if not isinstance(item[key], str) or not item[key].strip():
+            raise KnowledgePackError(f"{relative}: relationship {key} must be non-empty text")
+    if not re.fullmatch(r"[a-z][a-z0-9_.-]{2,127}", item["id"]):
+        raise KnowledgePackError(f"{relative}: invalid relationship ID")
+    if item["schema_version"] not in SUPPORTED_SCHEMA_VERSIONS:
+        raise KnowledgePackError(f"{relative}: unsupported relationship schema version")
+    if item["type"] not in {"requires", "complements", "conflicts_with", "alternative_to", "defines", "illustrates"}:
+        raise KnowledgePackError(f"{relative}: unsupported relationship type")
+    if len(item["rationale"]) > 2000:
+        raise KnowledgePackError(f"{relative}: relationship rationale exceeds size limit")
+    _validate_public_provenance_and_review(item, relative)
+    return item
+
+
+def _validate_learning_path(item: Any, relative: str) -> dict[str, Any]:
+    required = {"id", "schema_version", "title", "skill", "description", "objectives",
+                "steps", "prerequisites", "provenance", "review", "version"}
+    if not isinstance(item, dict) or set(item) != required:
+        raise KnowledgePackError(f"{relative}: invalid learning path fields")
+    _reject_private_fields(item)
+    for key in ("id", "schema_version", "title", "skill", "description", "version"):
+        if not isinstance(item[key], str) or not item[key].strip():
+            raise KnowledgePackError(f"{relative}: learning path {key} must be non-empty text")
+    if not re.fullmatch(r"[a-z][a-z0-9_.-]{2,127}", item["id"]):
+        raise KnowledgePackError(f"{relative}: invalid learning path ID")
+    if item["schema_version"] not in SUPPORTED_SCHEMA_VERSIONS or not _SEMVER.fullmatch(item["version"]):
+        raise KnowledgePackError(f"{relative}: unsupported learning path schema or version")
+    if item["skill"] not in {"speaking", "writing", "reading", "listening", "general"}:
+        raise KnowledgePackError(f"{relative}: unsupported learning path skill")
+    for key in ("objectives", "prerequisites"):
+        if not isinstance(item[key], list) or any(not isinstance(value, str) or not value.strip() for value in item[key]):
+            raise KnowledgePackError(f"{relative}: {key} must be arrays of non-empty strings")
+    if not isinstance(item["steps"], list) or not item["steps"]:
+        raise KnowledgePackError(f"{relative}: learning path requires at least one step")
+    for step in item["steps"]:
+        if not isinstance(step, dict) or set(step) != {"order", "strategy_id", "activity"}:
+            raise KnowledgePackError(f"{relative}: invalid learning path step")
+        if type(step["order"]) is not int or step["order"] < 1:
+            raise KnowledgePackError(f"{relative}: step order must be a positive integer")
+        if any(not isinstance(step[key], str) or not step[key].strip() for key in ("strategy_id", "activity")):
+            raise KnowledgePackError(f"{relative}: step strategy_id and activity must be non-empty text")
+    orders = [step["order"] for step in item["steps"]]
+    if len(orders) != len(set(orders)):
+        raise KnowledgePackError(f"{relative}: learning path step order values must be unique")
+    _validate_public_provenance_and_review(item, relative)
     return item
 
 
