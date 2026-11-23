@@ -165,7 +165,6 @@ class AuthenticatedMCPMiddleware:
                 "request_id": request_id,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "subject": subject,
-                "client_ip": client_ip,
                 "method": method,
                 "path": path,
                 "status": status,
