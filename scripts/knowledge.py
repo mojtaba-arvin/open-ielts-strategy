@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from open_ielts_strategy.document_import import import_document
 from open_ielts_strategy.knowledge_store import (
     DEFAULT_DB_PATH,
     CARD_STATUSES,
@@ -83,8 +84,7 @@ def main(argv=None):
                 if args.input == "-":
                     body = sys.stdin.read()
                 else:
-                    with Path(args.input).open("r", encoding="utf-8", newline="") as source_file:
-                        body = source_file.read()
+                    body = import_document(args.input)["text"]
                 result = store.ingest_text(
                     body,
                     title=args.title,

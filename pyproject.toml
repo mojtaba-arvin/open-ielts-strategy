@@ -12,5 +12,12 @@ license = { text = "MIT" }
 authors = [{ name = "Mojtaba Arvin" }]
 dependencies = []
 
+[project.optional-dependencies]
+documents = ["pypdf>=5,<7"]
+local-embeddings = ["sentence-transformers>=3,<6"]
+
+[project.scripts]
+ielts-knowledge-web = "open_ielts_strategy.knowledge_web:serve"
+
 [tool.setuptools]
 packages = ["open_ielts_strategy"]
