@@ -8,7 +8,7 @@ class KnowledgeBenchmarkTests(unittest.TestCase):
         self.source = "Plan before drafting. Avoid memorized essays."
         self.gold = [{
             "kind": "recommendation", "text": "Plan before drafting.",
-            "start_char": 0, "end_char": 22,
+            "start_char": 0, "end_char": 21,
         }]
 
     def test_exact_match_metrics_are_computed(self):
