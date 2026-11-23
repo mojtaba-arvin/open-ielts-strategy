@@ -6,7 +6,7 @@ DIMENSIONS = ("task_response", "coherence_cohesion", "lexical_resource", "gramma
 
 
 def _sentences(text):
-    return [part.strip() for part in re.split(r"(?<=[.!?])\\s+", text.strip()) if part.strip()]
+    return [part.strip() for part in re.split(r"(?<=[.!?])\s+", text.strip()) if part.strip()]
 
 
 def evaluate_writing(text, *, task=None):
@@ -16,24 +16,24 @@ def evaluate_writing(text, *, task=None):
     if task is not None and (not isinstance(task, str) or not task.strip()):
         raise ValueError("task must be non-empty text when provided")
 
-    words = re.findall(r"\\b[\\w’'-]+\\b", text.casefold(), flags=re.UNICODE)
+    words = re.findall(r"\b[\w’'-]+\b", text.casefold(), flags=re.UNICODE)
     if not words:
         raise ValueError("text must contain at least one word")
-    paragraphs = [p.strip() for p in re.split(r"\\n\\s*\\n", text.strip()) if p.strip()]
+    paragraphs = [p.strip() for p in re.split(r"\n\s*\n", text.strip()) if p.strip()]
     sentences = _sentences(text)
     counts = Counter(words)
     unique_ratio = len(counts) / len(words)
     avg_sentence_words = len(words) / max(1, len(sentences))
-    sentence_lengths = [len(re.findall(r"\\b[\\w’'-]+\\b", s)) for s in sentences]
+    sentence_lengths = [len(re.findall(r"\b[\w’'-]+\b", s)) for s in sentences]
     varied_sentence_lengths = len(set(sentence_lengths)) > 1
     transition_markers = ("however", "therefore", "moreover", "for example", "in contrast", "finally", "firstly", "secondly")
     lower = text.casefold()
-    transitions = [marker for marker in transition_markers if re.search(r"\\b" + re.escape(marker) + r"\\b", lower)]
-    punctuation_errors = bool(re.search(r"[!?.,]{2,}|\\s+[,.!?]", text))
+    transitions = [marker for marker in transition_markers if re.search(r"\b" + re.escape(marker) + r"\b", lower)]
+    punctuation_errors = bool(re.search(r"[!?.,]{2,}|\s+[,.!?]", text))
     repeated_word_ratio = sum(n - 1 for n in counts.values()) / len(words)
 
     # These are transparent thresholds for regression diagnostics, not IELTS band descriptors.
-    task_score = 1 + min(8, (1 if len(words) >= 80 else 0) + (2 if len(words) >= 150 else 0) + (2 if len(paragraphs) >= 3 else 0) + (1 if len(sentences) >= 5 else 0) + (2 if task and any(w in lower for w in re.findall(r"\\w+", task.casefold())[:3]) else 0))
+    task_score = 1 + min(8, (1 if len(words) >= 80 else 0) + (2 if len(words) >= 150 else 0) + (2 if len(paragraphs) >= 3 else 0) + (1 if len(sentences) >= 5 else 0) + (2 if task and any(w in lower for w in re.findall(r"\w+", task.casefold())[:3]) else 0))
     coherence_score = 1 + min(8, (2 if len(paragraphs) >= 3 else 0) + min(3, len(transitions)) + (1 if varied_sentence_lengths else 0) + (1 if len(sentences) >= 4 else 0) + (1 if not punctuation_errors else 0))
     lexical_score = 1 + min(8, int(unique_ratio * 8) + (1 if len(words) >= 100 else 0) - (1 if repeated_word_ratio > 0.35 else 0))
     grammar_score = 1 + min(8, (2 if varied_sentence_lengths else 0) + (2 if len(sentences) >= 4 else 0) + (2 if not punctuation_errors else 0) + (1 if avg_sentence_words >= 8 else 0) + (1 if avg_sentence_words <= 30 else 0))
