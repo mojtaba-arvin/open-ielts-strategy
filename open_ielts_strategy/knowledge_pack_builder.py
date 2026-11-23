@@ -59,6 +59,7 @@ def build_knowledge_pack(strategies: list[dict[str, Any]], destination: str | Pa
         "permissioned": "permission_confirmed",
     }
     from .knowledge_pipeline import assert_items_publishable
+    private_sources = []
     for item in validated:
         strategy_id = item["id"]
         item_ids = source_item_ids_by_strategy.get(strategy_id, [])
@@ -76,6 +77,26 @@ def build_knowledge_pack(strategies: list[dict[str, Any]], destination: str | Pa
             required_basis = expected_rights_basis[item["provenance"]["basis"]]
             if any(record["rights_basis"] != required_basis for record in approvals):
                 raise KnowledgePackError(f"{strategy_id}: private publication rights basis does not match public provenance")
+            placeholders = ",".join("?" for _ in item_ids)
+            rows = store._connection.execute(
+                f"""SELECT i.item_id, s.source_id, s.body, i.text
+                    FROM semantic_items i JOIN sources s ON s.source_id=i.source_id
+                    WHERE i.item_id IN ({placeholders})""",
+                tuple(item_ids),
+            ).fetchall()
+            for row in rows:
+                private_text = row["body"] or row["text"]
+                if private_text:
+                    private_sources.append({"source_id": row["source_id"], "text": private_text})
+
+    from .publication_scan import scan_publication_leaks
+    scan_payloads = [
+        json.dumps(item, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        for item in validated
+    ]
+    leak_report = scan_publication_leaks(scan_payloads, private_sources)
+    if not leak_report["passed"]:
+        raise KnowledgePackError("publication leak scan detected private source overlap or secret material")
 
     root = Path(destination).expanduser().absolute()
     if root.exists():
