@@ -32,13 +32,15 @@
       "type": [
         "string",
         "null"
-      ]
+      ],
+      "format": "date-time"
     },
     "last_verified_at": {
       "type": [
         "string",
         "null"
-      ]
+      ],
+      "format": "date-time"
     },
     "rights_holder": {
       "type": [
@@ -90,7 +92,8 @@
           "type": "string"
         },
         "reviewed_at": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "notes": {
           "type": "string"
@@ -119,7 +122,8 @@
       "type": [
         "string",
         "null"
-      ]
+      ],
+      "format": "date-time"
     }
   }
 }
