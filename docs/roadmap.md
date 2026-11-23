@@ -20,6 +20,11 @@ This roadmap distinguishes implemented repository mechanics from educational val
 - A default-deny release-claim registry and tag/release CI gate; public band-score, examiner-equivalence, Skill Lift, educational-effectiveness, guaranteed-improvement, and third-party-clearance claims remain disabled until independently evidenced.
 
 - Phase 1 private Knowledge Ingestion & Retrieval: local text/stdin/file import, source metadata and SHA-256, idempotent source registration, paragraph/sentence segmentation with exact offsets and timestamps, deterministic lexical candidate cards and topic tags, local lexical search, human review states, and explicit card relationships. Every imported card begins as needs_review; this is not semantic extraction or educational validation. See docs/knowledge-ingestion.md.
+- Phase 2 foundations: provider-neutral structured extraction contract, optional explicit loopback-only Ollama adapter, exact source-span validation, and review-required draft output. This does not establish semantic accuracy.
+- Phase 3 foundations: optional local SentenceTransformer adapter (local model path only), lexical fallback, provenance-rich hybrid ranking, overlap suggestions, and source-grounded comparison/playbook drafts. Embedding scores do not validate claims; conflicts remain human-curated.
+- Phase 4 foundations: loopback-only paste-first UI, bounded local TXT/Markdown/DOCX/PDF import, optional PDF parser, and local CLI integration. No OCR, remote sync, accounts, or public hosting.
+- Phase 5 foundations: exact-span extraction benchmark harness and synthetic regression fixtures. No qualified independent ratings or learner outcome evidence have been collected.
+- Privacy operations: SQLite online backup/restore helpers with integrity checks and restrictive best-effort permissions. Backups are not encrypted; use OS full-disk encryption.
 
 ## Not yet established or implemented
 
@@ -29,7 +34,7 @@ This roadmap distinguishes implemented repository mechanics from educational val
 4. **Semantic routing:** routing is deterministic lexical logic, not a calibrated semantic or model-based classifier.
 5. **Repository governance:** the active `Protect main` ruleset does not yet require the exact `validate` status context. Issue #4 tracks this administrative configuration; no ruleset change was made.
 6. **Rights clearance for third-party materials:** no blanket rights clearance exists. Remote scraping/fetching and repository ingestion remain disabled. The local importer only stores text that the learner supplies; it does not grant permission or determine whether private processing is lawful. Metadata, public availability, attribution, and a passing check do not grant copyright permission.
-7. **Knowledge product completeness:** Phase 1 is a local CLI and lexical search foundation. Semantic extraction, embeddings/hybrid retrieval, automatic overlap suggestions, UI, PDF/DOCX parsing, synchronization, and study-playbook generation are not implemented.
+7. **Knowledge product completeness:** Phases 1–4 now have local foundations, but semantic model quality, persistent embedding indexing, robust playbook generation, UI usability/security review, OCR, cloud sync, authentication, and production operations remain incomplete. The UI is single-user loopback-only.
 8. **Release readiness:** no claim of official IELTS affiliation, official band prediction, examiner equivalence, guaranteed score improvement, or production release validation is made.
 
 ## Legal and copyright hard boundary
@@ -40,12 +45,12 @@ New learning skills may be developed only from original explanations and synthet
 
 ## Next safe priorities
 
-1. Keep the default CI path offline, deterministic, and free of model/API calls. Keep imported learning material in ignored local storage, never fixtures or CI artifacts.
-2. Extend knowledge ingestion tests using synthetic, independently authored material; preserve exact source offsets and provenance in every derived card and retrieval result.
-3. Implement optional local semantic extraction only behind a provider-neutral, no-network-by-default adapter and human-review gate.
-4. Add local hybrid retrieval, comparison/playbook drafting, and explicit human-curated conflict workflows.
-5. Add vetted local PDF/DOCX parsing only after size/page limits, privacy controls, and synthetic parser fixtures exist.
-6. Build a paste-first UI and local library browser without uploading private source text.
+1. Keep default CI offline, deterministic, and free of model/API calls. Imported learning material must stay in ignored local storage, never fixtures or CI artifacts.
+2. Evaluate optional local extraction with genuinely independent human annotations; synthetic labels are regression fixtures only.
+3. Persist local embeddings with model/version fingerprints and an explicit re-index migration path; current hybrid vectors are computed at query time.
+4. Add a UI review workflow for candidate cards, relations, source deletion, preferences, and playbook editing; conduct a dedicated security review before broader use.
+5. Add parser fuzzing, malformed/large archive tests, PDF edge-case tests, and backup/restore recovery drills.
+6. Keep OCR, audio transcription, third-party crawling, cloud sync, accounts, and public hosting disabled until separately designed and reviewed.
 7. Resolve required-check governance and collect independent human evaluation only through separately approved processes; do not manufacture or infer ratings.
 
 No paid API, GPU spending, third-party content ingestion, or legal clearance is assumed.
