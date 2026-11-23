@@ -119,6 +119,8 @@ ielts-knowledge-diff --current ./knowledge --candidate ./.local/candidate-knowle
 
 The command verifies both packs, emits deterministic added/modified/removed record diffs with exact pack versions and manifest digests, and blocks candidate content containing common secret-like values. It is review output only: it does not create a commit, push, or release. A separate human review is mandatory. The diff scanner cannot compare against private source bodies; that check occurs during the local pack build. After approval, `ielts-knowledge-release` can create a short-lived signed approval, commit/push only the pack to a release branch with expected-head protection, and create a revert commit for rollback. It does not merge PRs. The standalone `python -m open_ielts_strategy.semantic_publication_scan` command remains available for pre-build diagnostics; the same scanner can now be enabled as a blocking optional gate directly in `ielts-knowledge-publish` with `--semantic-embedding-model-path`. Both report source IDs and offsets, never matched text. They are heuristic signals, not proof of semantic non-disclosure or legal clearance.
 
+For durable local Study progress, learner-scoped Mentor history, and criterion-level evaluation of learner-submitted Practice answers, see [Learner State and Practice Evaluation](learner-state-and-practice.md). These workflows are opt-in and retain their assessment and privacy boundaries.
+
 ## Published Knowledge MCP (stdio)
 
 Install the optional MCP dependency and run the published-only adapter against a checked-out pack:
