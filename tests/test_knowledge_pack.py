@@ -224,9 +224,6 @@ class PublishedKnowledgePackTests(unittest.TestCase):
                 load_knowledge_pack(root)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class StrategyRelationshipConsistencyTests(unittest.TestCase):
     def make_multi_strategy_pack(self, root, records, relationship_records=None):
@@ -314,3 +311,7 @@ class StrategyRelationshipConsistencyTests(unittest.TestCase):
             self.make_multi_strategy_pack(root, [first, second, third])
             pack = load_knowledge_pack(root)
             self.assertEqual(len(pack.strategies), 3)
+
+
+if __name__ == "__main__":
+    unittest.main()
