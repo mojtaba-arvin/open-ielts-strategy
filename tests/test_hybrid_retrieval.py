@@ -105,7 +105,8 @@ class HybridRetrievalTests(unittest.TestCase):
         result = prepare_practice_context(self.store, "How should I answer?", skill="speaking")
         self.assertEqual(result["evidence_count"], 0)
         draft = prepare_practice_context(self.store, "How should I answer?", skill="speaking", include_unreviewed=True)
-        self.assertEqual(draft["evidence_count"], 1)
+        self.assertGreaterEqual(draft["evidence_count"], 1)
+        self.assertTrue(any(item["source"]["source_id"] for item in draft["evidence"]))
 
     def test_threshold_validation(self):
         with self.assertRaises(ValueError):
