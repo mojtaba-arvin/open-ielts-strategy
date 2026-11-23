@@ -24,8 +24,13 @@ class KnowledgeCliDocumentTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             payload = json.loads(result.stdout)
-            self.assertEqual(payload["title"], "DOCX notes")
             self.assertEqual(payload["segment_count"], 1)
+            listing = subprocess.run(
+                [sys.executable, "scripts/knowledge.py", "--db", str(db), "sources"],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(listing.returncode, 0, listing.stderr)
+            self.assertEqual(json.loads(listing.stdout)[0]["title"], "DOCX notes")
 
     def test_unsupported_document_fails_closed(self):
         with tempfile.TemporaryDirectory() as tmp:
