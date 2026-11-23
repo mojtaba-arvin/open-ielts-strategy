@@ -56,9 +56,6 @@ class ReleaseGateTests(unittest.TestCase):
         self.assertTrue(validate_claim_registry([]))
         self.assertTrue(validate_claim_registry({"schema_version": 1, "claims": []}))
 
-if __name__ == "__main__":
-    unittest.main()
-
 
     def test_release_preflight_checks_version_cli_and_license_contracts(self):
         root = Path(__file__).resolve().parents[1]
@@ -74,3 +71,7 @@ if __name__ == "__main__":
         root = Path(__file__).resolve().parents[1]
         errors = validate_release_preflight(root, "latest")
         self.assertTrue(any("canonical vMAJOR.MINOR.PATCH" in error for error in errors))
+
+
+if __name__ == "__main__":
+    unittest.main()
