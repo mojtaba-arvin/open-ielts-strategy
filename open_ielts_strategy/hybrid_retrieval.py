@@ -93,6 +93,15 @@ def hybrid_search(store, query: str, *, provider: EmbeddingProvider | None = Non
             semantic_params = (status,)
         semantic_sql += " LIMIT 5000"
         rows.extend(store._connection.execute(semantic_sql, semantic_params).fetchall())
+    retention_table = store._connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='source_retention'"
+    ).fetchone()
+    retention_states = {}
+    if retention_table:
+        retention_states = {
+            row["source_id"]: row["state"]
+            for row in store._connection.execute("SELECT source_id, state FROM source_retention")
+        }
     records = []
     qtokens = _tokens(query)
     for row in rows:
@@ -133,6 +142,9 @@ def hybrid_search(store, query: str, *, provider: EmbeddingProvider | None = Non
             "rights_status": row["rights_status"], "ordinal": row["ordinal"],
             "start_char": row["start_char"], "end_char": row["end_char"],
             "locator": __import__("json").loads(row["locator_json"]),
+            "source_text_state": retention_states.get(row["source_id"], "retained"),
+            "extraction_rationale": row["review_reason"],
+            "review_note": row["review_note"],
         })
     results.sort(key=lambda item: (-item["score"], item["source_id"], item["ordinal"]))
     return results[:limit]
