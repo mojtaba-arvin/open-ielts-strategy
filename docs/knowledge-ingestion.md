@@ -84,6 +84,14 @@ Record a reviewed relationship:
 
 A user-approved card means accepted for personal use, not scientifically verified. supported must be used only when the reviewer can record the supporting basis. conflicting records an explicitly reviewed disagreement; the system does not infer contradiction from similar words.
 
+### Purge the original transcript but keep reviewed strategies
+
+After semantic extraction, review every extracted item. If you no longer want the raw transcript retained locally, run:
+
+    python scripts/knowledge.py purge-source-text src_ID --confirm
+
+This irreversible operation requires every semantic item to have left `needs_review`. It clears the source body and raw segment text, deletes lexical cards that contain whole passages, and keeps reviewed semantic items, their source IDs/offsets, metadata, and the original SHA-256 fingerprint. Semantic items remain searchable. Since the original body is gone, exact text-to-source re-verification is no longer possible; the retained hash and offsets are provenance metadata, not a recoverable copy. Backups made before purging may still contain the transcript and must be handled separately.
+
 ## Outputs
 
 - **Source record:** immutable imported body, SHA-256, metadata, rights declaration, source ID, capture timestamp.
