@@ -27,3 +27,5 @@ A twelfth run includes the publication-diff CLI and final typed relationship loo
 A thirteenth run validates the new publication-diff CLI and version-bump rule.
 
 A final run validates the latest version-bump regression test and package metadata description.
+
+A final documentation-alignment run validates the exact latest feature head and ADR/README consistency.
