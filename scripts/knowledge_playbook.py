@@ -26,6 +26,22 @@ def load_cards(store, card_ids):
             (card_id,),
         ).fetchone()
         if row is None:
+            semantic_table = store._connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='semantic_items'"
+            ).fetchone()
+            if semantic_table:
+                row = store._connection.execute(
+                    """SELECT i.item_id AS card_id, i.status, i.kind,
+                              substr(i.text,1,160) AS title, i.topic_tags_json,
+                              i.text, g.start_char, g.end_char, g.locator_json,
+                              s.source_id, s.title AS source_title
+                       FROM semantic_items i
+                       JOIN segments g ON g.segment_id=i.segment_id
+                       JOIN sources s ON s.source_id=i.source_id
+                       WHERE i.item_id=?""",
+                    (card_id,),
+                ).fetchone()
+        if row is None:
             raise KeyError(f"unknown card_id: {card_id}")
         cards.append(dict(row))
     return cards

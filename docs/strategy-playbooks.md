@@ -14,7 +14,7 @@ Preferences are a separate data structure and are never mixed into the source re
 
 ## CLI
 
-Select card IDs explicitly and preserve their supplied order:
+Select lexical card IDs or semantic extraction item IDs explicitly and preserve their supplied order. Semantic item IDs are returned by `python scripts/knowledge.py semantic-items src_ID` or `python scripts/knowledge_search.py "..." `:
 
 ```bash
 python scripts/knowledge_playbook.py compare --card-id card_A --card-id card_B
