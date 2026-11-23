@@ -32,6 +32,20 @@ def get_published_learning_path(pack: KnowledgePack, path_id: str) -> dict:
     }
 
 
+def get_published_concept(pack: KnowledgePack, concept_id: str) -> dict:
+    concept = pack.get_concept(concept_id)
+    if concept is None:
+        raise KeyError(f"unknown published concept: {concept_id}")
+    return {
+        "concept": concept,
+        "related_strategies": [
+            pack.get_strategy(strategy_id) for strategy_id in concept["related_strategies"]
+        ],
+        "pack_version": pack.pack_version,
+        "manifest_sha256": pack.manifest_sha256,
+    }
+
+
 def create_published_study_plan(pack: KnowledgePack, *, skill: str, limit: int = 5) -> dict:
     if skill not in {"speaking", "writing", "reading", "listening", "general"}:
         raise ValueError("unsupported IELTS skill")
