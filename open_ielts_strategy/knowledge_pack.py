@@ -19,6 +19,7 @@ MAX_STRATEGY_BYTES = 256_000
 MAX_PACK_FILES = 5_000
 MAX_TOTAL_BYTES = 50_000_000
 SUPPORTED_SCHEMA_VERSIONS = {"1.0"}
+SUPPORTED_PACK_SCHEMA_VERSIONS = {"1.0", "1.1"}
 _SEMVER = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$")
 _PRIVATE_KEYS = {
     "source_id", "source_ids", "extraction_id", "extraction_ids",
@@ -41,12 +42,16 @@ class KnowledgePack:
     concepts: tuple[dict[str, Any], ...] = ()
     relationships: tuple[dict[str, Any], ...] = ()
     learning_paths: tuple[dict[str, Any], ...] = ()
+    examples: tuple[dict[str, Any], ...] = ()
 
     def get_concept(self, concept_id: str) -> dict[str, Any] | None:
         return next((item for item in self.concepts if item["id"] == concept_id), None)
 
     def get_learning_path(self, path_id: str) -> dict[str, Any] | None:
         return next((item for item in self.learning_paths if item["id"] == path_id), None)
+
+    def get_example(self, example_id: str) -> dict[str, Any] | None:
+        return next((item for item in self.examples if item["id"] == example_id), None)
 
     def get_strategy(self, strategy_id: str) -> dict[str, Any] | None:
         return next((item for item in self.strategies if item["id"] == strategy_id), None)
@@ -265,6 +270,31 @@ def _validate_learning_path(item: Any, relative: str) -> dict[str, Any]:
     return item
 
 
+
+def _validate_example(item: Any, relative: str) -> dict[str, Any]:
+    required = {"id", "schema_version", "strategy_id", "skill", "task", "content",
+                "strategy_application", "learning_note", "provenance", "review", "version"}
+    if not isinstance(item, dict) or set(item) != required:
+        raise KnowledgePackError(f"{relative}: invalid example fields")
+    _reject_private_fields(item)
+    for key in ("id", "schema_version", "strategy_id", "skill", "task", "content",
+                "strategy_application", "learning_note", "version"):
+        if not isinstance(item[key], str) or not item[key].strip():
+            raise KnowledgePackError(f"{relative}: example {key} must be non-empty text")
+    if not re.fullmatch(r"[a-z][a-z0-9_.-]{2,127}", item["id"]):
+        raise KnowledgePackError(f"{relative}: invalid example ID")
+    if item["schema_version"] not in SUPPORTED_SCHEMA_VERSIONS or not _SEMVER.fullmatch(item["version"]):
+        raise KnowledgePackError(f"{relative}: unsupported example schema or version")
+    if item["skill"] not in {"speaking", "writing", "reading", "listening", "general"}:
+        raise KnowledgePackError(f"{relative}: unsupported example skill")
+    if len(item["task"]) > 2000 or len(item["content"]) > 12000:
+        raise KnowledgePackError(f"{relative}: example task or content exceeds size limit")
+    if len(item["strategy_application"]) > 4000 or len(item["learning_note"]) > 4000:
+        raise KnowledgePackError(f"{relative}: example explanation exceeds size limit")
+    _validate_public_provenance_and_review(item, relative)
+    return item
+
+
 def load_knowledge_pack(path: str | Path) -> KnowledgePack:
     """Load and verify a directory pack; no database, network, or LLM is required."""
     root = Path(path).expanduser().resolve(strict=True)
@@ -284,7 +314,7 @@ def load_knowledge_pack(path: str | Path) -> KnowledgePack:
         raise KnowledgePackError("manifest has an unsupported shape")
     if manifest["format"] != FORMAT:
         raise KnowledgePackError("unsupported knowledge pack format")
-    if not isinstance(manifest["schema_version"], str) or manifest["schema_version"] not in SUPPORTED_SCHEMA_VERSIONS:
+    if not isinstance(manifest["schema_version"], str) or manifest["schema_version"] not in SUPPORTED_PACK_SCHEMA_VERSIONS:
         raise KnowledgePackError("unsupported knowledge pack schema version")
     if not isinstance(manifest["pack_version"], str) or not _SEMVER.fullmatch(manifest["pack_version"]):
         raise KnowledgePackError("pack_version must be semantic version text")
@@ -292,7 +322,7 @@ def load_knowledge_pack(path: str | Path) -> KnowledgePack:
     if not isinstance(files, list) or not files or len(files) > MAX_PACK_FILES:
         raise KnowledgePackError("manifest files must contain 1..5000 entries")
     seen = set()
-    strategies, concepts, relationships, learning_paths = [], [], [], []
+    strategies, concepts, relationships, learning_paths, examples = [], [], [], [], []
     total_bytes = 0
     for entry in files:
         if not isinstance(entry, dict) or set(entry) != {"path", "sha256"}:
@@ -333,6 +363,16 @@ def load_knowledge_pack(path: str | Path) -> KnowledgePack:
             relationships.append(_validate_relationship(record, relative))
         elif relative.startswith("learning-paths/"):
             learning_paths.append(_validate_learning_path(record, relative))
+        elif relative.startswith("examples/"):
+            if manifest["schema_version"] != "1.1":
+                raise KnowledgePackError("separate example records require Knowledge Pack schema version 1.1")
+            parts = PurePosixPath(relative).parts
+            if len(parts) != 3:
+                raise KnowledgePackError(f"example files must be grouped under a skill directory: {relative}")
+            validated = _validate_example(record, relative)
+            if parts[1] != validated["skill"]:
+                raise KnowledgePackError(f"{relative}: example skill does not match its directory")
+            examples.append(validated)
         else:
             raise KnowledgePackError(f"unsupported v1 pack file: {relative}")
     actual_files = set()
@@ -347,7 +387,7 @@ def load_knowledge_pack(path: str | Path) -> KnowledgePack:
         raise KnowledgePackError(f"manifest/file-set mismatch; unlisted={unlisted[:5]}, missing={missing[:5]}")
     if not strategies:
         raise KnowledgePackError("Knowledge Pack must contain at least one strategy")
-    all_records = strategies + concepts + relationships + learning_paths
+    all_records = strategies + concepts + relationships + learning_paths + examples
     all_ids = [item["id"] for item in all_records]
     if len(all_ids) != len(set(all_ids)):
         raise KnowledgePackError("record IDs must be unique across the Knowledge Pack")
@@ -369,14 +409,22 @@ def load_knowledge_pack(path: str | Path) -> KnowledgePack:
         missing = sorted({step["strategy_id"] for step in item["steps"]} - strategy_ids)
         if missing:
             raise KnowledgePackError(f"{item['id']}: learning path references unknown strategies: {missing}")
+    strategies_by_id = {item["id"]: item for item in strategies}
+    for item in examples:
+        strategy = strategies_by_id.get(item["strategy_id"])
+        if strategy is None:
+            raise KnowledgePackError(f"{item['id']}: example references an unknown strategy")
+        if item["skill"] != strategy["skill"]:
+            raise KnowledgePackError(f"{item['id']}: example skill must match its strategy skill")
     strategies.sort(key=lambda item: item["id"])
     concepts.sort(key=lambda item: item["id"])
     relationships.sort(key=lambda item: item["id"])
     learning_paths.sort(key=lambda item: item["id"])
+    examples.sort(key=lambda item: item["id"])
     return KnowledgePack(
         root=root, schema_version=manifest["schema_version"],
         pack_version=manifest["pack_version"], strategies=tuple(strategies),
         manifest_sha256=hashlib.sha256(manifest_bytes).hexdigest(),
         concepts=tuple(concepts), relationships=tuple(relationships),
-        learning_paths=tuple(learning_paths),
+        learning_paths=tuple(learning_paths), examples=tuple(examples),
     )
