@@ -54,6 +54,8 @@ Prepare a source-cited context pack for a new Speaking/Writing practice question
 
 An optional read-only stdio MCP bridge lets ChatGPT desktop or another compatible client search this local library and retrieve cited practice context. Install `.[mcp]`, then configure `python -m open_ielts_strategy.knowledge_mcp --db /absolute/path/.local/knowledge.sqlite3` as a local stdio server. It exposes no ingest/delete tools. Retrieved excerpts are shared with the connected model; use local Ollama for strict no-cloud processing. See [Private Knowledge MCP](docs/private-knowledge-mcp.md).
 
+For a fully local end-to-end workflow, generate an IELTS practice answer from reviewed private knowledge with `python scripts/knowledge_answer.py "..." --skill speaking --model YOUR_INSTALLED_MODEL`. It calls only local Ollama; it does not call ChatGPT or a paid API, and it refuses to generate a personalized answer when no approved evidence is found. See [Local Practice Answers](docs/local-practice-answers.md).
+
 Backup and restore helpers are available in `open_ielts_strategy.knowledge_backup`; backups are unencrypted and must be stored privately with full-disk encryption.
 
 ## Free offline evaluation foundations
