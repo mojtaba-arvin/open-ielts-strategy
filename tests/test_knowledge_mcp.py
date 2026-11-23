@@ -96,6 +96,8 @@ class KnowledgeMCPTests(unittest.TestCase):
                         "topic_tags": ["speaking"], "rationale": "The speaker recommends an opening.",
                     }]}, provider_name="test", model_name="fixture", prompt_version="v1",
                 )
+                store._connection.execute("DROP TABLE source_retention")
+                store._connection.commit()
             with ReadOnlyKnowledgeStore(path) as reader:
                 result = list_private_semantic_items(reader, source["source_id"])
                 self.assertEqual(result["item_count"], 1)
