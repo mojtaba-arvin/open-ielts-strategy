@@ -25,7 +25,7 @@ def _tokens(text: str) -> list[str]:
     return [token for token in _TOKEN_RE.findall(text.casefold()) if token not in _STOPWORDS]
 
 
-def _document_text(strategy: dict[str, Any]) -> str:
+def _document_text(strategy: dict[str, Any], examples: list[dict[str, Any]] | None = None) -> str:
     applicability = strategy["applicability"]
     return " ".join((
         strategy["id"], strategy["title"], strategy["summary"],
@@ -35,6 +35,7 @@ def _document_text(strategy: dict[str, Any]) -> str:
         " ".join(applicability["question_types"]),
         " ".join(applicability["parts"]),
         " ".join(applicability["conditions"]),
+        " ".join(example.get("task", "") + " " + example.get("content", "") + " " + example.get("strategy_application", "") + " " + example.get("learning_note", "") for example in (examples or [])),
     ))
 
 
@@ -45,7 +46,13 @@ class PublishedRetrievalEngine:
         self.pack = pack
         self.embedding_provider = embedding_provider
         self._strategies = list(pack.strategies)
-        self._texts = [_document_text(item) for item in self._strategies]
+        examples_by_strategy = {}
+        for example in pack.examples:
+            examples_by_strategy.setdefault(example["strategy_id"], []).append(example)
+        self._texts = [
+            _document_text(item, examples_by_strategy.get(item["id"], []))
+            for item in self._strategies
+        ]
         self._tokens = [_tokens(text) for text in self._texts]
         self._term_frequencies = [Counter(tokens) for tokens in self._tokens]
         self._lengths = [len(tokens) for tokens in self._tokens]
