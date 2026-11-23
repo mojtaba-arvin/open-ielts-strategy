@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "open-ielts-strategy"
 version = "0.1.0"
-description = "Evaluation-first original Agent Skills for IELTS preparation"
+description = "Versioned IELTS Knowledge Pack and AI Mentor platform with evaluation-first Agent Skills"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
