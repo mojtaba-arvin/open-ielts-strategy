@@ -223,7 +223,7 @@ def _ensure_publication_schema(store):
         ON publication_reviews(publication_status);
     CREATE TABLE IF NOT EXISTS publication_review_events (
         event_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        item_id TEXT NOT NULL,
+        item_id TEXT NOT NULL REFERENCES semantic_items(item_id) ON DELETE CASCADE,
         publication_status TEXT NOT NULL,
         rights_basis TEXT,
         reviewer TEXT NOT NULL,
