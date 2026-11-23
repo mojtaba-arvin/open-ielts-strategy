@@ -116,9 +116,12 @@ def validate_release_preflight(root: Path, release_tag: str | None = None) -> li
         if not (root / filename).is_file():
             errors.append(f"required licensing notice is missing: {filename}")
     license_files = project.get("license-files")
-    if not isinstance(license_files, list) or not {
-        "LICENSE", "LICENSE-CONTENT", "NOTICE"
-    }.issubset(set(license_files)):
+    required_license_files = {"LICENSE", "LICENSE-CONTENT", "NOTICE"}
+    if (
+        not isinstance(license_files, list)
+        or any(not isinstance(filename, str) for filename in license_files)
+        or not required_license_files.issubset(set(license_files))
+    ):
         errors.append("project.license-files must package LICENSE, LICENSE-CONTENT, and NOTICE")
     if (root / "LICENSE").is_file() and "MIT License" not in (root / "LICENSE").read_text(encoding="utf-8"):
         errors.append("LICENSE must contain the MIT software license")
