@@ -2,7 +2,7 @@
 
 ## Pull-request lanes
 
-- `CI` is the required, deterministic validation lane. It runs on every pull request and push to `main`; its `validate` job is the only status intended for branch protection.
+- `CI` is the deterministic validation lane intended to become the required check. It runs on every pull request and push to `main`; its exact job context is `validate`. **As last verified on 2026-11-23, the active `Protect main` ruleset does not yet require any status check.** Do not describe `validate` as required until the ruleset read-back confirms it. Issue [#4](https://github.com/mojtaba-arvin/open-ielts-strategy/issues/4) tracks the administrative step; see [the governance runbook](governance.md#required-validate-check--administrative-runbook).
 - `Runtime evaluation` runs for changes to runtime adapters, runtime scripts, skill definitions/evaluation fixtures, and its own workflow. It uses fixture mode in all automated triggers and never calls paid model APIs.
 - `Judge calibration` runs for judge implementation, calibration data/tests/docs, and its own workflow. Pull requests and schedules use dry-run fixtures; live judging requires an explicit manual dispatch and bounded budget.
 - `Nightly validation` is supplemental and runs on schedule or manual dispatch only. It is deliberately excluded from pull-request required checks.
