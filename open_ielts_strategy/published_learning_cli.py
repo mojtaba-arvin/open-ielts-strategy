@@ -24,6 +24,9 @@ def build_parser():
     study.add_argument("--skill", choices=("speaking", "writing", "reading", "listening", "general"), required=True)
     study.add_argument("--limit", type=int, default=20)
     study.add_argument("--completed-path", action="append", default=[], help="Previously completed learning path ID; repeatable")
+    study.add_argument("--state-db", help="Private local SQLite database for learner progress")
+    study.add_argument("--learner-id", help="Stable local learner scope; required with --state-db")
+    study.add_argument("--complete-path", action="append", default=[], help="Mark a published path complete; repeatable")
 
     get_example = commands.add_parser("get-example", help="Retrieve a separately reviewed published example")
     get_example.add_argument("--pack", default="knowledge")
@@ -51,6 +54,8 @@ def build_parser():
     chat.add_argument("--strategy-id", required=True)
     chat.add_argument("--message", required=True)
     chat.add_argument("--history-json", default="[]", help="JSON array of prior learner/mentor turns")
+    chat.add_argument("--state-db", help="Private local SQLite database for Mentor history")
+    chat.add_argument("--learner-id", help="Stable local learner scope; required with --state-db")
     chat.add_argument("--provider", choices=("ollama", "openai-compatible"), default="ollama")
     chat.add_argument("--model", required=True)
     chat.add_argument("--endpoint")
@@ -64,8 +69,32 @@ def main(argv=None):
     try:
         pack = load_knowledge_pack(args.pack)
         if args.command == "study":
-            result = build_study_progression(pack, skill=args.skill, limit=args.limit,
-                                               completed_path_ids=args.completed_path)
+            if args.state_db and not args.learner_id:
+                raise ValueError("--learner-id is required with --state-db")
+            if args.complete_path and not args.state_db:
+                raise ValueError("--complete-path requires --state-db")
+            if args.state_db:
+                from .learner_state import LearnerStateStore
+            state = LearnerStateStore(args.state_db) if args.state_db else None
+            try:
+                known = {item["id"] for item in pack.learning_paths}
+                unknown = set(args.complete_path) - known
+                if unknown:
+                    raise ValueError("unknown learning paths: " + ", ".join(sorted(unknown)))
+                if state:
+                    for path_id in args.complete_path:
+                        state.mark_path_completed(args.learner_id, pack.pack_version, path_id)
+                completed = set(args.completed_path)
+                if state:
+                    completed.update(state.completed_paths(args.learner_id, pack.pack_version))
+                result = build_study_progression(pack, skill=args.skill, limit=args.limit,
+                                                  completed_path_ids=completed)
+                if state:
+                    result["learner_state"] = {"storage": "local_sqlite", "learner_id": args.learner_id,
+                                               "completed_path_count": len(completed)}
+            finally:
+                if state:
+                    state.close()
         elif args.command == "get-example":
             result = get_published_example(pack, args.example_id)
         else:
@@ -76,13 +105,31 @@ def main(argv=None):
                 config["api_key_env"] = args.api_key_env
             provider = build_consumption_provider(args.provider, **config)
             if args.command == "mentor-chat":
+                if args.state_db and not args.learner_id:
+                    raise ValueError("--learner-id is required with --state-db")
+                if args.state_db:
+                    from .learner_state import LearnerStateStore
+                state = LearnerStateStore(args.state_db) if args.state_db else None
                 try:
-                    history = json.loads(args.history_json)
-                except json.JSONDecodeError as exc:
-                    raise ValueError("--history-json must be a JSON array") from exc
-                result = continue_mentor_session(
-                    pack, args.strategy_id, args.message, provider=provider, history=history
-                )
+                    try:
+                        history = json.loads(args.history_json)
+                    except json.JSONDecodeError as exc:
+                        raise ValueError("--history-json must be a JSON array") from exc
+                    if state:
+                        if history:
+                            raise ValueError("--history-json cannot be combined with persisted state")
+                        history = state.mentor_history(args.learner_id, pack.pack_version, args.strategy_id)
+                    result = continue_mentor_session(
+                        pack, args.strategy_id, args.message, provider=provider, history=history
+                    )
+                    if state:
+                        state.append_mentor_turn(args.learner_id, pack.pack_version, args.strategy_id,
+                                                 args.message, result["answer"])
+                        result["learner_state"] = {"storage": "local_sqlite", "learner_id": args.learner_id,
+                                                   "persisted_turns": True}
+                finally:
+                    if state:
+                        state.close()
             elif args.command == "mentor":
                 result = explain_published_strategy(
                     pack, args.strategy_id, provider=provider,
