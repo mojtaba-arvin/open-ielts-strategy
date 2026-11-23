@@ -34,7 +34,9 @@ jobs:
           [[ "$actual_tag" == "$RELEASE_TAG" ]] || { echo "checked-out tag does not match requested tag"; exit 1; }
       - name: Validate repository and source rights
         run: python scripts/validate_repo.py
-      - name: Validate release claims
+      - name: Validate release claims and package preflight
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: python scripts/validate_release.py
       - name: Build source distribution and wheel
         run: |
