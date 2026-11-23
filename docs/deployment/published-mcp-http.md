@@ -56,3 +56,12 @@ The middleware checks Host and optional Origin allowlists, validates bearer toke
 - The liveness endpoint does not prove MCP readiness or educational quality.
 - Backups, deployment availability, TLS, identity federation/OIDC, durable tamper-resistant audit retention, external secret synchronization, and incident response remain deployment-operator responsibilities. Static subject tokens, optional Redis distributed limits, and stdout audit events are implemented as foundations.
 - This deployment is a security baseline, not a completed production security certification. Conduct threat modeling and penetration testing before public exposure.
+
+For a local multi-replica rate-limit test, install the Redis extra in the image (already included in the supplied Dockerfile), set `IELTS_MCP_REDIS_URL=redis://redis:6379/0`, and start the optional profile:
+
+```bash
+export IELTS_MCP_REDIS_URL=redis://redis:6379/0
+docker compose --profile distributed -f compose.published-mcp.yml up --build -d
+```
+
+The bundled Redis container has no authentication and must remain on a private local Compose network. Use an authenticated TLS-enabled managed Redis service outside local testing.
