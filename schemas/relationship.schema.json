@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Published Knowledge Relationship",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "schema_version",
+    "from_id",
+    "to_id",
+    "type",
+    "rationale",
+    "provenance",
+    "review"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{2,127}$"
+    },
+    "schema_version": {
+      "const": "1.0"
+    },
+    "from_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "to_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "enum": [
+        "requires",
+        "complements",
+        "conflicts_with",
+        "alternative_to",
+        "defines",
+        "illustrates"
+      ]
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "provenance": {
+      "$ref": "strategy.schema.json#/$defs/publicProvenance"
+    },
+    "review": {
+      "$ref": "strategy.schema.json#/$defs/publicReview"
+    }
+  },
+  "$id": "https://open-ielts-strategy.dev/schemas/relationship.schema.json"
+}

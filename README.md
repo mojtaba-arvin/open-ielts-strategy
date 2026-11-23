@@ -1,6 +1,6 @@
-# Open IELTS Strategy
+# Open IELTS Strategy — Versioned Knowledge & AI Mentor Platform
 
-An evaluation-first collection of original Agent Skills for IELTS preparation. The project prioritizes task routing, reproducible evaluation, source provenance, and conservative content-rights handling.
+An evaluation-first IELTS learning platform with a portable, versioned Knowledge Pack, private knowledge-engineering workflow, published retrieval, Practice, Mentor, Study, and MCP interfaces. Original Agent Skills, reproducible evaluation, source provenance, and conservative content-rights handling remain core project principles.
 
 > **Content policy:** no third-party transcripts, audio/video, official IELTS questions, answer keys, or substantial excerpts are published here by default. Examples are original or synthetic. A public URL is provenance, not permission.
 
@@ -49,6 +49,8 @@ python scripts/knowledge_web.py --port 8765
 ```
 
 Then open `http://127.0.0.1:8765`. For local DOCX/PDF import, see [Local UI and Documents](docs/local-ui-and-documents.md). Optional local Ollama extraction, embeddings, hybrid retrieval, and playbooks are documented in [Semantic Extraction](docs/semantic-extraction.md), [Hybrid Retrieval](docs/hybrid-retrieval.md), and [Strategy Playbooks](docs/strategy-playbooks.md). These features produce reviewable drafts, not validated IELTS advice.
+
+An explicitly selected OpenAI-compatible extraction provider is also available with `--provider openai-compatible --model MODEL`; it requires an API key from an environment variable and sends source segments to the configured HTTPS service. There is no automatic cloud fallback. See [Semantic Extraction](docs/semantic-extraction.md) for the data-egress boundary.
 
 Prepare a source-cited context pack for a new Speaking/Writing practice question with `python scripts/knowledge_practice.py "..." --skill speaking`. By default, only personally approved or explicitly supported cards are included; use `--include-unreviewed` to inspect drafts. The command prepares evidence for ChatGPT to write an answer; it does not generate an answer itself. See [Practice Context](docs/practice-context.md).
 
@@ -113,6 +115,26 @@ python scripts/knowledge.py delete-source src_ID --confirm
 ```
 
 Use only material you are entitled to import and process. Rights metadata is a declaration, not legal clearance. See [Knowledge Ingestion & Retrieval](docs/knowledge-ingestion.md) for the data model, limitations, acceptance criteria, phases, and parallel work plan. PDF/DOCX parsing, semantic extraction, embeddings, a graphical UI, and educational validation are not part of Phase 1.
+
+## Published Knowledge Pack (v1 foundation)
+
+The repository now includes a dependency-free reader for versioned published Knowledge Packs. A cloned checkout can load approved strategies, concepts, typed relationships, learning paths, and (in manifest schema v1.1) separately reviewed examples, then perform BM25 retrieval without opening the private SQLite library or contacting a model/API provider. Optional cached local sentence-transformer or HTTPS OpenAI-compatible embeddings enable dense/hybrid retrieval; remote calls are explicit and require an environment-backed API key.
+
+The pack contract uses `knowledge/manifest.json`, typed JSON records, and SHA-256 file checksums. Manifest schema v1.0 supports strategies/concepts/relationships/learning paths; v1.1 adds standalone `examples/<skill>/` records with explicit strategy references and separate review/provenance gates. Content approval and publication approval are separate mandatory states. Published provenance excludes private source/extraction IDs, source bodies, transcript text, and private review notes. See [Published Knowledge Pack v1](docs/knowledge/published-knowledge-pack-v1.md) and [ADR-001](docs/architecture/adr-001-published-knowledge-pack.md).
+
+A published-only stdio MCP adapter is available as `ielts-published-knowledge-mcp --pack ./knowledge`. An opt-in Streamable HTTP transport is available via `python -m pip install '.[http-mcp]'` and `ielts-published-knowledge-mcp-http`; it supports static per-subject read-only token registries, Host/optional Origin checks, per-subject rate limits, content-free structured audit events, and optional shared Redis rate limiting via `.[redis-rate-limit]`. It is packaged with a non-root container and localhost-only Compose deployment. Published MCP supports local or explicitly configured HTTPS OpenAI-compatible embeddings. See [HTTP MCP deployment](docs/deployment/published-mcp-http.md). Static tokens are not OIDC, stdout audit is not durable retention, and public deployment still needs TLS/proxy operations and security review.
+
+The portable-consumption and local publication foundations are implemented. An optional local embedding-based semantic-overlap screen is now a blocking Knowledge Pack build gate when enabled; it supplements exact overlap/secret checks but remains a heuristic, not legal clearance. A persistent public-only index cache is versioned by pack manifest and model fingerprint and is wired into the Practice CLI. Optional local sentence-transformer and HTTPS OpenAI-compatible embedding providers are supported. Opt-in `--query-rewriting` and local `--reranker-model-path` options extend retrieval without changing the deterministic default. Human Practice review and reviewer-agreement reporting are available locally; no human ratings or educational outcomes are claimed. The signed release CLI now supports short-lived human diff/rights attestations, expected-head-protected push to a non-default branch, and revert-based rollback. Distributed HTTP rate limiting, per-user authorization, audit retention, independent legal review, and actual human evaluation remain separate gates.
+
+A local pack builder (`ielts-knowledge-publish`) verifies the private content/publication approvals for source-derived records, checks rights-basis consistency and exact source/secret overlap, optionally adds local semantic-overlap screening with `--semantic-embedding-model-path`, requires explicit human confirmation, and writes a deterministic pack. Git operations are intentionally delegated to the separate signed release command. See the [publishing guide](docs/knowledge/published-knowledge-pack-v1.md).
+
+The `ielts-practice` command can generate an evidence-attributed practice answer from the published pack with either a local Ollama model or an explicitly selected OpenAI-compatible API provider. It refuses to fabricate strategy attribution and makes no model call when no relevant published evidence is found; see [Published Knowledge Pack v1](docs/knowledge/published-knowledge-pack-v1.md).
+
+Knowledge Pack JSON Schemas are meta-validated and cross-reference checked in CI with the optional `schema-validation` extra; the runtime loader itself remains standard-library-only. The optional `ielts-practice-eval` CLI stores private human rubric reviews locally and reports descriptive inter-rater agreement; see [Practice human review](docs/evaluation/practice-human-review.md).
+
+`ielts-knowledge-diff` produces a deterministic, review-only diff between two verified Knowledge Pack revisions; it never commits or pushes. The separate `ielts-knowledge-release` command adds a short-lived HMAC-protected human approval, explicit push confirmation to a non-default release branch, expected-head protection, and a revert-based rollback command. It never merges a PR or bypasses branch protection; see [Knowledge Pack release authorization](docs/release/knowledge-pack-release.md). `open_ielts_strategy.published_index.PublishedIndexStore` caches published record text/vectors in a separate disposable SQLite index, invalidated by the pack manifest digest or model fingerprint. `EnhancedPublishedRetrievalEngine` supports explicit model-assisted query rewriting and local cross-encoder reranking; both are opt-in and bounded. `semantic_publication_scan` provides the local embedding-based source-overlap gate. `ielts-knowledge-benchmark` reports offline retrieval initialization, p50/p95 latency, and throughput without emitting query text or retrieved content.
+
+The `ielts-learning` CLI provides deterministic Study paths plus model-backed Mentor explanations and original-example generation from published strategies. Published MCP exposes Study and standalone published-example lookup by default, and model-backed Mentor/generated-example tools only when a provider and model are explicitly configured.
 
 ## Principles
 

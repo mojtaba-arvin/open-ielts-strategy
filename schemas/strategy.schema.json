@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open-ielts-strategy.dev/schemas/strategy.schema.json",
+  "title": "Published IELTS Strategy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "schema_version",
+    "title",
+    "skill",
+    "summary",
+    "purpose",
+    "reasoning",
+    "steps",
+    "applicability",
+    "limitations",
+    "common_mistakes",
+    "examples",
+    "relationships",
+    "provenance",
+    "review",
+    "version"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{2,127}$"
+    },
+    "schema_version": {
+      "const": "1.0"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "skill": {
+      "enum": [
+        "speaking",
+        "writing",
+        "reading",
+        "listening",
+        "general"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "purpose": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "reasoning": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "applicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "question_types",
+        "parts",
+        "conditions"
+      ],
+      "properties": {
+        "question_types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "parts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "common_mistakes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "examples": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "relationships": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requires",
+        "complements",
+        "conflicts_with",
+        "alternatives"
+      ],
+      "properties": {
+        "requires": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "complements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "conflicts_with": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basis",
+        "public_references"
+      ],
+      "properties": {
+        "basis": {
+          "enum": [
+            "original",
+            "independently_authored",
+            "public_domain",
+            "permissioned"
+          ]
+        },
+        "public_references": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://"
+          }
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "content_status",
+        "publication_status"
+      ],
+      "properties": {
+        "content_status": {
+          "const": "approved"
+        },
+        "publication_status": {
+          "const": "approved"
+        }
+      }
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$"
+    }
+  },
+  "$defs": {
+    "publicProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basis",
+        "public_references"
+      ],
+      "properties": {
+        "basis": {
+          "enum": [
+            "original",
+            "independently_authored",
+            "public_domain",
+            "permissioned"
+          ]
+        },
+        "public_references": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://"
+          }
+        }
+      }
+    },
+    "publicReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "content_status",
+        "publication_status"
+      ],
+      "properties": {
+        "content_status": {
+          "const": "approved"
+        },
+        "publication_status": {
+          "const": "approved"
+        }
+      }
+    }
+  }
+}

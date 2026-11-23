@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Published IELTS Concept",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "schema_version",
+    "title",
+    "definition",
+    "related_strategies",
+    "provenance",
+    "review",
+    "version"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{2,127}$"
+    },
+    "schema_version": {
+      "const": "1.0"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "definition": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 3000
+    },
+    "related_strategies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "provenance": {
+      "$ref": "strategy.schema.json#/$defs/publicProvenance"
+    },
+    "review": {
+      "$ref": "strategy.schema.json#/$defs/publicReview"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    }
+  },
+  "$id": "https://open-ielts-strategy.dev/schemas/concept.schema.json"
+}

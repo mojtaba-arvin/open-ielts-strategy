@@ -28,6 +28,22 @@ jobs:
         run: python scripts/validate_release.py
       - name: Verify package build/install contract
         run: python -m pip install --no-deps .
+      - name: Validate optional Streamable HTTP MCP transport
+        run: |
+          python -m pip install '.[http-mcp,redis-rate-limit]'
+          python -c "from mcp.server.fastmcp import FastMCP; server = FastMCP('ci'); assert callable(server.streamable_http_app)"
+      - name: Build published MCP container
+        run: docker build -f Dockerfile.published-mcp -t open-ielts-strategy/published-mcp:ci .
+      - name: Validate published MCP Compose deployment
+        run: docker compose -f compose.published-mcp.yml config --quiet
+      - name: Validate Kubernetes deployment security structure
+        run: |
+          python -m pip install pyyaml
+          python scripts/validate_kubernetes_manifest.py
+      - name: Validate Knowledge Pack JSON Schemas
+        run: |
+          python -m pip install '.[schema-validation]'
+          python scripts/validate_knowledge_schemas.py
       - name: Validate evaluation cases
         run: |
           python scripts/evaluate.py --skill ielts-writing-feedback
