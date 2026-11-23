@@ -8,7 +8,10 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import math
 from pathlib import Path
+
+from .publication_scan import MAX_SCAN_TEXT_CHARS, MAX_SOURCE_CHARS, MAX_TOTAL_SOURCE_CHARS
 
 
 def _chunks(text: str, size: int = 512, overlap: int = 128):
@@ -36,17 +39,22 @@ def _cosine(left, right):
 
 def scan_semantic_publication_leaks(payloads: list[str], private_sources: list[dict],
                                     embedding_provider, *, threshold: float = 0.93,
-                                    max_chunks: int = 10000, batch_size: int = 64) -> dict:
+                                    max_chunks: int = 1000, batch_size: int = 64) -> dict:
     if not 0.5 <= threshold <= 1.0:
         raise ValueError("threshold must be between 0.5 and 1.0")
-    if type(max_chunks) is not int or not 1 <= max_chunks <= 50000:
-        raise ValueError("max_chunks must be between 1 and 50000")
+    if type(max_chunks) is not int or not 1 <= max_chunks <= 5000:
+        raise ValueError("max_chunks must be between 1 and 5000")
     if type(batch_size) is not int or not 1 <= batch_size <= 512:
         raise ValueError("batch_size must be between 1 and 512")
     public_chunks, source_chunks = [], []
+    total_source_chars = 0
+    total_public_chars = 0
     for payload_index, payload in enumerate(payloads):
         if not isinstance(payload, str):
             raise ValueError("public payloads must be strings")
+        total_public_chars += len(payload)
+        if total_public_chars > MAX_SCAN_TEXT_CHARS:
+            raise ValueError("candidate publication text exceeds semantic scan size limit")
         public_chunks.extend((payload_index, offset, chunk) for offset, chunk in _chunks(payload))
     for source in private_sources:
         if not isinstance(source, dict) or not isinstance(source.get("source_id"), str):
@@ -54,6 +62,11 @@ def scan_semantic_publication_leaks(payloads: list[str], private_sources: list[d
         body = source.get("text")
         if not isinstance(body, str):
             continue
+        if len(body) > MAX_SOURCE_CHARS:
+            raise ValueError("a private source exceeds the semantic scan size limit")
+        total_source_chars += len(body)
+        if total_source_chars > MAX_TOTAL_SOURCE_CHARS:
+            raise ValueError("private sources exceed the semantic scan total size limit")
         source_chunks.extend((source["source_id"], offset, chunk) for offset, chunk in _chunks(body))
     if len(public_chunks) + len(source_chunks) > max_chunks:
         raise ValueError("semantic scan chunk budget exceeded; reduce inputs or raise the explicit limit")
@@ -71,6 +84,11 @@ def scan_semantic_publication_leaks(payloads: list[str], private_sources: list[d
             encoded = embedding_provider.encode(batch)
             if not isinstance(encoded, list) or len(encoded) != len(batch):
                 raise ValueError("embedding provider returned an unexpected vector count")
+            for vector in encoded:
+                if not isinstance(vector, (list, tuple)) or not vector:
+                    raise ValueError("embedding provider returned an invalid vector")
+                if any(type(value) not in (int, float) or not math.isfinite(float(value)) for value in vector):
+                    raise ValueError("embedding vector must contain only finite numeric values")
             vectors.extend(encoded)
         return vectors
     source_vectors = encode_batched(source_chunks)
@@ -103,7 +121,7 @@ def main(argv=None):
     parser.add_argument("--private-sources", required=True, help="private JSON array of {source_id,text}; keep local")
     parser.add_argument("--embedding-model-path", required=True, help="already-cached local sentence-transformer model")
     parser.add_argument("--threshold", type=float, default=0.93)
-    parser.add_argument("--max-chunks", type=int, default=10000)
+    parser.add_argument("--max-chunks", type=int, default=1000)
     args = parser.parse_args(argv)
     try:
         from .hybrid_retrieval import LocalSentenceTransformer
