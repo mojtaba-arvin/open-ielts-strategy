@@ -74,6 +74,8 @@ For source-derived strategies, map each strategy to its private semantic item ID
 
 The `--confirm-human-review` flag is an explicit operator attestation, not an automated legal determination. Rights metadata and model-generated content are never treated as self-approving.
 
+Retrieval defaults to in-memory BM25 and works without an embedding model. For local dense/hybrid retrieval, install `.[local-embeddings]` and pass an existing on-disk sentence-transformer directory with `--embedding-model-path /path/to/cached/model` to either `ielts-practice` or `ielts-published-knowledge-mcp`. The adapter uses `local_files_only=True`; it will not download model weights. The current hybrid fusion is BM25 plus cosine similarity; learned reranking and incremental persistent indexes remain future work.
+
 ## Published Knowledge MCP (stdio)
 
 Install the optional MCP dependency and run the published-only adapter against a checked-out pack:
