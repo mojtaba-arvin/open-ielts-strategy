@@ -79,7 +79,7 @@ def hybrid_search(store, query: str, *, provider: EmbeddingProvider | None = Non
     if semantic_table:
         semantic_sql = """SELECT i.item_id AS card_id, i.kind, substr(i.text,1,160) AS title,
                     i.topic_tags_json, i.status, i.rationale AS review_reason,
-                    i.rationale AS review_note, e.prompt_version AS extraction_method,
+                    i.review_note AS review_note, e.prompt_version AS extraction_method,
                     g.segment_id, i.text, g.ordinal, i.start_char, i.end_char,
                     g.locator_json, s.source_id, s.title AS source_title,
                     s.source_type, s.author, s.source_url, s.rights_status
