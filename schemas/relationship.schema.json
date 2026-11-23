@@ -50,5 +50,6 @@
     "review": {
       "$ref": "strategy.schema.json#/$defs/publicReview"
     }
-  }
+  },
+  "$id": "https://open-ielts-strategy.dev/schemas/relationship.schema.json"
 }
