@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68,<82"]
+requires = ["setuptools>=77,<82"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,8 @@ version = "0.1.0"
 description = "Versioned IELTS Knowledge Pack and AI Mentor platform with evaluation-first Agent Skills"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE", "LICENSE-CONTENT", "NOTICE"]
 authors = [{ name = "Mojtaba Arvin" }]
 dependencies = []
 
