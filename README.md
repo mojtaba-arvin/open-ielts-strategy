@@ -78,6 +78,8 @@ python scripts/knowledge.py search "speaking fluency" --topic speaking
 python scripts/knowledge.py show src_ID
 python scripts/knowledge.py review card_ID --status user_approved --note "Useful for my practice"
 python scripts/knowledge.py link card_A card_B --relation contradicts --note "Reviewed disagreement"
+python scripts/knowledge.py relations --source-id src_ID
+python scripts/knowledge.py delete-source src_ID --confirm
 ```
 
 Use only material you are entitled to import and process. Rights metadata is a declaration, not legal clearance. See [Knowledge Ingestion & Retrieval](docs/knowledge-ingestion.md) for the data model, limitations, acceptance criteria, phases, and parallel work plan. PDF/DOCX parsing, semantic extraction, embeddings, a graphical UI, and educational validation are not part of Phase 1.
