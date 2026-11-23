@@ -100,6 +100,9 @@ def inspect_audio(data, filename, *, max_bytes=DEFAULT_MAX_BYTES,
                 rate = stream.getframerate()
                 frames = stream.getnframes()
                 width = stream.getsampwidth()
+                payload = stream.readframes(frames)
+                if len(payload) != frames * channels * width:
+                    raise ValueError("truncated WAV audio payload")
                 if channels not in (1, 2) or rate < 8000 or width not in (1, 2, 3, 4):
                     raise ValueError("unsupported WAV audio parameters")
                 duration = frames / rate
