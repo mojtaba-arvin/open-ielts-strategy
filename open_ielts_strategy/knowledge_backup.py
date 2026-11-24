@@ -5,28 +5,7 @@ import os
 import sqlite3
 from pathlib import Path
 
-
-def _ensure_private_parent(directory: Path) -> None:
-    """Create missing parent directories as private without changing existing ones."""
-    missing = []
-    current = directory
-    while not current.exists():
-        missing.append(current)
-        if current.parent == current:
-            break
-        current = current.parent
-
-    for candidate in reversed(missing):
-        try:
-            candidate.mkdir(mode=0o700)
-        except FileExistsError:
-            # Another process may have created it; never change permissions on
-            # a directory we did not create ourselves.
-            continue
-        try:
-            candidate.chmod(0o700)
-        except OSError:
-            pass
+from .filesystem_security import ensure_private_directory
 
 
 def _create_exclusive_private_file(path: Path) -> None:
@@ -44,7 +23,7 @@ def backup_database(source_path: str | Path, destination_path: str | Path) -> di
         raise FileExistsError("refusing to overwrite an existing backup")
     if destination.parent.resolve() == Path.cwd().resolve():
         raise ValueError("store backups in a dedicated private directory, not the repository root")
-    _ensure_private_parent(destination.parent)
+    ensure_private_directory(destination.parent)
     created = False
     try:
         # O_EXCL also rejects dangling symlinks and closes the check-then-create
@@ -74,7 +53,7 @@ def restore_database(backup_path: str | Path, destination_path: str | Path) -> d
         raise ValueError("backup must exist and restore destination must be new")
     if destination.parent.resolve() == Path.cwd().resolve():
         raise ValueError("restore into a private local directory, not repository root")
-    _ensure_private_parent(destination.parent)
+    ensure_private_directory(destination.parent)
     created = False
     try:
         _create_exclusive_private_file(destination)
