@@ -13,6 +13,7 @@ import sys
 import time
 from pathlib import Path
 
+from open_ielts_strategy.embedding_providers import OpenAICompatibleEmbeddingProvider
 from open_ielts_strategy.knowledge_pack import load_knowledge_pack
 from open_ielts_strategy.published_retrieval import PublishedRetrievalEngine
 from open_ielts_strategy.published_index import PublishedIndexStore
