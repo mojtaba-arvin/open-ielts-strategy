@@ -86,9 +86,22 @@ def _read_pdf(path: Path) -> str:
             raise DocumentImportError("encrypted PDFs are not accepted")
         if len(reader.pages) > MAX_PDF_PAGES:
             raise DocumentImportError("PDF exceeds the 300-page limit")
-        pages = [page.extract_text() or "" for page in reader.pages]
+        pages = []
+        extracted_chars = 0
+        for page in reader.pages:
+            page_text = page.extract_text() or ""
+            if not page_text.strip():
+                continue
+            normalized = re.sub(r"[ \t]+", " ", page_text).strip()
+            if not normalized:
+                continue
+            # Account for the paragraph separators before retaining the page.
+            extracted_chars += len(normalized) + (2 if pages else 0)
+            if extracted_chars > MAX_EXTRACTED_CHARS:
+                raise DocumentImportError("extracted PDF text exceeds the 5-million-character limit")
+            pages.append(normalized)
     except DocumentImportError:
         raise
     except Exception as exc:
         raise DocumentImportError("PDF parsing failed") from exc
-    return "\n\n".join(re.sub(r"[ \t]+", " ", page).strip() for page in pages if page.strip())
+    return "\n\n".join(pages)
