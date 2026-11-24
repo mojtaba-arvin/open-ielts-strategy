@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+import warnings
 import zipfile
 from types import SimpleNamespace
 from pathlib import Path
@@ -70,6 +71,18 @@ class DocumentImportTests(unittest.TestCase):
                 archive.writestr("word/document.xml", xml)
                 archive.writestr("word/vbaProject.bin", b"macro")
             with self.assertRaises(DocumentImportError):
+                import_document(path)
+
+    def test_docx_with_duplicate_archive_members_is_rejected(self):
+        xml = "duplicate"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "duplicate-member.docx"
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", UserWarning)
+                with zipfile.ZipFile(path, "w") as archive:
+                    archive.writestr("word/document.xml", xml)
+                    archive.writestr("word/document.xml", xml)
+            with self.assertRaisesRegex(DocumentImportError, "duplicate entries"):
                 import_document(path)
 
     def test_malformed_docx_zip_is_normalized(self):
