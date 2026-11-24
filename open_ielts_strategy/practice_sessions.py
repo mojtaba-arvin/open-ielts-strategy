@@ -118,7 +118,7 @@ class PracticeSessionStore:
         result["attempts"] = [
             self.get_attempt(item["id"])
             for item in self._connection.execute(
-                "SELECT id FROM practice_attempts WHERE session_id = ? ORDER BY created_at, id",
+                "SELECT id FROM practice_attempts WHERE session_id = ? ORDER BY rowid",
                 (session_id,),
             ).fetchall()
         ]
