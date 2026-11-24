@@ -10,6 +10,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
+from .filesystem_security import ensure_private_directory
 from .knowledge_extraction import classify_segment
 
 DEFAULT_DB_PATH = ".local/knowledge.sqlite3"
@@ -146,13 +147,7 @@ class KnowledgeStore:
         self.db_path = str(db_path)
         if self.db_path != ":memory:":
             path = Path(self.db_path).expanduser()
-            parent_existed = path.parent.exists()
-            path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-            if not parent_existed:
-                try:
-                    path.parent.chmod(0o700)
-                except OSError:
-                    pass
+            ensure_private_directory(path.parent)
             self.db_path = str(path)
         self._connection = sqlite3.connect(self.db_path)
         self._connection.row_factory = sqlite3.Row
