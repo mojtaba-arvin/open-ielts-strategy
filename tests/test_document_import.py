@@ -105,6 +105,65 @@ class DocumentImportTests(unittest.TestCase):
         self.assertEqual(first.calls, 1)
         self.assertEqual(second.calls, 0)
 
+    def test_pdf_exact_output_limit_accounts_for_page_separators(self):
+        class Page:
+            def __init__(self, text):
+                self.text = text
+
+            def extract_text(self):
+                return self.text
+
+        class Reader:
+            is_encrypted = False
+            pages = [Page("x" * 2_499_999), Page("  \t "), Page("y" * 2_499_999)]
+
+            def __init__(self, path, strict):
+                pass
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "at-limit.pdf"
+            path.write_bytes(b"%PDF")
+            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+                result = import_document(path)
+
+        self.assertEqual(result["characters"], 5_000_000)
+        self.assertTrue(result["text"].startswith("x"))
+        self.assertTrue(result["text"].endswith("y"))
+
+    def test_encrypted_pdf_is_rejected_before_page_extraction(self):
+        class Page:
+            def extract_text(self):
+                raise AssertionError("encrypted PDF pages must not be extracted")
+
+        class Reader:
+            is_encrypted = True
+            pages = [Page()]
+
+            def __init__(self, path, strict):
+                pass
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "encrypted.pdf"
+            path.write_bytes(b"%PDF")
+            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+                with self.assertRaisesRegex(DocumentImportError, "encrypted"):
+                    import_document(path)
+
+    def test_pdf_parser_failures_are_normalized(self):
+        class Reader:
+            is_encrypted = False
+            pages = []
+
+            def __init__(self, path, strict):
+                raise RuntimeError("malformed PDF internals")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "broken.pdf"
+            path.write_bytes(b"%PDF")
+            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+                with self.assertRaisesRegex(DocumentImportError, "PDF parsing failed"):
+                    import_document(path)
+
     def test_unsupported_extension_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "video.mp4"
