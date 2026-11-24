@@ -1,3 +1,4 @@
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,6 +12,29 @@ def scores(task_relevance):
 
 
 class PracticeReviewCalibrationTests(unittest.TestCase):
+    def test_store_creates_private_parent_directories_and_preserves_existing_ones(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            private_db = root / "new-private" / "nested" / "reviews.sqlite3"
+            store = PracticeReviewStore(private_db)
+            try:
+                if os.name != "nt":
+                    self.assertEqual((root / "new-private").stat().st_mode & 0o777, 0o700)
+                    self.assertEqual(private_db.parent.stat().st_mode & 0o777, 0o700)
+                    self.assertEqual(private_db.stat().st_mode & 0o777, 0o600)
+            finally:
+                store.close()
+
+            shared = root / "shared"
+            shared.mkdir(mode=0o755)
+            if os.name != "nt":
+                shared.chmod(0o755)
+            store = PracticeReviewStore(shared / "reviews.sqlite3")
+            store.close()
+            if os.name != "nt":
+                self.assertEqual(shared.stat().st_mode & 0o777, 0o755)
+                self.assertEqual((shared / "reviews.sqlite3").stat().st_mode & 0o777, 0o600)
+
     def _report(self, reviewer_ids_and_scores):
         with tempfile.TemporaryDirectory() as tmp:
             store = PracticeReviewStore(Path(tmp) / "reviews.sqlite3")
