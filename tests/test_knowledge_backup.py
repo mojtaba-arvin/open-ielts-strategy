@@ -46,6 +46,19 @@ class KnowledgeBackupTests(unittest.TestCase):
             if os.name != "nt":
                 self.assertEqual(shared.stat().st_mode & 0o777, 0o755)
 
+    def test_failed_backup_removes_reserved_destination(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            invalid_source = root / "invalid.sqlite3"
+            invalid_source.write_bytes(b"not a SQLite database")
+            destination = root / "backups" / "copy.sqlite3"
+
+            with self.assertRaises(sqlite3.DatabaseError):
+                backup_database(invalid_source, destination)
+
+            self.assertFalse(destination.exists())
+            self.assertTrue(invalid_source.exists())
+
     def test_backup_refuses_overwrite_and_same_path(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
