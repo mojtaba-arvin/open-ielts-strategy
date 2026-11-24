@@ -23,6 +23,7 @@ schema-validation = ["jsonschema>=4.23,<5"]
 
 [project.scripts]
 ielts = "open_ielts_strategy.product_cli:main"
+ielts-knowledge-init = "open_ielts_strategy.knowledge_init_cli:main"
 ielts-knowledge-status = "open_ielts_strategy.knowledge_pack_status:main"
 ielts-knowledge-web = "open_ielts_strategy.knowledge_web:serve"
 ielts-knowledge-mcp = "open_ielts_strategy.knowledge_mcp:main"
