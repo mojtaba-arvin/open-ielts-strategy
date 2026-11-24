@@ -22,10 +22,27 @@ def main(argv=None):
     parser.add_argument("--session-db", help="Private local SQLite database")
     parser.add_argument("--session-id", help="Append this attempt to an existing session in --session-db")
     args = parser.parse_args(argv)
+    store = None
     try:
         if args.session_id and not args.session_db:
             raise ValueError("--session-id requires --session-db")
         pack = load_knowledge_pack(args.pack)
+        session = None
+        if args.session_db:
+            from .practice_sessions import PracticeSessionStore
+            store = PracticeSessionStore(args.session_db)
+            if args.session_id:
+                session = store.get_session(args.session_id)
+                expected = {
+                    "question": args.question,
+                    "skill": args.skill,
+                    "pack_version": pack.pack_version,
+                }
+                actual = {key: session[key] for key in expected}
+                if actual != expected:
+                    raise ValueError(
+                        "existing session does not match question, skill, and Knowledge Pack version"
+                    )
         config = {"model": args.model}
         if args.endpoint:
             config["endpoint"] = args.endpoint
@@ -34,40 +51,29 @@ def main(argv=None):
         provider = build_consumption_provider(args.provider, **config)
         result = evaluate_published_response(pack, args.question, args.answer,
                                              skill=args.skill, provider=provider, limit=args.limit)
-        if args.session_db and result["status"] == "evaluated":
-            from .practice_sessions import PracticeSessionStore
-            with PracticeSessionStore(args.session_db) as store:
-                if args.session_id:
-                    session = store.get_session(args.session_id)
-                    expected = {
-                        "question": args.question,
-                        "skill": args.skill,
-                        "pack_version": pack.pack_version,
-                    }
-                    actual = {key: session[key] for key in expected}
-                    if actual != expected:
-                        raise ValueError(
-                            "existing session does not match question, skill, and Knowledge Pack version"
-                        )
-                else:
-                    session = store.create_session(
-                        args.question, skill=args.skill, pack_version=pack.pack_version
-                    )
-                attempt = store.record_attempt(
-                    session["id"], args.answer,
-                    feedback="\n".join(result["next_steps"]),
-                    strategy_ids=result["strategy_ids_used"], assessment=result,
+        if store and result["status"] == "evaluated":
+            if session is None:
+                session = store.create_session(
+                    args.question, skill=args.skill, pack_version=pack.pack_version
                 )
-                result["persistence"] = {
-                    "storage": "local_sqlite",
-                    "session_id": session["id"],
-                    "attempt_id": attempt["id"],
-                    "attempt_count": store.get_session(session["id"])["attempt_count"],
-                }
+            attempt = store.record_attempt(
+                session["id"], args.answer,
+                feedback="\n".join(result["next_steps"]),
+                strategy_ids=result["strategy_ids_used"], assessment=result,
+            )
+            result["persistence"] = {
+                "storage": "local_sqlite",
+                "session_id": session["id"],
+                "attempt_id": attempt["id"],
+                "attempt_count": store.get_session(session["id"])["attempt_count"],
+            }
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except (OSError, RuntimeError, ValueError, KeyError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
+    finally:
+        if store:
+            store.close()
     return 0
 
 
