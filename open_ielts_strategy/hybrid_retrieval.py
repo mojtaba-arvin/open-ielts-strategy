@@ -16,20 +16,35 @@ def _tokens(text: str) -> set[str]:
 
 
 def _validated_vector(vector) -> list[float]:
-    import math
     if not isinstance(vector, (list, tuple)) or not vector:
         raise ValueError("embedding vectors must be non-empty numeric sequences")
-    if any(type(value) not in (int, float) or not math.isfinite(value) for value in vector):
+    if any(type(value) not in (int, float) for value in vector):
         raise ValueError("embedding vectors must contain only finite numbers")
-    return [float(value) for value in vector]
+    try:
+        values = [float(value) for value in vector]
+    except (OverflowError, ValueError) as exc:
+        raise ValueError("embedding vectors must contain only finite numbers") from exc
+    if any(not math.isfinite(value) for value in values):
+        raise ValueError("embedding vectors must contain only finite numbers")
+    return values
 
 
 def _cosine(left: list[float], right: list[float]) -> float:
     if not left or len(left) != len(right):
         raise ValueError("embedding vectors must have the same non-zero dimension")
-    dot = sum(a * b for a, b in zip(left, right))
-    norms = math.sqrt(sum(x * x for x in left)) * math.sqrt(sum(x * x for x in right))
-    return dot / norms if norms else 0.0
+    # Scale each vector before dot products so valid large finite values cannot
+    # overflow their squared norms or produce NaN retrieval scores.
+    left_scale = max(abs(value) for value in left)
+    right_scale = max(abs(value) for value in right)
+    if not left_scale or not right_scale:
+        return 0.0
+    scaled_left = [value / left_scale for value in left]
+    scaled_right = [value / right_scale for value in right]
+    dot = sum(a * b for a, b in zip(scaled_left, scaled_right))
+    norms = math.sqrt(sum(x * x for x in scaled_left)) * math.sqrt(
+        sum(x * x for x in scaled_right)
+    )
+    return dot / norms
 
 
 class LocalSentenceTransformer:
