@@ -1,6 +1,7 @@
 """Private SQLite backup/restore helpers. Backups are not encrypted."""
 from __future__ import annotations
 
+import os
 import sqlite3
 from pathlib import Path
 
@@ -28,6 +29,12 @@ def _ensure_private_parent(directory: Path) -> None:
             pass
 
 
+def _create_exclusive_private_file(path: Path) -> None:
+    """Reserve a new destination without following or replacing existing paths."""
+    descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    os.close(descriptor)
+
+
 def backup_database(source_path: str | Path, destination_path: str | Path) -> dict:
     source = Path(source_path).expanduser()
     destination = Path(destination_path).expanduser()
@@ -38,7 +45,12 @@ def backup_database(source_path: str | Path, destination_path: str | Path) -> di
     if destination.parent.resolve() == Path.cwd().resolve():
         raise ValueError("store backups in a dedicated private directory, not the repository root")
     _ensure_private_parent(destination.parent)
+    created = False
     try:
+        # O_EXCL also rejects dangling symlinks and closes the check-then-create
+        # race in which two backup processes could open the same destination.
+        _create_exclusive_private_file(destination)
+        created = True
         with sqlite3.connect(str(source)) as src, sqlite3.connect(str(destination)) as dst:
             src.backup(dst)
             check = dst.execute("PRAGMA integrity_check").fetchone()[0]
@@ -49,7 +61,8 @@ def backup_database(source_path: str | Path, destination_path: str | Path) -> di
         except OSError:
             pass
     except Exception:
-        destination.unlink(missing_ok=True)
+        if created:
+            destination.unlink(missing_ok=True)
         raise
     return {"backup_path": str(destination), "integrity": "ok", "encrypted": False}
 
@@ -62,7 +75,10 @@ def restore_database(backup_path: str | Path, destination_path: str | Path) -> d
     if destination.parent.resolve() == Path.cwd().resolve():
         raise ValueError("restore into a private local directory, not repository root")
     _ensure_private_parent(destination.parent)
+    created = False
     try:
+        _create_exclusive_private_file(destination)
+        created = True
         with sqlite3.connect(backup.resolve().as_uri() + "?mode=ro", uri=True) as src, sqlite3.connect(str(destination)) as dst:
             if src.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
                 raise sqlite3.DatabaseError("backup integrity check failed")
@@ -74,6 +90,7 @@ def restore_database(backup_path: str | Path, destination_path: str | Path) -> d
         except OSError:
             pass
     except Exception:
-        destination.unlink(missing_ok=True)
+        if created:
+            destination.unlink(missing_ok=True)
         raise
     return {"restored_path": str(destination), "integrity": "ok", "encrypted": False}
