@@ -91,4 +91,4 @@ def _read_pdf(path: Path) -> str:
         raise
     except Exception as exc:
         raise DocumentImportError("PDF parsing failed") from exc
-    return "\n\n".join(re.sub(r"[ \\t]+", " ", page).strip() for page in pages if page.strip())
+    return "\n\n".join(re.sub(r"[ \t]+", " ", page).strip() for page in pages if page.strip())
