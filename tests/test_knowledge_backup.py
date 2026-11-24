@@ -58,6 +58,48 @@ class KnowledgeBackupTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 backup_database(db, db)
 
+    def test_backup_refuses_dangling_symlink_destination(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            db = root / "private" / "knowledge.sqlite3"
+            with KnowledgeStore(db):
+                pass
+            backup_dir = root / "backups"
+            backup_dir.mkdir()
+            destination = backup_dir / "backup.sqlite3"
+            target = root / "outside.sqlite3"
+            try:
+                destination.symlink_to(target)
+            except (NotImplementedError, OSError) as exc:
+                self.skipTest(f"symlink creation is unavailable: {exc}")
+
+            with self.assertRaises(FileExistsError):
+                backup_database(db, destination)
+            self.assertTrue(destination.is_symlink())
+            self.assertFalse(target.exists())
+
+    def test_restore_refuses_dangling_symlink_destination(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            db = root / "private" / "knowledge.sqlite3"
+            with KnowledgeStore(db):
+                pass
+            backup = root / "backups" / "backup.sqlite3"
+            backup_database(db, backup)
+            restore_dir = root / "restore"
+            restore_dir.mkdir()
+            destination = restore_dir / "knowledge.sqlite3"
+            target = root / "outside.sqlite3"
+            try:
+                destination.symlink_to(target)
+            except (NotImplementedError, OSError) as exc:
+                self.skipTest(f"symlink creation is unavailable: {exc}")
+
+            with self.assertRaises(FileExistsError):
+                restore_database(backup, destination)
+            self.assertTrue(destination.is_symlink())
+            self.assertFalse(target.exists())
+
 
 if __name__ == "__main__":
     unittest.main()
