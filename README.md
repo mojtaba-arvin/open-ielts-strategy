@@ -25,6 +25,25 @@ It never creates placeholder records or bypasses publication gates. Until a
 reviewed pack is supplied, pack-backed learning workflows correctly report that
 their knowledge source is unavailable.
 
+## Start a Knowledge Pack authoring workspace
+
+To begin authoring without pretending an approved pack already exists:
+
+```bash
+ielts knowledge-init --workspace .local/knowledge-authoring
+ielts adapter-status
+```
+
+The first command creates a private local workspace with a deliberately
+non-publishable strategy template. It does not create `knowledge/manifest.json`,
+approve content, or publish anything. Replace placeholders and complete
+independent content and rights/publication review before building a candidate.
+See [Knowledge Pack authoring workspace](docs/knowledge/authoring-workspace.md).
+
+The second command reports which independently installed capability adapters
+are discoverable in the current Python environment. An unavailable adapter is
+not emulated or silently replaced; see [Adapter availability](docs/knowledge/adapter-availability.md).
+
 ## Quick start
 
 Python 3.11+:
