@@ -13,7 +13,8 @@ def scores(task_relevance):
 class PracticeReviewCalibrationTests(unittest.TestCase):
     def _report(self, reviewer_ids_and_scores):
         with tempfile.TemporaryDirectory() as tmp:
-            with PracticeReviewStore(Path(tmp) / "reviews.sqlite3") as store:
+            store = PracticeReviewStore(Path(tmp) / "reviews.sqlite3")
+            try:
                 for item_id, reviewer_id, rating in reviewer_ids_and_scores:
                     if item_id not in getattr(self, "_registered", set()):
                         store.register_output(
@@ -23,6 +24,8 @@ class PracticeReviewCalibrationTests(unittest.TestCase):
                         self._registered = getattr(self, "_registered", set()) | {item_id}
                     store.submit_review(item_id, reviewer_id, scores(rating))
                 return store.calibration_report()
+            finally:
+                store.close()
 
     def test_two_reviewer_perfect_agreement_has_unit_weighted_kappa(self):
         self._registered = set()
