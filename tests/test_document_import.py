@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 import zipfile
+from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -73,6 +74,36 @@ class DocumentImportTests(unittest.TestCase):
                        side_effect=RuntimeError("encrypted ZIP entry")):
                 with self.assertRaises(DocumentImportError):
                     import_document(path)
+
+    def test_pdf_extraction_stops_when_text_limit_is_exceeded(self):
+        class Page:
+            def __init__(self, text):
+                self.text = text
+                self.calls = 0
+
+            def extract_text(self):
+                self.calls += 1
+                return self.text
+
+        first = Page("x" * 5_000_001)
+        second = Page("must not be extracted")
+
+        class Reader:
+            is_encrypted = False
+            pages = [first, second]
+
+            def __init__(self, path, strict):
+                pass
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "large-text.pdf"
+            path.write_bytes(b"%PDF")
+            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+                with self.assertRaises(DocumentImportError):
+                    import_document(path)
+
+        self.assertEqual(first.calls, 1)
+        self.assertEqual(second.calls, 0)
 
     def test_unsupported_extension_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
