@@ -86,6 +86,27 @@ class PracticeResponseCliSessionTests(unittest.TestCase):
             with PracticeSessionStore(db) as store:
                 self.assertEqual(store.get_session(session_id)["attempt_count"], 1)
 
+    def test_scope_mismatch_is_rejected_before_evaluator_call(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = str(Path(tmp) / "practice.sqlite3")
+            with PracticeSessionStore(db) as store:
+                session = store.create_session(
+                    "Original question", skill="writing", pack_version="1.0.0"
+                )
+            with patch("open_ielts_strategy.practice_response_cli.load_knowledge_pack",
+                       return_value=SimpleNamespace(pack_version="1.0.0")), \
+                 patch("open_ielts_strategy.practice_response_cli.build_consumption_provider",
+                       return_value=object()), \
+                 patch("open_ielts_strategy.practice_response_cli.evaluate_published_response") as evaluate:
+                code, error = self._run([
+                    "--skill", "writing", "--question", "Different question",
+                    "--answer", "Answer", "--model", "local", "--session-db", db,
+                    "--session-id", session["id"],
+                ])
+                self.assertEqual(code, 2)
+                self.assertIn("does not match", error)
+                evaluate.assert_not_called()
+
     def test_session_id_requires_session_database(self):
         with ExitStack() as stack:
             for dependency in self._patch_dependencies():
