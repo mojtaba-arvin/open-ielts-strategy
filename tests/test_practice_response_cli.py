@@ -3,7 +3,7 @@ import io
 import json
 import tempfile
 import unittest
-from contextlib import ExitStack
+from contextlib import ExitStack, redirect_stderr
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -23,7 +23,7 @@ def evaluation():
 class PracticeResponseCliSessionTests(unittest.TestCase):
     def _run(self, args):
         output = io.StringIO()
-        with contextlib.redirect_stdout(output):
+        with contextlib.redirect_stdout(output), redirect_stderr(output):
             code = main(args)
         return code, output.getvalue()
 
