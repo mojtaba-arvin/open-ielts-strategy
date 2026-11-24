@@ -62,7 +62,7 @@ to approved. For source-derived records, map private reviewed item IDs using
 Build into a new candidate directory, inspect the full diff, and use the
 separately authorized release workflow only after human review.
 """
-GITIGNORE = "*.sqlite\\n*.sqlite3\\n*.db\\n.local/\\napprovals/\\nprivate-sources/\\n"
+GITIGNORE = "*.sqlite\n*.sqlite3\n*.db\n.local/\napprovals/\nprivate-sources/\n"
 
 def initialize_workspace(destination: str | Path) -> dict:
     root = Path(destination).expanduser().absolute()
@@ -74,10 +74,10 @@ def initialize_workspace(destination: str | Path) -> dict:
         root.mkdir(mode=0o700); created = True
         (root / "drafts").mkdir(mode=0o700)
         files = {"README.md": WORKSPACE_README, ".gitignore": GITIGNORE,
-                 "drafts/strategy.template.json": json.dumps(STRATEGY_TEMPLATE, ensure_ascii=False, indent=2) + "\\n"}
+                 "drafts/strategy.template.json": json.dumps(STRATEGY_TEMPLATE, ensure_ascii=False, indent=2) + "\n"}
         for relative, content in files.items():
             target = root / relative
-            with target.open("x", encoding="utf-8", newline="\\n") as stream: stream.write(content)
+            with target.open("x", encoding="utf-8", newline="\n") as stream: stream.write(content)
             if os.name != "nt": target.chmod(0o600)
         return {"created": True, "workspace": str(root), "published_pack_created": False,
                 "draft_files": ["drafts/strategy.template.json"]}
