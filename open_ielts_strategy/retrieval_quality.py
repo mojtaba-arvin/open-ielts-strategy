@@ -28,7 +28,7 @@ def _validate_cases(cases: list[dict[str, Any]], known_ids: set[str]) -> list[di
             raise ValueError("case IDs must be unique, non-empty bounded strings")
         if not isinstance(query, str) or not query.strip() or len(query) > 1000:
             raise ValueError("each query must contain 1..1000 characters")
-        if skill is not None and skill not in {"speaking", "writing", "reading", "listening", "general"}:
+        if skill is not None and (not isinstance(skill, str) or skill not in {"speaking", "writing", "reading", "listening", "general"}):
             raise ValueError("case skill is unsupported")
         if not isinstance(relevance, dict) or not relevance:
             raise ValueError("each case requires at least one relevance judgment")
