@@ -2,6 +2,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
 
 from open_ielts_strategy.document_import import DocumentImportError, import_document
 
@@ -46,6 +47,32 @@ class DocumentImportTests(unittest.TestCase):
                 archive.writestr("word/vbaProject.bin", b"macro")
             with self.assertRaises(DocumentImportError):
                 import_document(path)
+
+    def test_malformed_docx_zip_is_normalized(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "broken.docx"
+            path.write_bytes(b"not a zip archive")
+            with self.assertRaises(DocumentImportError):
+                import_document(path)
+
+    def test_malformed_docx_xml_is_normalized(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "broken-xml.docx"
+            with zipfile.ZipFile(path, "w") as archive:
+                archive.writestr("word/document.xml", b"<w:document>")
+            with self.assertRaises(DocumentImportError):
+                import_document(path)
+
+    def test_unreadable_docx_entry_is_normalized(self):
+        xml = "<w:document xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'/>"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "unreadable.docx"
+            with zipfile.ZipFile(path, "w") as archive:
+                archive.writestr("word/document.xml", xml)
+            with patch("open_ielts_strategy.document_import.zipfile.ZipFile.read",
+                       side_effect=RuntimeError("encrypted ZIP entry")):
+                with self.assertRaises(DocumentImportError):
+                    import_document(path)
 
     def test_unsupported_extension_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
