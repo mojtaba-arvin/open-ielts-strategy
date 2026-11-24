@@ -1,0 +1,66 @@
+import unittest
+from types import SimpleNamespace
+
+from open_ielts_strategy.retrieval_quality import evaluate_retrieval
+
+
+class FakeEngine:
+    def __init__(self):
+        self.pack = SimpleNamespace(strategies=[
+            {"id": "s1"}, {"id": "s2"}, {"id": "s3"},
+        ])
+        self.index_identity = {
+            "pack_version": "1.2.3", "manifest_sha256": "a" * 64,
+            "document_count": 3,
+        }
+        self.embedding_provider = None
+
+    def search(self, query, *, skill=None, limit=10):
+        order = ["s2", "s1", "s3"] if "second" in query else ["s1", "s2", "s3"]
+        return [{"strategy_id": item} for item in order[:limit]]
+
+
+class RetrievalQualityTests(unittest.TestCase):
+    def test_reports_macro_recall_precision_mrr_and_ndcg_without_queries(self):
+        report = evaluate_retrieval(FakeEngine(), [
+            {"id": "case-1", "query": "first query",
+             "relevance": {"s1": 3, "s2": 1}},
+            {"id": "case-2", "query": "second query",
+             "relevance": {"s1": 1, "s2": 3}},
+        ], ks=(1, 2))
+        self.assertEqual(report["benchmark"], "published-retrieval-relevance")
+        self.assertEqual(report["metrics_at_k"]["1"]["recall"], 0.5)
+        self.assertEqual(report["metrics_at_k"]["1"]["precision"], 1.0)
+        self.assertEqual(report["metrics_at_k"]["1"]["mrr"], 1.0)
+        self.assertGreater(report["metrics_at_k"]["2"]["ndcg"], 0.8)
+        self.assertFalse(report["query_text_included"])
+        self.assertFalse(report["judgments_included"])
+        self.assertEqual(len(report["case_suite_sha256"]), 64)
+
+    def test_rejects_unknown_strategy_judgments_and_duplicate_case_ids(self):
+        engine = FakeEngine()
+        with self.assertRaisesRegex(ValueError, "unknown strategy"):
+            evaluate_retrieval(engine, [{"id": "x", "query": "q",
+                                         "relevance": {"missing": 2}}])
+        case = {"id": "x", "query": "q", "relevance": {"s1": 1}}
+        with self.assertRaisesRegex(ValueError, "unique"):
+            evaluate_retrieval(engine, [case, case])
+
+    def test_rejects_invalid_grades_and_k_values(self):
+        with self.assertRaisesRegex(ValueError, "grades"):
+            evaluate_retrieval(FakeEngine(), [{"id": "x", "query": "q",
+                                                "relevance": {"s1": 4}}])
+        with self.assertRaisesRegex(ValueError, "ks"):
+            evaluate_retrieval(FakeEngine(), [{"id": "x", "query": "q",
+                                                "relevance": {"s1": 1}}], ks=())
+
+    def test_hybrid_mode_is_reported(self):
+        engine = FakeEngine()
+        engine.embedding_provider = object()
+        report = evaluate_retrieval(engine, [{"id": "x", "query": "q",
+                                               "relevance": {"s1": 1}}], ks=(1,))
+        self.assertEqual(report["retrieval_mode"], "hybrid")
+
+
+if __name__ == "__main__":
+    unittest.main()
