@@ -22,6 +22,28 @@ RUBRIC = {
 _ALLOWED = {key: range(1, 6) for key in RUBRIC}
 
 
+def _ensure_private_parent(directory: Path) -> None:
+    """Create missing database directories as private without changing existing ones."""
+    missing = []
+    current = directory
+    while not current.exists():
+        missing.append(current)
+        if current.parent == current:
+            break
+        current = current.parent
+
+    for candidate in reversed(missing):
+        try:
+            candidate.mkdir(mode=0o700)
+        except FileExistsError:
+            # A concurrent creator owns this directory; do not change its mode.
+            continue
+        try:
+            candidate.chmod(0o700)
+        except OSError:
+            pass
+
+
 class PracticeReviewStore:
     """SQLite store for private human annotations; never part of a public pack."""
 
@@ -29,7 +51,7 @@ class PracticeReviewStore:
         self.path = str(path)
         if self.path != ":memory:":
             db_path = Path(self.path).expanduser()
-            db_path.parent.mkdir(parents=True, exist_ok=True)
+            _ensure_private_parent(db_path.parent)
             self.path = str(db_path)
         self.connection = sqlite3.connect(self.path)
         if self.path != ":memory:":
