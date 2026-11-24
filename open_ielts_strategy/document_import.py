@@ -14,6 +14,7 @@ MAX_DOCX_UNCOMPRESSED = 80 * 1024 * 1024
 MAX_DOCX_ENTRIES = 2000
 MAX_PDF_PAGES = 300
 MAX_EXTRACTED_CHARS = 5_000_000
+WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 
 
 class DocumentImportError(ValueError):
@@ -50,6 +51,8 @@ def import_document(path: str | Path) -> dict:
 
 
 def _read_docx(path: Path) -> str:
+    paragraphs = []
+    extracted_chars = 0
     try:
         with zipfile.ZipFile(path) as archive:
             infos = archive.infolist()
@@ -58,20 +61,36 @@ def _read_docx(path: Path) -> str:
             names = {x.filename for x in infos}
             if "word/document.xml" not in names or any(name.casefold().endswith("vbaproject.bin") for name in names):
                 raise DocumentImportError("invalid or macro-bearing DOCX is not accepted")
-            xml = archive.read("word/document.xml")
+
+            # Stream the XML and discard completed paragraphs so the full XML
+            # tree is never retained in memory. Stop as soon as the text budget
+            # is exceeded, before parsing the remainder of the document.
+            with archive.open("word/document.xml") as document:
+                stack = []
+                for event, element in ElementTree.iterparse(document, events=("start", "end")):
+                    if event == "start":
+                        stack.append(element)
+                        continue
+                    if element.tag == f"{{{WORD_NS}}}p":
+                        value = "".join(node.text or "" for node in element.iter(f"{{{WORD_NS}}}t"))
+                        if value:
+                            extracted_chars += len(value) + (2 if paragraphs else 0)
+                            if extracted_chars > MAX_EXTRACTED_CHARS:
+                                raise DocumentImportError(
+                                    "extracted DOCX text exceeds the 5-million-character limit"
+                                )
+                            paragraphs.append(value)
+                        element.clear()
+                        if len(stack) > 1:
+                            stack[-2].remove(element)
+                    stack.pop()
+    except DocumentImportError:
+        raise
+    except ElementTree.ParseError as exc:
+        raise DocumentImportError("malformed DOCX XML") from exc
     except (zipfile.BadZipFile, KeyError, OSError, RuntimeError, NotImplementedError,
             EOFError, zlib.error, lzma.LZMAError) as exc:
         raise DocumentImportError("invalid or unreadable DOCX container") from exc
-    try:
-        root = ElementTree.fromstring(xml)
-    except ElementTree.ParseError as exc:
-        raise DocumentImportError("malformed DOCX XML") from exc
-    ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
-    paragraphs = []
-    for paragraph in root.findall(".//w:p", ns):
-        value = "".join(node.text or "" for node in paragraph.findall(".//w:t", ns))
-        if value:
-            paragraphs.append(value)
     return "\n\n".join(paragraphs)
 
 
