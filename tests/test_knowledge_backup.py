@@ -1,4 +1,5 @@
 import os
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
@@ -99,6 +100,19 @@ class KnowledgeBackupTests(unittest.TestCase):
                 restore_database(backup, destination)
             self.assertTrue(destination.is_symlink())
             self.assertFalse(target.exists())
+
+    def test_restore_removes_reserved_destination_when_backup_is_invalid(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            invalid_backup = root / "invalid.sqlite3"
+            invalid_backup.write_bytes(b"not a SQLite database")
+            destination = root / "restore" / "knowledge.sqlite3"
+
+            with self.assertRaises(sqlite3.DatabaseError):
+                restore_database(invalid_backup, destination)
+
+            self.assertFalse(destination.exists())
+            self.assertTrue(invalid_backup.exists())
 
 
 if __name__ == "__main__":
