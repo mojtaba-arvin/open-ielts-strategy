@@ -10,9 +10,9 @@ import os
 import re
 import sqlite3
 from pathlib import Path
+from typing import Any
 
 from .filesystem_security import ensure_private_directory
-from typing import Any
 
 RUBRIC = {
     "task_relevance": "Addresses the learner's actual task",
