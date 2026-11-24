@@ -99,42 +99,55 @@ class PracticeReviewStore:
         rows = self.connection.execute(
             "SELECT item_id, reviewer_id, rubric_json FROM practice_reviews ORDER BY item_id, reviewer_id"
         ).fetchall()
-        grouped: dict[str, list[dict]] = {}
+        grouped: dict[str, dict[str, dict]] = {}
         for row in rows:
-            grouped.setdefault(row["item_id"], []).append(json.loads(row["rubric_json"]))
+            grouped.setdefault(row["item_id"], {})[row["reviewer_id"]] = json.loads(row["rubric_json"])
+
         dimensions = {}
         for dimension in RUBRIC:
-            pairs = []
+            pair_samples: dict[tuple[str, str], list[tuple[int, int]]] = {}
             exact = total = 0
             for reviews in grouped.values():
-                for i in range(len(reviews)):
-                    for j in range(i + 1, len(reviews)):
-                        a, b = reviews[i][dimension], reviews[j][dimension]
-                        pairs.append((a, b))
+                reviewers = sorted(reviews)
+                for index, reviewer_a in enumerate(reviewers):
+                    for reviewer_b in reviewers[index + 1:]:
+                        a = reviews[reviewer_a][dimension]
+                        b = reviews[reviewer_b][dimension]
+                        pair_samples.setdefault((reviewer_a, reviewer_b), []).append((a, b))
                         exact += a == b
                         total += 1
-            if not pairs:
-                dimensions[dimension] = {"paired_reviews": 0, "exact_agreement": None, "weighted_kappa": None}
-                continue
-            observed = sum(1 - ((a - b) / 4) ** 2 for a, b in pairs) / len(pairs)
-            left = [a for a, _ in pairs]
-            right = [b for _, b in pairs]
-            expected = 0.0
-            for score_a in range(1, 6):
-                for score_b in range(1, 6):
-                    pa = left.count(score_a) / len(left)
-                    pb = right.count(score_b) / len(right)
-                    expected += pa * pb * (1 - ((score_a - score_b) / 4) ** 2)
-            kappa = (observed - expected) / (1 - expected) if expected < 1 else None
+
+            pair_kappas = []
+            for samples in pair_samples.values():
+                left = [a for a, _ in samples]
+                right = [b for _, b in samples]
+                observed = sum(1 - ((a - b) / 4) ** 2 for a, b in samples) / len(samples)
+                expected = 0.0
+                for score_a in range(1, 6):
+                    for score_b in range(1, 6):
+                        pa = left.count(score_a) / len(left)
+                        pb = right.count(score_b) / len(right)
+                        expected += pa * pb * (1 - ((score_a - score_b) / 4) ** 2)
+                if expected < 1:
+                    pair_kappas.append(((observed - expected) / (1 - expected), len(samples)))
+
+            weighted_kappa = (
+                sum(kappa * sample_count for kappa, sample_count in pair_kappas)
+                / sum(sample_count for _, sample_count in pair_kappas)
+                if pair_kappas else None
+            )
             dimensions[dimension] = {
-                "paired_reviews": len(pairs),
-                "exact_agreement": round(exact / total, 4),
-                "weighted_kappa": round(kappa, 4) if kappa is not None else None,
+                "paired_reviews": total,
+                "reviewer_pair_count": len(pair_samples),
+                "weighted_kappa_pair_count": len(pair_kappas),
+                "exact_agreement": round(exact / total, 4) if total else None,
+                "weighted_kappa": round(weighted_kappa, 4) if weighted_kappa is not None else None,
             }
+
         return {
             "reviewed_item_count": len(grouped),
             "review_count": len(rows),
             "reviewer_agreement": dimensions,
             "rubric": RUBRIC,
-            "interpretation": "Descriptive reviewer agreement only; not examiner equivalence, IELTS band calibration, or educational-effectiveness evidence.",
+            "interpretation": "Pairwise quadratic-weighted Cohen kappa is averaged across reviewer pairs, weighted by their shared item count. Descriptive agreement only; not examiner equivalence, IELTS band calibration, or educational-effectiveness evidence.",
         }
