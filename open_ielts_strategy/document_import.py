@@ -1,9 +1,11 @@
 """Bounded local TXT/Markdown/PDF/DOCX text extraction."""
 from __future__ import annotations
 
-import re
 import hashlib
+import lzma
+import re
 import zipfile
+import zlib
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -54,11 +56,12 @@ def _read_docx(path: Path) -> str:
             if len(infos) > MAX_DOCX_ENTRIES or sum(x.file_size for x in infos) > MAX_DOCX_UNCOMPRESSED:
                 raise DocumentImportError("DOCX archive exceeds safe expansion limits")
             names = {x.filename for x in infos}
-            if "word/document.xml" not in names or any(name.endswith("vbaProject.bin") for name in names):
+            if "word/document.xml" not in names or any(name.casefold().endswith("vbaproject.bin") for name in names):
                 raise DocumentImportError("invalid or macro-bearing DOCX is not accepted")
             xml = archive.read("word/document.xml")
-    except (zipfile.BadZipFile, KeyError, OSError) as exc:
-        raise DocumentImportError("invalid DOCX container") from exc
+    except (zipfile.BadZipFile, KeyError, OSError, RuntimeError, NotImplementedError,
+            EOFError, zlib.error, lzma.LZMAError) as exc:
+        raise DocumentImportError("invalid or unreadable DOCX container") from exc
     try:
         root = ElementTree.fromstring(xml)
     except ElementTree.ParseError as exc:
@@ -88,4 +91,4 @@ def _read_pdf(path: Path) -> str:
         raise
     except Exception as exc:
         raise DocumentImportError("PDF parsing failed") from exc
-    return "\n\n".join(re.sub(r"[ \t]+", " ", page).strip() for page in pages if page.strip())
+    return "\n\n".join(re.sub(r"[ \\t]+", " ", page).strip() for page in pages if page.strip())
