@@ -3,6 +3,7 @@ import io
 import json
 import tempfile
 import unittest
+from contextlib import ExitStack
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -41,16 +42,19 @@ class PracticeResponseCliSessionTests(unittest.TestCase):
             db = str(Path(tmp) / "practice.sqlite3")
             args = ["--skill", "writing", "--question", "Discuss both views.",
                     "--answer", "First response.", "--model", "local", "--session-db", db]
-            with self._patch_dependencies()[0], self._patch_dependencies()[1], self._patch_dependencies()[2]:
+            with ExitStack() as stack:
+                for dependency in self._patch_dependencies():
+                    stack.enter_context(dependency)
                 code, output = self._run(args)
                 self.assertEqual(code, 0)
                 first = json.loads(output)
                 session_id = first["persistence"]["session_id"]
                 self.assertEqual(first["persistence"]["attempt_count"], 1)
 
-                code, output = self._run(args[:-4] + ["--answer", "Second response.",
-                                                      "--model", "local", "--session-db", db,
-                                                      "--session-id", session_id])
+                second_args = args.copy()
+                second_args[second_args.index("--answer") + 1] = "Second response."
+                second_args += ["--session-id", session_id]
+                code, output = self._run(second_args)
                 self.assertEqual(code, 0)
                 second = json.loads(output)
                 self.assertEqual(second["persistence"]["session_id"], session_id)
@@ -66,7 +70,9 @@ class PracticeResponseCliSessionTests(unittest.TestCase):
             db = str(Path(tmp) / "practice.sqlite3")
             args = ["--skill", "writing", "--question", "Discuss both views.",
                     "--answer", "First response.", "--model", "local", "--session-db", db]
-            with self._patch_dependencies()[0], self._patch_dependencies()[1], self._patch_dependencies()[2]:
+            with ExitStack() as stack:
+                for dependency in self._patch_dependencies():
+                    stack.enter_context(dependency)
                 code, output = self._run(args)
                 self.assertEqual(code, 0)
                 session_id = json.loads(output)["persistence"]["session_id"]
@@ -81,7 +87,9 @@ class PracticeResponseCliSessionTests(unittest.TestCase):
                 self.assertEqual(store.get_session(session_id)["attempt_count"], 1)
 
     def test_session_id_requires_session_database(self):
-        with self._patch_dependencies()[0], self._patch_dependencies()[1], self._patch_dependencies()[2]:
+        with ExitStack() as stack:
+            for dependency in self._patch_dependencies():
+                stack.enter_context(dependency)
             code, error = self._run([
                 "--skill", "writing", "--question", "Question", "--answer", "Answer",
                 "--model", "local", "--session-id", "existing",
