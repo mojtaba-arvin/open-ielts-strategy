@@ -197,6 +197,17 @@ class KnowledgeStoreTests(unittest.TestCase):
         finally:
             reopened.close()
 
+    def test_nested_new_database_parent_directories_are_private(self):
+        if os.name != "posix":
+            self.skipTest("POSIX permission bits are not available")
+        database_parent = Path(self.temp_dir.name) / "new-parent" / "nested" / "leaf"
+        store = KnowledgeStore(database_parent / "knowledge.sqlite3")
+        try:
+            for directory in (database_parent.parents[1], database_parent.parents[0], database_parent):
+                self.assertEqual(directory.stat().st_mode & 0o777, 0o700)
+        finally:
+            store.close()
+
     def test_existing_database_parent_permissions_are_not_changed(self):
         if os.name != "posix":
             self.skipTest("POSIX permission bits are not available")
