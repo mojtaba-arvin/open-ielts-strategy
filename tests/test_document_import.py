@@ -39,6 +39,23 @@ class DocumentImportTests(unittest.TestCase):
             result = import_document(path)
             self.assertEqual(result["text"], "IELTS Writing plan\n\nPractice daily")
 
+    def test_docx_extraction_stops_at_character_limit(self):
+        namespace = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+        paragraphs = "".join(
+            f"<w:p><w:r><w:t>{'x' * 1_000_000}</w:t></w:r></w:p>"
+            for _ in range(6)
+        )
+        xml = (
+            f'<w:document xmlns:w="{namespace}"><w:body>'
+            f"{paragraphs}</w:body></w:document>"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "oversized.docx"
+            with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+                archive.writestr("word/document.xml", xml)
+            with self.assertRaisesRegex(DocumentImportError, "5-million-character limit"):
+                import_document(path)
+
     def test_macro_docx_rejected(self):
         xml = "<w:document xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'/>"
         with tempfile.TemporaryDirectory() as tmp:
@@ -70,7 +87,7 @@ class DocumentImportTests(unittest.TestCase):
             path = Path(tmp) / "unreadable.docx"
             with zipfile.ZipFile(path, "w") as archive:
                 archive.writestr("word/document.xml", xml)
-            with patch("open_ielts_strategy.document_import.zipfile.ZipFile.read",
+            with patch("open_ielts_strategy.document_import.zipfile.ZipFile.open",
                        side_effect=RuntimeError("encrypted ZIP entry")):
                 with self.assertRaises(DocumentImportError):
                     import_document(path)
