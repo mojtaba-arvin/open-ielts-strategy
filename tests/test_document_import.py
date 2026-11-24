@@ -5,7 +5,13 @@ from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import patch
 
-from open_ielts_strategy.document_import import DocumentImportError, import_document
+from open_ielts_strategy.document_import import (
+    MAX_DOCX_ENTRIES,
+    MAX_DOCX_UNCOMPRESSED,
+    MAX_PDF_PAGES,
+    DocumentImportError,
+    import_document,
+)
 
 
 class DocumentImportTests(unittest.TestCase):
@@ -187,3 +193,53 @@ class DocumentImportTests(unittest.TestCase):
             path.write_bytes(b"data")
             with self.assertRaises(DocumentImportError):
                 import_document(path)
+
+    def test_docx_entry_count_limit_is_checked_before_xml_read(self):
+        xml = "<w:document xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'/>"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "too-many-entries.docx"
+            with zipfile.ZipFile(path, "w") as archive:
+                archive.writestr("word/document.xml", xml)
+            infos = [SimpleNamespace(filename="word/document.xml", file_size=len(xml))]
+            infos.extend(
+                SimpleNamespace(filename=f"extra/{index}", file_size=0)
+                for index in range(MAX_DOCX_ENTRIES)
+            )
+            with patch("open_ielts_strategy.document_import.zipfile.ZipFile.infolist",
+                       return_value=infos):
+                with self.assertRaisesRegex(DocumentImportError, "expansion limits"):
+                    import_document(path)
+
+    def test_docx_uncompressed_size_limit_is_checked_before_xml_read(self):
+        xml = "<w:document xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'/>"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "oversized-expansion.docx"
+            with zipfile.ZipFile(path, "w") as archive:
+                archive.writestr("word/document.xml", xml)
+            infos = [SimpleNamespace(
+                filename="word/document.xml",
+                file_size=MAX_DOCX_UNCOMPRESSED + 1,
+            )]
+            with patch("open_ielts_strategy.document_import.zipfile.ZipFile.infolist",
+                       return_value=infos):
+                with self.assertRaisesRegex(DocumentImportError, "expansion limits"):
+                    import_document(path)
+
+    def test_pdf_page_limit_is_checked_before_page_extraction(self):
+        class Page:
+            def extract_text(self):
+                raise AssertionError("over-limit PDF pages must not be extracted")
+
+        class Reader:
+            is_encrypted = False
+            pages = [Page() for _ in range(MAX_PDF_PAGES + 1)]
+
+            def __init__(self, path, strict):
+                pass
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "too-many-pages.pdf"
+            path.write_bytes(b"%PDF")
+            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+                with self.assertRaisesRegex(DocumentImportError, "300-page limit"):
+                    import_document(path)
