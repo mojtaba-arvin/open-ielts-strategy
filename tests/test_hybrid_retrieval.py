@@ -48,6 +48,24 @@ class HybridRetrievalTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             hybrid_search(self.store, "anything", provider=Bad())
 
+    def test_large_finite_embeddings_produce_finite_cosine_scores(self):
+        class LargeFinite:
+            def encode(self, texts):
+                return [[1e308, 1e308], *([[1e308, 0.0] for _ in texts[1:]])]
+
+        results = hybrid_search(self.store, "anything", provider=LargeFinite())
+        self.assertTrue(results)
+        self.assertTrue(all(result["semantic_score"] == 0.707107 for result in results))
+        self.assertTrue(all(result["score"] < float("inf") for result in results))
+
+    def test_integer_embedding_outside_float_range_is_rejected(self):
+        class TooLarge:
+            def encode(self, texts):
+                return [[10 ** 1000], *([[1.0] for _ in texts[1:]])]
+
+        with self.assertRaises(ValueError):
+            hybrid_search(self.store, "anything", provider=TooLarge())
+
     def test_embedding_dimension_mismatch_is_rejected(self):
         class Bad:
             def encode(self, texts): return [[1.0, 0.0], *([[1.0]] * (len(texts) - 1))]
