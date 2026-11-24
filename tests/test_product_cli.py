@@ -26,6 +26,15 @@ class ProductCliTests(unittest.TestCase):
             self.assertEqual(main(["knowledge-release", "approve"]), 0)
             run.assert_called_once_with(["approve"])
 
+    def test_knowledge_init_delegates(self):
+        with patch("open_ielts_strategy.knowledge_init_cli.main", return_value=0) as run:
+            self.assertEqual(main(["knowledge-init", "--workspace", ".local/authoring"]), 0)
+            run.assert_called_once_with(["--workspace", ".local/authoring"])
+
+    def test_adapter_status_delegates(self):
+        with patch("open_ielts_strategy.integration_adapters_cli.main", return_value=0) as run:
+            self.assertEqual(main(["adapter-status"]), 0)
+            run.assert_called_once_with([])
     def test_unknown_command_is_rejected(self):
         with self.assertRaises(SystemExit):
             main(["not-a-command"])
