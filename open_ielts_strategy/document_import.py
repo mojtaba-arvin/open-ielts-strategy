@@ -59,6 +59,8 @@ def _read_docx(path: Path) -> str:
             if len(infos) > MAX_DOCX_ENTRIES or sum(x.file_size for x in infos) > MAX_DOCX_UNCOMPRESSED:
                 raise DocumentImportError("DOCX archive exceeds safe expansion limits")
             names = {x.filename for x in infos}
+            if len(names) != len(infos):
+                raise DocumentImportError("DOCX archive contains duplicate entries")
             if "word/document.xml" not in names or any(name.casefold().endswith("vbaproject.bin") for name in names):
                 raise DocumentImportError("invalid or macro-bearing DOCX is not accepted")
 
