@@ -42,7 +42,7 @@ class PracticeReviewCalibrationTests(unittest.TestCase):
         ]
         self._registered = set()
         first = self._report(observations)["reviewer_agreement"]["task_relevance"]
-        renamed = [(item, {"alpha": "zulu", "bravo": "yankee", "charlie": "xray"}[reviewer], rating)
+        renamed = [(item, {"alpha": "yankee", "bravo": "zulu", "charlie": "xray"}[reviewer], rating)
                    for item, reviewer, rating in observations]
         self._registered = set()
         second = self._report(renamed)["reviewer_agreement"]["task_relevance"]
