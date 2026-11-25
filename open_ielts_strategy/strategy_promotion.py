@@ -144,7 +144,7 @@ def promote_strategy_draft(
         raise StrategyPromotionError("a promotion receipt already exists for this draft")
 
     candidate_payload = (json.dumps(candidate, ensure_ascii=False, sort_keys=True, indent=2) + "\n").encode("utf-8")
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    ensure_private_directory(output_path.parent)
     try:
         _write_private_json(output_path, candidate)
         receipt = {
