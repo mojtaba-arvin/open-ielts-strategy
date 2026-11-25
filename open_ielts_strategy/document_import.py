@@ -114,10 +114,24 @@ def _read_pdf(path: Path) -> str:
         pages = []
         extracted_chars = 0
         for page in reader.pages:
-            page_text = page.extract_text() or ""
+            observed_chars = 0
+
+            def guard_text_fragment(text, *_):
+                nonlocal observed_chars
+                if not text or not text.strip():
+                    return
+                observed_chars += len(text)
+                if observed_chars > MAX_EXTRACTED_CHARS - extracted_chars:
+                    raise DocumentImportError(
+                        "extracted PDF text exceeds the 5-million-character limit"
+                    )
+
+            # pypdf invokes the visitor as text fragments are decoded. Raising
+            # here aborts an oversized page before its complete text is built.
+            page_text = page.extract_text(visitor_text=guard_text_fragment) or ""
             if not page_text.strip():
                 continue
-            normalized = re.sub(r"[ \t]+", " ", page_text).strip()
+            normalized = re.sub(r"[ \\t]+", " ", page_text).strip()
             if not normalized:
                 continue
             # Account for the paragraph separators before retaining the page.
