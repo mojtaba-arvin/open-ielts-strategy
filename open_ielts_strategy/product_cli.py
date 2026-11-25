@@ -12,7 +12,7 @@ def main(argv=None) -> int:
     parser.add_argument(
         "command",
         choices=(
-            "library", "extract", "knowledge-answer",
+            "library", "extract", "knowledge-draft", "knowledge-answer",
             "knowledge-status", "knowledge-init", "adapter-status",
             "knowledge-publish", "knowledge-diff", "knowledge-release",
             "study", "mentor", "mentor-chat", "practice",
@@ -25,6 +25,8 @@ def main(argv=None) -> int:
         from .knowledge_library_cli import main as run
     elif args.command == "extract":
         from .knowledge_extract_cli import main as run
+    elif args.command == "knowledge-draft":
+        from .knowledge_draft_cli import main as run
     elif args.command == "knowledge-answer":
         from .knowledge_answer_cli import main as run
     elif args.command == "knowledge-status":
