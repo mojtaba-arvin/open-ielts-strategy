@@ -131,7 +131,7 @@ def _read_pdf(path: Path) -> str:
             page_text = page.extract_text(visitor_text=guard_text_fragment) or ""
             if not page_text.strip():
                 continue
-            normalized = re.sub(r"[ \\t]+", " ", page_text).strip()
+            normalized = re.sub(r"[ \t]+", " ", page_text).strip()
             if not normalized:
                 continue
             # Account for the paragraph separators before retaining the page.
