@@ -127,6 +127,40 @@ class KnowledgeBackupTests(unittest.TestCase):
             self.assertFalse(destination.exists())
             self.assertTrue(invalid_backup.exists())
 
+    def test_backup_captures_committed_wal_data_and_restores_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "private" / "knowledge.sqlite3"
+            source.parent.mkdir()
+            with sqlite3.connect(source) as connection:
+                self.assertEqual(connection.execute("PRAGMA journal_mode=WAL").fetchone()[0], "wal")
+                connection.execute("CREATE TABLE recovery_probe (value TEXT NOT NULL)")
+                connection.execute("INSERT INTO recovery_probe VALUES (?)", ("committed-in-wal",))
+                connection.commit()
+
+            # The committed row is deliberately not checkpointed before backup.
+            backup = root / "backups" / "wal-snapshot.sqlite3"
+            result = backup_database(source, backup)
+            self.assertEqual(result["integrity"], "ok")
+
+            restored = root / "restore" / "knowledge.sqlite3"
+            restore_result = restore_database(backup, restored)
+            self.assertEqual(restore_result["integrity"], "ok")
+            with sqlite3.connect(restored) as connection:
+                self.assertEqual(
+                    connection.execute("SELECT value FROM recovery_probe").fetchone()[0],
+                    "committed-in-wal",
+                )
+                self.assertEqual(connection.execute("PRAGMA integrity_check").fetchone()[0], "ok")
+
+            # A backup is a snapshot; creating it must not mutate the live source.
+            with sqlite3.connect(source) as connection:
+                self.assertEqual(
+                    connection.execute("SELECT value FROM recovery_probe").fetchone()[0],
+                    "committed-in-wal",
+                )
+                self.assertEqual(connection.execute("PRAGMA integrity_check").fetchone()[0], "ok")
+
 
 if __name__ == "__main__":
     unittest.main()
