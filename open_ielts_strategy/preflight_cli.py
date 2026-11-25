@@ -76,14 +76,17 @@ def run_preflight(
         f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}; requires Python 3.11+",
     )
 
-    db_path = Path(db).expanduser()
-    db_writable, db_reason = _writable_location(db_path)
-    add(
-        "private_database_path",
-        "ok" if db_writable else "blocked",
-        db_reason if db_writable else f"not_writable: {db_reason}",
-        path=str(db_path),
-    )
+    if mode == "author":
+        db_path = Path(db).expanduser()
+        db_writable, db_reason = _writable_location(db_path)
+        add(
+            "private_database_path",
+            "ok" if db_writable else "blocked",
+            db_reason if db_writable else f"not_writable: {db_reason}",
+            path=str(db_path),
+        )
+    else:
+        add("private_database_path", "info", "not_required_for_published_pack_consumption")
 
     pack_result = inspect_knowledge_pack(pack)
     if pack_result["usable"]:
