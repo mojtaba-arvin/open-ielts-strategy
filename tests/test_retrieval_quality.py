@@ -37,6 +37,26 @@ class RetrievalQualityTests(unittest.TestCase):
         self.assertFalse(report["judgments_included"])
         self.assertEqual(len(report["case_suite_sha256"]), 64)
 
+    def test_reports_macro_metrics_and_counts_per_skill_without_query_data(self):
+        report = evaluate_retrieval(FakeEngine(), [
+            {"id": "writing-1", "query": "first writing query", "skill": "writing",
+             "relevance": {"s1": 3}},
+            {"id": "writing-2", "query": "second writing query", "skill": "writing",
+             "relevance": {"s2": 3}},
+            {"id": "general-1", "query": "general query", "skill": "general",
+             "relevance": {"s1": 1}},
+        ], ks=(1, 2))
+        self.assertEqual(report["case_count_by_skill"], {"general": 1, "writing": 2})
+        self.assertEqual(report["metrics_by_skill_at_k"]["writing"]["1"]["recall"], 1.0)
+        self.assertEqual(report["metrics_by_skill_at_k"]["general"]["1"]["recall"], 1.0)
+        self.assertEqual(set(report["metrics_by_skill_at_k"]["writing"]["1"]), {
+            "recall", "precision", "mrr", "ndcg",
+        })
+        serialized = str(report)
+        self.assertNotIn("first writing query", serialized)
+        self.assertNotIn("second writing query", serialized)
+        self.assertNotIn('"relevance"', serialized)
+
     def test_rejects_unknown_strategy_judgments_and_duplicate_case_ids(self):
         engine = FakeEngine()
         with self.assertRaisesRegex(ValueError, "unknown strategy"):

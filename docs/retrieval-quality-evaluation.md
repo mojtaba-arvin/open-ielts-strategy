@@ -51,10 +51,12 @@ python scripts/evaluate_published_retrieval.py \
 ```
 
 The report records pack version and manifest digest, retrieval mode, case count,
-a canonical case-suite SHA-256 fingerprint, and macro-averaged metrics. It omits
-query text and relevance judgments. Keep the input judgment file private when
-it contains sensitive learner data. The evaluator rejects duplicate case IDs,
-unknown strategy IDs, malformed grades, and unbounded inputs.
+a canonical case-suite SHA-256 fingerprint, overall macro-averaged metrics,
+and per-skill/task macro metrics and case counts. It omits query text and
+relevance judgments. Cases without a skill are grouped as `unspecified`.
+Keep the input judgment file private when it contains sensitive learner data.
+The evaluator rejects duplicate case IDs, unknown strategy IDs, malformed
+grades, and unbounded inputs.
 
 ## Interpretation
 
@@ -63,8 +65,10 @@ unknown strategy IDs, malformed grades, and unbounded inputs.
 - MRR@k: reciprocal rank of the first relevant result, or zero if absent.
 - nDCG@k: graded ranking quality normalized by the ideal ordering.
 
-These are descriptive metrics against the supplied judgments. They are only as
-representative and reliable as the query set and reviewers that created them.
-They do not measure IELTS band scores, examiner agreement, learner outcomes,
-or educational effectiveness. For external claims, use the independent protocol
-and qualified blinded reviewers.
+Per-skill values are descriptive breakdowns of the caller's supplied cases;
+they do not correct sampling imbalance or establish representative coverage.
+Reviewers must define the skill/task taxonomy and held-out split before tuning.
+These metrics are only as representative and reliable as the query set and
+reviewers that created them. They do not measure IELTS band scores, examiner
+agreement, learner outcomes, or educational effectiveness. For external claims,
+use the independent protocol and qualified blinded reviewers.

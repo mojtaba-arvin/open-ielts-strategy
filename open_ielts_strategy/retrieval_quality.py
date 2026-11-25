@@ -61,6 +61,16 @@ def _case_metrics(ranked_ids: list[str], relevance: dict[str, int], k: int) -> d
     }
 
 
+def _aggregate(rows_by_k: dict[int, list[dict[str, float]]]) -> dict[str, dict[str, float]]:
+    return {
+        str(k): {
+            name: round(sum(row[name] for row in rows) / len(rows), 6)
+            for name in ("recall", "precision", "mrr", "ndcg")
+        }
+        for k, rows in rows_by_k.items()
+    }
+
+
 def evaluate_retrieval(engine: Any, cases: list[dict[str, Any]], *,
                        ks: tuple[int, ...] = (1, 3, 5, 10)) -> dict:
     """Evaluate ranked strategy IDs against caller-supplied graded judgments."""
@@ -73,19 +83,18 @@ def evaluate_retrieval(engine: Any, cases: list[dict[str, Any]], *,
     canonical = json.dumps(validated, ensure_ascii=False, sort_keys=True,
                            separators=(",", ":")).encode("utf-8")
     per_k = {k: [] for k in ks}
+    by_skill = {}
     for case in validated:
+        skill = case["skill"] or "unspecified"
+        skill_rows = by_skill.setdefault(skill, {k: [] for k in ks})
         results = engine.search(case["query"], skill=case["skill"], limit=max(ks))
         ranked_ids = [item["strategy_id"] for item in results]
         if len(ranked_ids) != len(set(ranked_ids)):
             raise ValueError("retrieval engine returned duplicate strategy IDs")
         for k in ks:
-            per_k[k].append(_case_metrics(ranked_ids, case["relevance"], k))
-    metrics = {}
-    for k, rows in per_k.items():
-        metrics[str(k)] = {
-            name: round(sum(row[name] for row in rows) / len(rows), 6)
-            for name in ("recall", "precision", "mrr", "ndcg")
-        }
+            row = _case_metrics(ranked_ids, case["relevance"], k)
+            per_k[k].append(row)
+            skill_rows[k].append(row)
     identity = engine.index_identity
     return {
         "benchmark": "published-retrieval-relevance",
@@ -95,7 +104,11 @@ def evaluate_retrieval(engine: Any, cases: list[dict[str, Any]], *,
         "retrieval_mode": "hybrid" if engine.embedding_provider is not None else "bm25",
         "case_count": len(validated),
         "case_suite_sha256": hashlib.sha256(canonical).hexdigest(),
-        "metrics_at_k": metrics,
+        "metrics_at_k": _aggregate(per_k),
+        "case_count_by_skill": {skill: len(rows[next(iter(ks))]) for skill, rows in sorted(by_skill.items())},
+        "metrics_by_skill_at_k": {
+            skill: _aggregate(rows) for skill, rows in sorted(by_skill.items())
+        },
         "query_text_included": False,
         "judgments_included": False,
         "educational_quality_measured": False,
