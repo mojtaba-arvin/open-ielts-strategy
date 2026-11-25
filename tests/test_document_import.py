@@ -92,6 +92,30 @@ class DocumentImportTests(unittest.TestCase):
             with self.assertRaises(DocumentImportError):
                 import_document(path)
 
+    def test_docx_corrupt_member_crc_is_normalized(self):
+        xml = (
+            "<w:document xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'>"
+            "<w:body><w:p><w:r><w:t>Alpha</w:t></w:r></w:p></w:body></w:document>"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "corrupt-crc.docx"
+            with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_STORED) as archive:
+                archive.writestr("word/document.xml", xml)
+
+            with zipfile.ZipFile(path) as archive:
+                info = archive.getinfo("word/document.xml")
+            data_offset = info.header_offset + 30 + len(info.filename.encode()) + len(info.extra)
+            with path.open("r+b") as handle:
+                handle.seek(data_offset)
+                payload = bytearray(handle.read(info.compress_size))
+                index = payload.index(b"Alpha")
+                payload[index] = ord("B")
+                handle.seek(data_offset)
+                handle.write(payload)
+
+            with self.assertRaisesRegex(DocumentImportError, "invalid or unreadable DOCX"):
+                import_document(path)
+
     def test_malformed_docx_xml_is_normalized(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "broken-xml.docx"
