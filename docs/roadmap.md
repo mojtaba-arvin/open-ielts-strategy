@@ -89,13 +89,6 @@ Keep these gates separate; passing one must not be used to imply the others.
 - [x] Build a candidate Knowledge Pack only after source approvals, human confirmation, and leakage checks.
 - [ ] Verify a fresh clone can validate and use the published pack across Practice, Study, Mentor, and MCP without the original transcript or private SQLite database.
 - [x] Integration-test the generated-strategy → human promotion → approved portable pack path and prove private source text/IDs are absent.
-- [ ] A learner can import their own transcript/notes into the private local library.
-- [ ] An explicitly selected local model can extract candidate strategies with exact source anchors; model output remains a draft.
-- [ ] The learner can inspect, edit/curate, and content-review each candidate.
-- [ ] Publication/rights review remains separate and fail-closed.
-- [ ] A candidate Knowledge Pack builds only after the applicable approvals and leakage checks.
-- [ ] A fresh clone can validate the published pack and use Practice, Study, Mentor, and MCP without the original transcript or private SQLite database.
-- [ ] Integration tests cover the private-source-to-portable-pack boundary and prove private source text/IDs are absent from the pack.
 
 The generator and promotion mechanics are implemented. PR #128 proves the earlier private-source-to-pack boundary with a manually authored strategy fixture; PR #135 adds an offline fake-provider acceptance test that exercises semantic extraction, Strategy Draft generation, explicit human content review, rights approval, promotion, pack building, and independent pack loading. This validates the software path, not live-model quality or educational effectiveness.
 
