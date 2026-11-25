@@ -88,9 +88,28 @@ Keep these gates separate; passing one must not be used to imply the others.
 - [ ] Integration tests cover the private-source-to-portable-pack boundary and prove private source text/IDs are absent from the pack.
 
 The repository now has unit coverage for each underlying stage. The
-`test_transcript_to_published_pack.py` acceptance test exercises the core
-private-to-portable boundary with an offline deterministic fixture; it is not
-a live-model accuracy test and does not create real learner content.
+`test_transcript_to_published_pack.py` acceptance test exercises the private
+source → explicit extraction → human approval → portable pack boundary with an
+offline deterministic fixture; it is not a live-model accuracy test and does
+not create real learner content.
+
+**Critical P0 product gap:** semantic extraction currently stores exact source
+spans and per-segment summaries. It does not yet synthesize a complete IELTS
+strategy record from reviewed semantic items. The Knowledge Pack builder still
+requires a separately authored strategy JSON file. The end-to-end acceptance
+test deliberately supplies that strategy fixture; it must not be interpreted
+as proof that transcript-to-strategy generation is complete.
+
+Next implementation: add a private, model-generated strategy-draft workflow
+(Local Ollama and explicitly selected HTTPS API), grounded only in selected
+reviewed semantic items. The draft must remain non-publishable, carry private
+source-item mappings outside the public record, pass strict Knowledge Pack
+field validation, and require human content review plus the existing separate
+publication/rights approval before promotion/build. Never auto-set approval
+states, invent provenance, or include transcript text/private IDs in the
+published pack. Add regression tests for prompt-injection handling, malformed
+model output, source-item provenance, unapproved-item rejection, and public
+pack leakage before calling this milestone complete.
 
 ### P1 — Make first use predictable
 
