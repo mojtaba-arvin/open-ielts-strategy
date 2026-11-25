@@ -35,7 +35,7 @@ class KnowledgeLibraryCliTests(unittest.TestCase):
 
             results = json.loads(output.getvalue())
             self.assertTrue(results)
-            self.assertIn("direct response", results[0]["text"].casefold())
+            self.assertIn("direct response", results[0]["excerpt"].casefold())
 
 
 if __name__ == "__main__":
