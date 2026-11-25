@@ -5,6 +5,11 @@ from open_ielts_strategy.product_cli import main
 
 
 class ProductCliTests(unittest.TestCase):
+    def test_preflight_delegates_without_rewriting_arguments(self):
+        with patch("open_ielts_strategy.preflight_cli.main", return_value=0) as run:
+            self.assertEqual(main(["preflight", "--mode", "author"]), 0)
+            run.assert_called_once_with(["--mode", "author"])
+
     def test_study_delegates_to_learning_cli(self):
         with patch("open_ielts_strategy.published_learning_cli.main", return_value=0) as run:
             self.assertEqual(main(["study", "--skill", "speaking"]), 0)
