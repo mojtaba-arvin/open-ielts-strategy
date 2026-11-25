@@ -79,7 +79,7 @@ Keep these gates separate; passing one must not be used to imply the others.
 
 ### P0 — Verify the core value path
 
-- [ ] Generate a private Strategy Draft from only `supported` / `user_approved` semantic items using an explicitly selected local Ollama model or HTTPS API provider. The draft must be strict-schema validated, private, source-mapped only in the local envelope, and remain unapproved. This generator is an authoring aid, not educational validation.
+- [x] Generate a private Strategy Draft from only `supported` / `user_approved` semantic items using an explicitly selected local Ollama model or HTTPS API provider. The draft is strict-schema validated, private, source-mapped only in the local envelope, and remains unapproved. This generator is an authoring aid, not educational validation (PR #131; CI #752 passed 468 tests).\n- [ ] Promote a human-edited Strategy Draft only after explicit strategy-content review and persisted publication/rights approval for every mapped semantic item. Derive public provenance from the approved rights basis; keep reviewer notes and source/item mappings in a private receipt.
 - [ ] A learner can import their own transcript/notes into the private local library.
 - [ ] An explicitly selected local model can extract candidate strategies with exact source anchors; model output remains a draft.
 - [ ] The learner can inspect, edit/curate, and content-review each candidate.

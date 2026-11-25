@@ -6,8 +6,11 @@ writes a Knowledge Pack or changes content/publication review state.
 from __future__ import annotations
 
 import json
+import os
 import re
+import sqlite3
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +34,51 @@ _PRIVATE_KEY_NAMES = {
     "extraction_id", "transcript", "transcript_text", "source_text",
     "private_source_path", "review_note", "rights_evidence_path",
 }
+
+
+def _ensure_private_draft_schema(store) -> None:
+    """Persist immutable source-item mappings in the private SQLite workspace."""
+    store._connection.executescript("""
+    CREATE TABLE IF NOT EXISTS private_strategy_drafts (
+        draft_id TEXT PRIMARY KEY,
+        source_id TEXT NOT NULL REFERENCES sources(source_id) ON DELETE CASCADE,
+        strategy_id TEXT NOT NULL,
+        skill TEXT NOT NULL,
+        provider_name TEXT NOT NULL,
+        model_name TEXT NOT NULL,
+        prompt_version TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('needs_human_review', 'promoted')),
+        created_at TEXT NOT NULL,
+        promoted_at TEXT,
+        content_reviewer TEXT,
+        content_review_note TEXT,
+        candidate_sha256 TEXT,
+        candidate_path TEXT
+    );
+    CREATE TABLE IF NOT EXISTS private_strategy_draft_items (
+        draft_id TEXT NOT NULL REFERENCES private_strategy_drafts(draft_id) ON DELETE CASCADE,
+        item_id TEXT NOT NULL REFERENCES semantic_items(item_id) ON DELETE CASCADE,
+        position INTEGER NOT NULL,
+        PRIMARY KEY(draft_id, item_id),
+        UNIQUE(draft_id, position)
+    );
+    """)
+    store._connection.commit()
+
+
+def load_private_strategy_draft_mapping(store, draft_id: str):
+    """Return the authoritative local draft record and ordered source-item mapping."""
+    _ensure_private_draft_schema(store)
+    row = store._connection.execute(
+        "SELECT * FROM private_strategy_drafts WHERE draft_id=?", (draft_id,)
+    ).fetchone()
+    if row is None:
+        return None, []
+    items = store._connection.execute(
+        "SELECT item_id FROM private_strategy_draft_items WHERE draft_id=? ORDER BY position",
+        (draft_id,),
+    ).fetchall()
+    return dict(row), [item["item_id"] for item in items]
 
 
 class StrategyDraftError(ValueError):
@@ -225,9 +273,42 @@ def generate_strategy_draft(
     destination = directory / f"{resolved_draft_id}.json"
     if destination.exists():
         raise StrategyDraftError("draft destination already exists; refusing to overwrite")
-    payload = json.dumps(envelope, ensure_ascii=False, indent=2) + "\n"
-    with destination.open("x", encoding="utf-8") as handle:
-        handle.write(payload)
+    payload = (json.dumps(envelope, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    _ensure_private_draft_schema(store)
+    created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    descriptor = None
+    file_created = False
+    try:
+        with store._connection:
+            store._connection.execute(
+                """INSERT INTO private_strategy_drafts
+                   (draft_id, source_id, strategy_id, skill, provider_name, model_name,
+                    prompt_version, status, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, 'needs_human_review', ?)""",
+                (resolved_draft_id, source_id, strategy_id, skill, provider_name,
+                 model_name, PROMPT_VERSION, created_at),
+            )
+            store._connection.executemany(
+                """INSERT INTO private_strategy_draft_items (draft_id, item_id, position)
+                   VALUES (?, ?, ?)""",
+                [(resolved_draft_id, item["item_id"], index)
+                 for index, item in enumerate(eligible)],
+            )
+            descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            file_created = True
+            with os.fdopen(descriptor, "wb") as handle:
+                descriptor = None
+                handle.write(payload)
+    except sqlite3.IntegrityError as exc:
+        if file_created and destination.exists():
+            destination.unlink()
+        raise StrategyDraftError("draft ID or source-item mapping already exists in the private workspace") from exc
+    except Exception:
+        if descriptor is not None:
+            os.close(descriptor)
+        if file_created and destination.exists():
+            destination.unlink()
+        raise
     try:
         destination.chmod(0o600)
     except OSError:
