@@ -110,7 +110,13 @@ def promote_strategy_draft(
         or draft_record["status"] != "needs_human_review"
         or draft_record["source_id"] != source_id
         or draft_record["strategy_id"] != (strategy.get("id") if isinstance(strategy, dict) else None)
+        or draft_record["skill"] != (strategy.get("skill") if isinstance(strategy, dict) else None)
         or persisted_item_ids != item_ids
+        or envelope["generation"] != {
+            "provider": draft_record["provider_name"],
+            "model": draft_record["model_name"],
+            "prompt_version": draft_record["prompt_version"],
+        }
     ):
         raise StrategyPromotionError("private source mapping or draft identity does not match the authoritative SQLite record")
 
