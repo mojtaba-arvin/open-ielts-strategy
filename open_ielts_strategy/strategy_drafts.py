@@ -74,7 +74,7 @@ def validate_strategy_content(value: Any, *, strategy_id: str, skill: str, versi
         raise StrategyDraftError("strategy_id must be a normalized public strategy identifier")
     if not isinstance(skill, str) or skill not in ALLOWED_SKILLS:
         raise StrategyDraftError("unsupported IELTS skill")
-    if not isinstance(version, str) or not re.fullmatch(r"(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?", version):
+    if not isinstance(version, str) or not re.fullmatch(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?", version):
         raise StrategyDraftError("version must be semantic version text")
 
     strategy = {
