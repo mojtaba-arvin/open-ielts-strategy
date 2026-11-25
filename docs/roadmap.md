@@ -4,7 +4,7 @@ This roadmap distinguishes implemented repository mechanics from educational val
 
 ## Delivered
 
-- **Generated Strategy Draft to portable consumer acceptance (PR #136 and #137):** offline fake-provider integration covers private ingestion, semantic extraction, Strategy Draft generation, human content review, rights approval, promotion, leakage-checked pack construction, independent pack loading, and fresh-process Practice/Study/Mentor/MCP adapter use without the private database. PR #138 CI #773 passed 473 tests.
+- **Generated Strategy Draft to portable consumer acceptance (PR #136 and #138):** offline fake-provider integration covers private ingestion, semantic extraction, Strategy Draft generation, human content review, rights approval, promotion, leakage-checked pack construction, independent pack loading, and fresh-process Practice/Study/Mentor/MCP adapter use without the private database. PR #138 CI #773 passed 473 tests.
 
 - **Model-generated private Strategy Drafts and controlled promotion (PR #131 and #134):** explicit Local Ollama/HTTPS API selection, reviewed semantic-item grounding, strict strategy-content validation, private source-item mapping persisted in SQLite, tamper detection, separate human strategy review, rights-basis-derived provenance, private promotion receipts, and the existing builder confirmation/leakage gate. CI #752 passed 468 tests; CI #761 passed.
 
