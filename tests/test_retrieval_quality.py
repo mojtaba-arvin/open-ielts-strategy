@@ -43,7 +43,7 @@ class RetrievalQualityTests(unittest.TestCase):
              "relevance": {"s1": 3}},
             {"id": "writing-2", "query": "second writing query", "skill": "writing",
              "relevance": {"s2": 3}},
-            {"id": "general-1", "query": "general query",
+            {"id": "general-1", "query": "general query", "skill": "general",
              "relevance": {"s1": 1}},
         ], ks=(1, 2))
         self.assertEqual(report["case_count_by_skill"], {"general": 1, "writing": 2})
