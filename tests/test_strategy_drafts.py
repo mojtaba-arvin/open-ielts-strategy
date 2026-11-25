@@ -66,6 +66,7 @@ class StrategyDraftTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_only_reviewed_items_are_sent_and_draft_is_private_unapproved(self):
+        review_semantic_item(self.store, self.items[0]["item_id"], "user_approved")
         provider = FakeProvider(json.dumps(valid_content()))
         result = generate_strategy_draft(
             self.store, self.source["source_id"], provider,
