@@ -37,15 +37,15 @@ Inspect and curate the drafts:
 ielts library semantic-items src_ID
 ielts library review-semantic sitem_ID --status user_approved \
   --note "Reviewed for my personal IELTS study"
-ielts library review-publication sitem_ID --status approved \
-  --reviewer "maintainer" --rights-basis self_authored
 ```
 
-Content approval and publication/rights approval are separate. Do not claim
-`self_authored` for a podcast or other third-party source. Use
-`permission_confirmed` only when the exact publication permission is real and
-documented. A private-copy declaration, public URL, attribution, or model
-rewriting is not publication permission.
+Content approval and publication/rights approval are separate. The
+`user_approved` state above is sufficient for personal study; it does not
+authorize publication. Do not run `review-publication --status approved` for
+this `personal_copy_unverified` podcast source. Use `self_authored` only for
+material you authored yourself, or `permission_confirmed` only when exact
+publication permission is documented. A private-copy declaration, public URL,
+attribution, or model rewriting is not publication permission.
 
 After all required reviews, create a candidate Knowledge Pack, inspect its
 diff, and use the signed release workflow:
