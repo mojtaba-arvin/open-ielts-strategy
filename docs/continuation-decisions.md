@@ -62,6 +62,13 @@ independent code, documentation, test, and CI work while they are pending.
   no follow-up depends on it. Never delete a branch merely to tidy the branch list.
 - Keep main protected; do not weaken rulesets or bypass review/status requirements.
 
+## CLI error context
+
+When a command returns a non-zero status or its argument parser exits with an error,
+the unified CLI must append the command's data-scope boundary to stderr. Successful
+commands and `--help` output must remain unchanged. Keep this scope map aligned with
+`docs/product-cli.md` and the individual command handlers.
+
 ## Next product work after CLI scope/help
 
 1. Add safe operational acceptance tooling that validates rendered deployment artifacts

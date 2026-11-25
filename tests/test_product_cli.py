@@ -1,6 +1,6 @@
 import io
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
 
 from open_ielts_strategy.product_cli import main
@@ -19,6 +19,21 @@ class ProductCliTests(unittest.TestCase):
         with patch("open_ielts_strategy.knowledge_library_cli.main", return_value=0) as run:
             self.assertEqual(main(["library", "--help"]), 0)
             run.assert_called_once_with(["--help"])
+
+    def test_returned_command_error_includes_data_scope(self):
+        error = io.StringIO()
+        with patch("open_ielts_strategy.published_practice_cli.main", return_value=2):
+            with redirect_stderr(error):
+                self.assertEqual(main(["practice", "question"]), 2)
+        self.assertIn("published Knowledge Pack", error.getvalue())
+
+    def test_argument_parser_error_includes_data_scope(self):
+        error = io.StringIO()
+        with patch("open_ielts_strategy.knowledge_library_cli.main", side_effect=SystemExit(2)):
+            with redirect_stderr(error):
+                with self.assertRaises(SystemExit):
+                    main(["library", "--unknown-option"])
+        self.assertIn("private local authoring database", error.getvalue())
 
     def test_preflight_delegates_without_rewriting_arguments(self):
         with patch("open_ielts_strategy.preflight_cli.main", return_value=0) as run:
