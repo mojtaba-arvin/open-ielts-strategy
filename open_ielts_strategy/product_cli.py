@@ -1,12 +1,33 @@
-"""Unified product CLI; delegates to the supported focused command handlers."""
+"""Unified product CLI; delegates to focused, explicitly scoped command handlers."""
 from __future__ import annotations
+
 import argparse
 
+
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(prog="ielts", description="Open IELTS Strategy product command line.")
-    parser.add_argument("command", choices=("knowledge-status", "knowledge-init", "adapter-status", "knowledge-publish", "knowledge-diff", "knowledge-release", "study", "mentor", "mentor-chat", "practice", "practice-evaluate", "mcp"))
+    parser = argparse.ArgumentParser(
+        prog="ielts",
+        description="Open IELTS Strategy product command line.",
+    )
+    parser.add_argument(
+        "command",
+        choices=(
+            "library", "extract", "knowledge-answer",
+            "knowledge-status", "knowledge-init", "adapter-status",
+            "knowledge-publish", "knowledge-diff", "knowledge-release",
+            "study", "mentor", "mentor-chat", "practice",
+            "practice-evaluate", "mcp",
+        ),
+    )
     args, remainder = parser.parse_known_args(argv)
-    if args.command == "knowledge-status":
+
+    if args.command == "library":
+        from .knowledge_library_cli import main as run
+    elif args.command == "extract":
+        from .knowledge_extract_cli import main as run
+    elif args.command == "knowledge-answer":
+        from .knowledge_answer_cli import main as run
+    elif args.command == "knowledge-status":
         from .knowledge_pack_status import main as run
     elif args.command == "knowledge-init":
         from .knowledge_init_cli import main as run
@@ -28,6 +49,7 @@ def main(argv=None) -> int:
     else:
         from .published_knowledge_mcp import main as run
     return run(remainder)
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

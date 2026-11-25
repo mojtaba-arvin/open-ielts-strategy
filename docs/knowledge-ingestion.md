@@ -40,11 +40,11 @@ The first implementation intentionally exposes deterministic lexical extraction 
 
 The current entry point is the local CLI. Paste a transcript into standard input or provide a UTF-8 text/Markdown file:
 
-    cat transcript.txt | python scripts/knowledge.py ingest - --title "Writing strategy podcast" --type podcast_transcript --author "Presenter" --language en --rights-status personal_copy_unverified
+    cat transcript.txt | ielts library ingest - --title "Writing strategy podcast" --type podcast_transcript --author "Presenter" --language en --rights-status personal_copy_unverified
 
 Or:
 
-    python scripts/knowledge.py ingest ./notes.md --title "My IELTS notes" --type personal_notes --rights-status self_authored
+    ielts library ingest ./notes.md --title "My IELTS notes" --type personal_notes --rights-status self_authored
 
 Supported source types: podcast_transcript, video_transcript, personal_notes, book_excerpt, article, lecture_notes, web_article, and other.
 
@@ -64,24 +64,24 @@ Rights values are declarations, not legal findings: self_authored, permission_co
 
 Inspect a source and its segment/card links:
 
-    python scripts/knowledge.py sources
-    python scripts/knowledge.py show src_ID
+    ielts library sources
+    ielts library show src_ID
 
 Search the local library:
 
-    python scripts/knowledge.py search "Writing Task 2 planning"
-    python scripts/knowledge.py search "speaking fluency" --topic speaking
-    python scripts/knowledge.py search "time management" --status needs_review
+    ielts library search "Writing Task 2 planning"
+    ielts library search "speaking fluency" --topic speaking
+    ielts library search "time management" --status needs_review
 
 Review an individual card:
 
-    python scripts/knowledge.py review card_ID --status user_approved --note "Useful as a personal practice preference."
+    ielts library review card_ID --status user_approved --note "Useful as a personal practice preference."
 
 Record a reviewed relationship:
 
-    python scripts/knowledge.py link card_A card_B --relation contradicts --note "The recommendations differ in the planning time they propose."
-    python scripts/knowledge.py relations --source-id src_ID
-    python scripts/knowledge.py delete-source src_ID --confirm
+    ielts library link card_A card_B --relation contradicts --note "The recommendations differ in the planning time they propose."
+    ielts library relations --source-id src_ID
+    ielts library delete-source src_ID --confirm
 
 A user-approved card means accepted for personal use, not scientifically verified. supported must be used only when the reviewer can record the supporting basis. conflicting records an explicitly reviewed disagreement; the system does not infer contradiction from similar words.
 
@@ -89,7 +89,7 @@ A user-approved card means accepted for personal use, not scientifically verifie
 
 After semantic extraction, review every extracted item. If you no longer want the raw transcript retained locally, run:
 
-    python scripts/knowledge.py purge-source-text src_ID --confirm
+    ielts library purge-source-text src_ID --confirm
 
 This irreversible operation requires every semantic item to have left `needs_review`. It clears the source body, raw segment text, and generated segment summaries, deletes lexical cards that contain whole passages, and keeps reviewed semantic items, their source IDs/offsets, metadata, and the original SHA-256 fingerprint. It then runs SQLite VACUUM to reduce recoverable remnants in the database file. Semantic items remain searchable. Since the original body is gone, exact text-to-source re-verification is no longer possible; the retained hash and offsets are provenance metadata, not a recoverable copy. Backups made before purging may still contain the transcript and must be handled separately. VACUUM cannot guarantee erasure from SSD wear-leveling, filesystem snapshots, sync history, or other backups.
 
@@ -98,8 +98,8 @@ This irreversible operation requires every semantic item to have left `needs_rev
 Semantic item review and publication permission are separate decisions. A content reviewer may mark a candidate `user_approved` or `supported` for learning use; that does not make it publishable. Publication approval is stored in a separate private SQLite table with a reviewer, timestamp, rights-basis declaration, and private note.
 
 ```bash
-python scripts/knowledge.py review-semantic sitem_ID --status user_approved --note "Content reviewed for personal learning"
-python scripts/knowledge.py review-publication sitem_ID --status approved \
+ielts library review-semantic sitem_ID --status user_approved --note "Content reviewed for personal learning"
+ielts library review-publication sitem_ID --status approved \
   --reviewer "maintainer" --rights-basis self_authored \
   --note "Authorship and publication permission checked"
 ```
