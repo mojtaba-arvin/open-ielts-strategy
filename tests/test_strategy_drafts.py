@@ -77,8 +77,11 @@ class StrategyDraftTests(unittest.TestCase):
         self.assertFalse(result["publishable"])
         self.assertNotIn(self.items[0]["item_id"], provider.prompt)
         self.assertNotIn(self.source["source_id"], provider.prompt)
-        with self.assertRaises(StrategyDraftError):
-            json.loads(Path(result["private_path"]).read_text())["review"]["approved"] is True
+        envelope = json.loads(Path(result["private_path"]).read_text())
+        self.assertEqual(envelope["review"], {
+            "content_status": "pending", "publication_status": "pending", "approved": False,
+        })
+        self.assertEqual(envelope["private_source"]["semantic_item_ids"], [self.items[0]["item_id"]])
         self.assertEqual(Path(result["private_path"]).stat().st_mode & 0o777, 0o600)
 
     def test_unreviewed_items_are_rejected_before_model_call(self):
