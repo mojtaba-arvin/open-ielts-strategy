@@ -72,7 +72,7 @@ def validate_strategy_content(value: Any, *, strategy_id: str, skill: str, versi
     _reject_private_keys(value)
     if not isinstance(strategy_id, str) or not re.fullmatch(r"[a-z][a-z0-9_.-]{2,127}", strategy_id):
         raise StrategyDraftError("strategy_id must be a normalized public strategy identifier")
-    if skill not in ALLOWED_SKILLS:
+    if not isinstance(skill, str) or skill not in ALLOWED_SKILLS:
         raise StrategyDraftError("unsupported IELTS skill")
     if not isinstance(version, str) or not re.fullmatch(r"(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?", version):
         raise StrategyDraftError("version must be semantic version text")
@@ -121,7 +121,6 @@ def build_strategy_prompt(items: list[dict], *, skill: str) -> str:
         "kind": item["kind"],
         "text": item["text"],
         "topic_tags": item["topic_tags"],
-        "reviewer_note": item.get("review_note", ""),
     } for item in items]
     schema = {
         "type": "object",
