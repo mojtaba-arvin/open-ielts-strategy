@@ -94,6 +94,24 @@ class KnowledgeWebTests(unittest.TestCase):
                 server.server_close()
                 thread.join(timeout=2)
 
+    def test_ui_rejects_malformed_loopback_host_authorities(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(str(Path(tmp) / "db.sqlite3")))
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            base = f"http://127.0.0.1:{server.server_port}"
+            try:
+                for invalid_host in ("127.0.0.1:invalid", "127.0.0.1:99999", "127.0.0.1:"):
+                    request = Request(base + "/", headers={"Host": invalid_host})
+                    with self.subTest(host=invalid_host):
+                        with self.assertRaises(HTTPError) as error:
+                            urlopen(request)
+                        self.assertEqual(error.exception.code, 400)
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
+
     def test_ui_rejects_cross_origin_post(self):
         with tempfile.TemporaryDirectory() as tmp:
             server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(str(Path(tmp) / "db.sqlite3")))

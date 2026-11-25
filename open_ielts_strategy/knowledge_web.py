@@ -31,8 +31,30 @@ def make_handler(db_path: str):
             self.wfile.write(encoded)
 
         def _host_allowed(self):
-            host = self.headers.get("Host", "").lower()
-            return host.split(":")[0] in {"127.0.0.1", "localhost"}
+            # Parse the complete authority instead of splitting on ":"; the
+            # latter accepts malformed values such as "127.0.0.1:attacker".
+            host = self.headers.get("Host", "")
+            if not host or host != host.strip():
+                return False
+            try:
+                parsed = urlparse("//" + host)
+                port = parsed.port
+            except ValueError:
+                return False
+            if (
+                parsed.netloc != host
+                or parsed.hostname not in {"127.0.0.1", "localhost"}
+                or parsed.username is not None
+                or parsed.password is not None
+                or parsed.path
+                or parsed.params
+                or parsed.query
+                or parsed.fragment
+            ):
+                return False
+            if ":" in host and port is None:
+                return False
+            return port is None or 1 <= port <= 65535
 
         def _origin_allowed(self):
             origin = self.headers.get("Origin")

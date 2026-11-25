@@ -69,6 +69,13 @@ the unified CLI must append the command's data-scope boundary to stderr. Success
 commands and `--help` output must remain unchanged. Keep this scope map aligned with
 `docs/product-cli.md` and the individual command handlers.
 
+## Loopback authoring UI Host validation
+
+- The private authoring UI must bind only to `127.0.0.1`; do not expose it through a LAN bind, tunnel, reverse proxy, or public host.
+- Validate the complete HTTP Host authority. Accept only the exact loopback hostnames `127.0.0.1` and `localhost`, optionally followed by a valid TCP port. Reject malformed/empty/out-of-range ports, userinfo, paths, query/fragment components, and all other hostnames.
+- Do not use prefix checks or split-on-colon parsing for Host validation; malformed authorities can otherwise pass a naive loopback check.
+- Host validation is not authentication and does not make this single-user UI safe for network exposure. Keep CSRF and same-origin checks in place.
+
 ## Kubernetes validation boundary
 
 - `scripts/validate_kubernetes_manifest.py` is a static template regression check, not
