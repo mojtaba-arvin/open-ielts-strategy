@@ -167,7 +167,7 @@ class DocumentImportTests(unittest.TestCase):
 
         class Reader:
             is_encrypted = False
-            pages = [Page("x" * 2_499_999), Page("  \t "), Page("y" * 2_499_999)]
+            pages = [Page("x" * 2_499_999), Page(" "), Page("y" * 2_499_999)]
 
             def __init__(self, path, strict):
                 pass
