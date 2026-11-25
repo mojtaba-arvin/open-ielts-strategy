@@ -116,9 +116,13 @@ class DocumentImportTests(unittest.TestCase):
             def __init__(self, text):
                 self.text = text
                 self.calls = 0
+            self.completed = False
 
-            def extract_text(self):
+            def extract_text(self, visitor_text=None):
                 self.calls += 1
+                if visitor_text is not None:
+                    visitor_text(self.text, None, None, None, None)
+                self.completed = True
                 return self.text
 
         first = Page("x" * 5_000_001)
@@ -139,6 +143,7 @@ class DocumentImportTests(unittest.TestCase):
                     import_document(path)
 
         self.assertEqual(first.calls, 1)
+        self.assertFalse(first.completed)
         self.assertEqual(second.calls, 0)
 
     def test_pdf_exact_output_limit_accounts_for_page_separators(self):
@@ -146,7 +151,9 @@ class DocumentImportTests(unittest.TestCase):
             def __init__(self, text):
                 self.text = text
 
-            def extract_text(self):
+            def extract_text(self, visitor_text=None):
+                if visitor_text is not None:
+                    visitor_text(self.text, None, None, None, None)
                 return self.text
 
         class Reader:
@@ -168,7 +175,7 @@ class DocumentImportTests(unittest.TestCase):
 
     def test_encrypted_pdf_is_rejected_before_page_extraction(self):
         class Page:
-            def extract_text(self):
+            def extract_text(self, visitor_text=None):
                 raise AssertionError("encrypted PDF pages must not be extracted")
 
         class Reader:
@@ -240,7 +247,7 @@ class DocumentImportTests(unittest.TestCase):
 
     def test_pdf_page_limit_is_checked_before_page_extraction(self):
         class Page:
-            def extract_text(self):
+            def extract_text(self, visitor_text=None):
                 raise AssertionError("over-limit PDF pages must not be extracted")
 
         class Reader:
@@ -290,7 +297,7 @@ class DocumentImportTests(unittest.TestCase):
 
     def test_pdf_page_extraction_failures_are_normalized(self):
         class Page:
-            def extract_text(self):
+            def extract_text(self, visitor_text=None):
                 raise RuntimeError("malformed page content")
 
         class Reader:
