@@ -1,10 +1,25 @@
+import io
 import unittest
+from contextlib import redirect_stdout
 from unittest.mock import patch
 
 from open_ielts_strategy.product_cli import main
 
 
 class ProductCliTests(unittest.TestCase):
+    def test_root_help_explains_private_and_published_data_scopes(self):
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(main(["--help"]), 0)
+        self.assertIn("Private authoring DB", output.getvalue())
+        self.assertIn("Published Knowledge Pack", output.getvalue())
+        self.assertIn("knowledge-release", output.getvalue())
+
+    def test_subcommand_help_is_delegated_to_the_selected_handler(self):
+        with patch("open_ielts_strategy.knowledge_library_cli.main", return_value=0) as run:
+            self.assertEqual(main(["library", "--help"]), 0)
+            run.assert_called_once_with(["--help"])
+
     def test_preflight_delegates_without_rewriting_arguments(self):
         with patch("open_ielts_strategy.preflight_cli.main", return_value=0) as run:
             self.assertEqual(main(["preflight", "--mode", "author"]), 0)
