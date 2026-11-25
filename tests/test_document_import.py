@@ -118,8 +118,15 @@ class DocumentImportTests(unittest.TestCase):
                 self.calls = 0
                 self.completed = False
 
-            def extract_text(self, visitor_text=None):
+            def extract_text(self, visitor_operand_before=None, visitor_text=None):
                 self.calls += 1
+                if visitor_operand_before is not None:
+                    # pypdf catches Exception around XObject decoding; the
+                    # internal abort signal must escape that handler.
+                    try:
+                        visitor_operand_before(b"Tj", [self.text], None, None)
+                    except Exception:
+                        pass
                 if visitor_text is not None:
                     visitor_text(self.text, None, None, None, None)
                 self.completed = True
@@ -151,7 +158,9 @@ class DocumentImportTests(unittest.TestCase):
             def __init__(self, text):
                 self.text = text
 
-            def extract_text(self, visitor_text=None):
+            def extract_text(self, visitor_operand_before=None, visitor_text=None):
+                if visitor_operand_before is not None:
+                    visitor_operand_before(b"Tj", [self.text], None, None)
                 if visitor_text is not None:
                     visitor_text(self.text, None, None, None, None)
                 return self.text
@@ -175,7 +184,7 @@ class DocumentImportTests(unittest.TestCase):
 
     def test_encrypted_pdf_is_rejected_before_page_extraction(self):
         class Page:
-            def extract_text(self, visitor_text=None):
+            def extract_text(self, visitor_operand_before=None, visitor_text=None):
                 raise AssertionError("encrypted PDF pages must not be extracted")
 
         class Reader:
@@ -247,7 +256,7 @@ class DocumentImportTests(unittest.TestCase):
 
     def test_pdf_page_limit_is_checked_before_page_extraction(self):
         class Page:
-            def extract_text(self, visitor_text=None):
+            def extract_text(self, visitor_operand_before=None, visitor_text=None):
                 raise AssertionError("over-limit PDF pages must not be extracted")
 
         class Reader:
@@ -297,7 +306,7 @@ class DocumentImportTests(unittest.TestCase):
 
     def test_pdf_page_extraction_failures_are_normalized(self):
         class Page:
-            def extract_text(self, visitor_text=None):
+            def extract_text(self, visitor_operand_before=None, visitor_text=None):
                 raise RuntimeError("malformed page content")
 
         class Reader:
