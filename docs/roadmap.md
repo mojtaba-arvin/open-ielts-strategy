@@ -4,6 +4,8 @@ This roadmap distinguishes implemented repository mechanics from educational val
 
 ## Delivered
 
+- **Model-generated private Strategy Drafts and controlled promotion (PR #131 and #134):** explicit Local Ollama/HTTPS API selection, reviewed semantic-item grounding, strict strategy-content validation, private source-item mapping persisted in SQLite, tamper detection, separate human strategy review, rights-basis-derived provenance, private promotion receipts, and the existing builder confirmation/leakage gate. CI #752 passed 468 tests; CI #761 passed.
+
 - **Stages 3–6 are merged into `main`:** portable versioned published Knowledge Pack (v1.0/v1.1) and publication governance; BM25/dense/hybrid retrieval with persistent public-only cache, optional query rewriting/reranking and benchmark; published Practice, Study, Mentor and original-example learning workflows; and published-only MCP STDIO/Streamable HTTP integration with authenticated read-only access, rate limiting, audit events, and Docker/Compose/Kubernetes/Nginx deployment templates. The merge is PR #80 (`95fb68399e4ecc855e1c60c134742f010f23cba1`). The feature-head CI run #627 passed 376 unit tests before merge; this is not a post-merge CI result or production deployment.
 
 - Repository structure, contributor/agent rules, and separate software/content license notices.
@@ -79,7 +81,14 @@ Keep these gates separate; passing one must not be used to imply the others.
 
 ### P0 — Verify the core value path
 
-- [x] Generate a private Strategy Draft from only `supported` / `user_approved` semantic items using an explicitly selected local Ollama model or HTTPS API provider. The draft is strict-schema validated, private, source-mapped only in the local envelope, and remains unapproved. This generator is an authoring aid, not educational validation (PR #131; CI #752 passed 468 tests).\n- [ ] Promote a human-edited Strategy Draft only after explicit strategy-content review and persisted publication/rights approval for every mapped semantic item. Derive public provenance from the approved rights basis; keep reviewer notes and source/item mappings in a private receipt.
+- [x] Generate a private Strategy Draft from only `supported` / `user_approved` semantic items using an explicitly selected local Ollama model or HTTPS API provider. The draft is strict-schema validated, private, source-mapped in both the local envelope and authoritative private SQLite mapping, and remains unapproved. This generator is an authoring aid, not educational validation (PR #131; CI #752 passed 468 tests).
+- [x] Promote a human-edited Strategy Draft only after explicit strategy-content review and persisted publication/rights approval for every mapped semantic item. Derive public provenance from the approved rights basis; keep reviewer notes and source/item mappings in a private receipt (PR #134; CI #761 passed).
+- [x] Import learner-supplied transcript/notes into the private local library and extract reviewable semantic items with source anchors.
+- [x] Inspect/edit the strategy content, then require an explicit human content-review decision.
+- [x] Keep publication/rights review separate and fail-closed.
+- [x] Build a candidate Knowledge Pack only after source approvals, human confirmation, and leakage checks.
+- [ ] Verify a fresh clone can validate and use the published pack across Practice, Study, Mentor, and MCP without the original transcript or private SQLite database.
+- [x] Integration-test the generated-strategy → human promotion → approved portable pack path and prove private source text/IDs are absent.
 - [ ] A learner can import their own transcript/notes into the private local library.
 - [ ] An explicitly selected local model can extract candidate strategies with exact source anchors; model output remains a draft.
 - [ ] The learner can inspect, edit/curate, and content-review each candidate.
@@ -88,29 +97,9 @@ Keep these gates separate; passing one must not be used to imply the others.
 - [ ] A fresh clone can validate the published pack and use Practice, Study, Mentor, and MCP without the original transcript or private SQLite database.
 - [ ] Integration tests cover the private-source-to-portable-pack boundary and prove private source text/IDs are absent from the pack.
 
-The repository now has unit coverage for each underlying stage. The private Strategy Draft generator is the current P0 implementation; its output is not publishable until a human edits/reviews the content and the separate rights/publication workflow approves every mapped source item. The
-`test_transcript_to_published_pack.py` acceptance test exercises the private
-source → explicit extraction → human approval → portable pack boundary with an
-offline deterministic fixture; it is not a live-model accuracy test and does
-not create real learner content.
+The generator and promotion mechanics are implemented. PR #128 proves the earlier private-source-to-pack boundary with a manually authored strategy fixture; PR #135 adds an offline fake-provider acceptance test that exercises semantic extraction, Strategy Draft generation, explicit human content review, rights approval, promotion, pack building, and independent pack loading. This validates the software path, not live-model quality or educational effectiveness.
 
-**Critical P0 product gap:** semantic extraction currently stores exact source
-spans and per-segment summaries. It does not yet synthesize a complete IELTS
-strategy record from reviewed semantic items. The Knowledge Pack builder still
-requires a separately authored strategy JSON file. The end-to-end acceptance
-test deliberately supplies that strategy fixture; it must not be interpreted
-as proof that transcript-to-strategy generation is complete.
-
-Next implementation: add a private, model-generated strategy-draft workflow
-(Local Ollama and explicitly selected HTTPS API), grounded only in selected
-reviewed semantic items. The draft must remain non-publishable, carry private
-source-item mappings outside the public record, pass strict Knowledge Pack
-field validation, and require human content review plus the existing separate
-publication/rights approval before promotion/build. Never auto-set approval
-states, invent provenance, or include transcript text/private IDs in the
-published pack. Add regression tests for prompt-injection handling, malformed
-model output, source-item provenance, unapproved-item rejection, and public
-pack leakage before calling this milestone complete.
+**Remaining P0 external input:** the first real learner content pass still requires a transcript or personal notes supplied by the learner, plus actual human strategy review and documented publication rights for any source-derived public material. Synthetic fixtures must not be presented as real IELTS knowledge. The remaining technical acceptance item is a fresh-clone test of the published pack across Practice, Study, Mentor, and MCP with no private SQLite or transcript present.
 
 ### P1 — Make first use predictable
 
