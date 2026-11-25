@@ -153,6 +153,76 @@ class DocumentImportTests(unittest.TestCase):
         self.assertFalse(first.completed)
         self.assertEqual(second.calls, 0)
 
+    def test_pdf_text_budget_guard_covers_all_text_showing_operators(self):
+        oversized = "x" * 5_000_001
+        cases = (
+            (b"Tj", [oversized]),
+            (b"TJ", [[oversized]]),
+            (b"'", [oversized]),
+            (b'"', [0, 0, oversized]),
+        )
+        for operator, operands in cases:
+            with self.subTest(operator=operator):
+                class Page:
+                    completed = False
+
+                    def extract_text(self, visitor_operand_before=None, visitor_text=None):
+                        try:
+                            visitor_operand_before(operator, operands, None, None)
+                        except Exception:
+                            pass
+                        self.completed = True
+                        return "unexpected completion"
+
+                page = Page()
+
+                class Reader:
+                    is_encrypted = False
+                    pages = [page]
+
+                    def __init__(self, path, strict):
+                        pass
+
+                with tempfile.TemporaryDirectory() as tmp:
+                    path = Path(tmp) / "oversized-operator.pdf"
+                    path.write_bytes(b"%PDF")
+                    with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+                        with self.assertRaisesRegex(DocumentImportError, "5-million-character limit"):
+                            import_document(path)
+                self.assertFalse(page.completed)
+
+    def test_pdf_decoded_text_visitor_is_a_separate_budget_backstop(self):
+        oversized = "x" * 5_000_001
+
+        class Page:
+            completed = False
+
+            def extract_text(self, visitor_operand_before=None, visitor_text=None):
+                visitor_operand_before(b"Tj", ["small"], None, None)
+                try:
+                    visitor_text(oversized, None, None, None, None)
+                except Exception:
+                    pass
+                self.completed = True
+                return "unexpected completion"
+
+        page = Page()
+
+        class Reader:
+            is_encrypted = False
+            pages = [page]
+
+            def __init__(self, path, strict):
+                pass
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "oversized-decoded-text.pdf"
+            path.write_bytes(b"%PDF")
+            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+                with self.assertRaisesRegex(DocumentImportError, "5-million-character limit"):
+                    import_document(path)
+        self.assertFalse(page.completed)
+
     def test_pdf_exact_output_limit_accounts_for_page_separators(self):
         class Page:
             def __init__(self, text):
