@@ -2,30 +2,57 @@
 from __future__ import annotations
 
 import argparse
+import sys
+
+
+COMMANDS = (
+    "preflight", "library", "extract", "knowledge-draft", "knowledge-promote", "knowledge-answer",
+    "knowledge-status", "knowledge-init", "adapter-status",
+    "knowledge-publish", "knowledge-diff", "knowledge-release",
+    "study", "mentor", "mentor-chat", "practice",
+    "practice-evaluate", "mcp",
+)
+
+
+def _root_parser() -> argparse.ArgumentParser:
+    return argparse.ArgumentParser(
+        prog="ielts",
+        add_help=False,
+        description="Open IELTS Strategy product command line.",
+        epilog=(
+            "Command help is delegated to the selected handler: run "
+            "`ielts library --help`, `ielts practice --help`, etc.\n"
+            "Persistent command/data boundaries: docs/product-cli.md and "
+            "docs/continuation-decisions.md."
+        ),
+    )
+
+
+def _print_root_help() -> None:
+    parser = _root_parser()
+    parser.add_argument("command", choices=COMMANDS, nargs="?")
+    parser.print_help()
+    print(
+        "\nData scope (important):\n"
+        "  Private authoring DB: library, extract, knowledge-draft,\n"
+        "    knowledge-promote, knowledge-answer.\n"
+        "  Published Knowledge Pack: knowledge-status, practice, study,\n"
+        "    mentor, mentor-chat, mcp.\n"
+        "  Explicit review/release bridge: knowledge-publish, knowledge-diff,\n"
+        "    knowledge-release. These never bypass human approval.\n"
+        "  Setup/inspection: preflight, knowledge-init, adapter-status.\n"
+        "\nUse the command-specific --help before destructive or release actions."
+    )
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(
-        prog="ielts",
-        description="Open IELTS Strategy product command line.",
-        epilog=(
-            "Scope: library/extract/knowledge-draft/knowledge-promote/knowledge-answer "
-            "use the private local authoring database; practice/study/mentor/mcp use "
-            "the published Knowledge Pack. knowledge-publish/diff/release bridge "
-            "the two only through explicit human approval. Run `ielts preflight --help` "
-            "to check the local setup."
-        ),
-    )
-    parser.add_argument(
-        "command",
-        choices=(
-            "preflight", "library", "extract", "knowledge-draft", "knowledge-promote", "knowledge-answer",
-            "knowledge-status", "knowledge-init", "adapter-status",
-            "knowledge-publish", "knowledge-diff", "knowledge-release",
-            "study", "mentor", "mentor-chat", "practice",
-            "practice-evaluate", "mcp",
-        ),
-    )
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if not argv or argv[0] in {"-h", "--help", "help"}:
+        _print_root_help()
+        return 0
+
+    parser = _root_parser()
+    parser.add_argument("command", choices=COMMANDS)
     args, remainder = parser.parse_known_args(argv)
 
     if args.command == "preflight":
