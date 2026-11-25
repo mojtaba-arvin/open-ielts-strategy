@@ -76,15 +76,19 @@ commands and `--help` output must remain unchanged. Keep this scope map aligned 
 - Keep it fail-closed for host namespaces, hostPath mounts, seccomp, resource bounds,
   service/ingress wiring, and narrow ingress/egress policy. Add regression tests for
   every security invariant that can be checked without cluster access.
-- The next operational tooling step is a separate rendered-manifest validator driven by
-  an operator-supplied cluster profile (real ingress namespace, Redis CIDRs, hostname,
-  OIDC endpoint, and immutable image digest). Never put live secrets or private cluster
-  inventory into Git. Live CNI enforcement still requires operator evidence.
+- `scripts/validate_rendered_kubernetes_manifest.py` validates a rendered artifact
+  against a local operator-owned profile: namespace, ingress namespace, hostname,
+  OIDC auth URL, Redis TLS CIDRs, and immutable image digest. Its profile must remain
+  non-secret and outside Git; its JSON contract is in
+  `schemas/kubernetes-cluster-profile.schema.json`.
+- The rendered validator is an artifact consistency check only. It does not contact
+  Kubernetes, prove admission policy behavior, verify CNI enforcement, validate
+  certificate issuance, test OIDC bypass resistance, or establish operational acceptance.
+  Those remain operator-owned deployment and evidence gates.
 
 ## Next product work
 
-1. Add safe operational acceptance tooling that validates rendered deployment artifacts
-   against an operator-supplied cluster profile without pretending to validate a live cluster.
+1. Complete CI coverage and operator-facing examples for rendered Kubernetes profile validation.
 2. Improve retrieval evaluation ergonomics for caller-supplied, rights-cleared judgments,
    while keeping quality thresholds unset until independent reviewers establish them.
 3. Continue private-library recovery, backup/restore, parser robustness, and usability work.
