@@ -124,7 +124,7 @@ def _read_pdf(path: Path) -> str:
 
             def text_operand_size(value):
                 if isinstance(value, (str, bytes, bytearray)):
-                    return len(value) if value.strip() else 0
+                    return len(value)
                 if isinstance(value, (list, tuple)):
                     return sum(text_operand_size(item) for item in value)
                 return 0
@@ -145,7 +145,7 @@ def _read_pdf(path: Path) -> str:
 
             def guard_text_fragment(text, *_):
                 nonlocal observed_output_chars
-                if not text or not text.strip():
+                if not text:
                     return
                 observed_output_chars += len(text)
                 if observed_output_chars > remaining_chars:
