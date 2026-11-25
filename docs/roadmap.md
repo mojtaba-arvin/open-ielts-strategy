@@ -43,6 +43,8 @@ This roadmap distinguishes implemented repository mechanics from educational val
 
 - **Private document-import resource hardening (PR #149 and #150):** TXT/Markdown reads stop at the configured character budget; SHA-256 fingerprints are streamed; malformed DOCX and PDF parser regressions are covered; PDF text-showing operators are guarded before decode/aggregation with a decoded-output backstop. This remains local-only and does not add OCR or remote ingestion. pypdf may still materialize decompressed content streams before operator callbacks, so this is not complete memory isolation or an independent parser security review.
 
+- **Private authoring UI and parser regression follow-ups (PR #152–#154):** the loopback UI validates the complete Host authority and rejects malformed ports/userinfo/path components; PDF budget tests cover `Tj`, `TJ`, single-quote, double-quote, and the decoded-text callback; DOCX CRC corruption is normalized to `DocumentImportError`. These are regression/security controls, not authentication, parser isolation, or independent security review.
+
 ## Not yet established or implemented
 
 1. **Real educational effectiveness:** no independently reviewed benchmark currently demonstrates positive skill lift. Fixture-mode results are not evidence of effectiveness.
