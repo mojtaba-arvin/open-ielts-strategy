@@ -279,3 +279,41 @@ not change either review state, does not infer publication rights, and cannot
 build or publish a pack. A human must inspect and edit the strategy, then
 complete the independent content and publication review workflow before any
 publication build.
+
+
+## Human-gated Strategy Draft promotion
+
+The generated JSON is a private envelope. Inspect and edit only its `strategy`
+object before promotion. Do not add provenance or review fields yourself.
+Then, for every mapped semantic item, record both decisions in the private
+library:
+
+```sh
+ielts library --db .local/knowledge.sqlite3 review-semantic <ITEM_ID> --status user_approved
+ielts library --db .local/knowledge.sqlite3 review-publication <ITEM_ID> \
+  --status approved --reviewer "<RIGHTS_REVIEWER>" --rights-basis self_authored
+```
+
+Promote only after you have reviewed the complete strategy:
+
+```sh
+ielts knowledge-promote --db .local/knowledge.sqlite3 \
+  --draft .local/strategy-drafts/<DRAFT_ID>.json \
+  --destination .local/strategy-candidates/<STRATEGY_ID>.json \
+  --reviewer "<CONTENT_REVIEWER>" \
+  --review-note "Reviewed accuracy, clarity, and applicability" \
+  --confirm-content-review
+```
+
+Promotion fails unless all mapped items belong to the recorded source, have
+content and publication approval in SQLite, and share one supported rights
+basis. The command derives the public provenance basis from those private
+approval rows; it never trusts model-authored provenance. It writes a private
+Pack-ready candidate and a separate private promotion receipt. Mixed rights
+bases require splitting the strategy or resolving the rights basis before
+promotion.
+
+Finally, run the existing pack builder with the returned `--source-item`
+arguments and its separate `--confirm-human-review` gate. The builder repeats
+the approval and leakage checks. Promotion is not publication: it does not
+write a Knowledge Pack, commit files, or push content.
