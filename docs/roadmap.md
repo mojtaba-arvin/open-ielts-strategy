@@ -4,7 +4,7 @@ This roadmap distinguishes implemented repository mechanics from educational val
 
 ## Delivered
 
-- **Generated Strategy Draft to portable consumer acceptance (PR #136 and #137):** offline fake-provider integration covers private ingestion, semantic extraction, Strategy Draft generation, human content review, rights approval, promotion, leakage-checked pack construction, independent pack loading, and fresh-process Practice/Study/Mentor/MCP adapter use without the private database. PR #137 CI is pending.
+- **Generated Strategy Draft to portable consumer acceptance (PR #136 and #137):** offline fake-provider integration covers private ingestion, semantic extraction, Strategy Draft generation, human content review, rights approval, promotion, leakage-checked pack construction, independent pack loading, and fresh-process Practice/Study/Mentor/MCP adapter use without the private database. PR #138 CI #773 passed 473 tests.
 
 - **Model-generated private Strategy Drafts and controlled promotion (PR #131 and #134):** explicit Local Ollama/HTTPS API selection, reviewed semantic-item grounding, strict strategy-content validation, private source-item mapping persisted in SQLite, tamper detection, separate human strategy review, rights-basis-derived provenance, private promotion receipts, and the existing builder confirmation/leakage gate. CI #752 passed 468 tests; CI #761 passed.
 
@@ -89,7 +89,7 @@ Keep these gates separate; passing one must not be used to imply the others.
 - [x] Inspect/edit the strategy content, then require an explicit human content-review decision.
 - [x] Keep publication/rights review separate and fail-closed.
 - [x] Build a candidate Knowledge Pack only after source approvals, human confirmation, and leakage checks.
-- [x] Verify an isolated fresh consumer process can validate and use the published pack across Practice, Study, Mentor, and MCP without the original transcript or private SQLite database (PR #138; CI pending).
+- [x] Verify an isolated fresh consumer process can validate and use the published pack across Practice, Study, Mentor, and MCP without the original transcript or private SQLite database (PR #138; CI #773 passed 473 tests).
 - [x] Integration-test the generated-strategy → human promotion → approved portable pack path and prove private source text/IDs are absent.
 
 The generator and promotion mechanics are implemented. PR #128 proves the earlier private-source-to-pack boundary with a manually authored strategy fixture; PR #136 adds an offline fake-provider acceptance test that exercises semantic extraction, Strategy Draft generation, explicit human content review, rights approval, promotion, pack building, and independent pack loading. PR #138 extends this to a fresh isolated consumer process that exercises published retrieval/MCP adapter functions, Study progression, Practice generation, Mentor explanation, and original-example generation using only the copied pack. These tests validate software integration with deterministic fake providers, not live-model quality or educational effectiveness.
