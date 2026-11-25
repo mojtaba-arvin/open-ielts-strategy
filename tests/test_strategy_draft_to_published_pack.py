@@ -209,7 +209,7 @@ class FakeProvider:
                 "limitations": "Adapt it when the prompt needs a different structure.",
                 "exercise": "Answer three prompts and add one relevant reason to each.",
             })
-        if prompt.startswith("Create a new original IELTS learning example."):
+        if prompt.startswith("Create a new original IELTS learning example"):
             return json.dumps({
                 "example": "I usually read before breakfast because the quiet helps me focus.",
                 "strategy_application": "The response is direct and supported by one reason.",
