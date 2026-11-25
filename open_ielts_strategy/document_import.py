@@ -31,8 +31,11 @@ def import_document(path: str | Path) -> dict:
     suffix = file_path.suffix.casefold()
     if suffix in {".txt", ".md"}:
         try:
+            # Read only one character beyond the output budget. Hashing below
+            # is streamed separately, so a valid large input is never loaded
+            # into memory a second time just to fingerprint it.
             with file_path.open("r", encoding="utf-8", newline="") as handle:
-                text = handle.read()
+                text = handle.read(MAX_EXTRACTED_CHARS + 1)
         except UnicodeError as exc:
             raise DocumentImportError("text files must be valid UTF-8") from exc
     elif suffix == ".docx":
@@ -43,7 +46,8 @@ def import_document(path: str | Path) -> dict:
         raise DocumentImportError("supported formats are TXT, Markdown, PDF, and DOCX")
     if not text.strip() or len(text) > MAX_EXTRACTED_CHARS:
         raise DocumentImportError("extracted text is empty or exceeds the 5-million-character limit")
-    digest = hashlib.sha256(file_path.read_bytes()).hexdigest()
+    with file_path.open("rb") as handle:
+        digest = hashlib.file_digest(handle, "sha256").hexdigest()
     return {
         "text": text, "filename": file_path.name, "format": suffix[1:],
         "characters": len(text), "file_sha256": digest,
