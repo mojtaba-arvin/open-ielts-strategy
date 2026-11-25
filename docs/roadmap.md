@@ -100,8 +100,9 @@ The generator and promotion mechanics are implemented. PR #128 proves the earlie
 
 - [x] One documented quick-start covers environment setup, local model selection,
   transcript ingestion, extraction, review, candidate build, and local study.
-- [ ] CLI help and errors explain whether a command reads the private database
-  or the published Knowledge Pack.
+- [x] CLI help and errors explain whether a command reads the private database
+  or the published Knowledge Pack (PR #142 and #143; root help and command-specific
+  failure context distinguish private authoring, published consumption, and release bridge).
 - [x] A preflight command reports optional dependency availability, explicit model
   availability, pack validity, and local writable paths without sending learner data
   to a network (`ielts preflight`; Ollama inspection is loopback-only).
