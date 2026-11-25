@@ -11,6 +11,7 @@ from pathlib import Path
 from .filesystem_security import ensure_private_directory
 from .knowledge_pack import _validate_strategy
 from .knowledge_pipeline import assert_items_publishable
+from .strategy_drafts import load_private_strategy_draft_mapping
 
 RIGHTS_TO_PROVENANCE = {
     "self_authored": "original",
@@ -102,6 +103,17 @@ def promote_strategy_draft(
             or len(item_ids) != len(set(item_ids))):
         raise StrategyPromotionError("private source-item mapping is invalid")
 
+    strategy = envelope["strategy"]
+    draft_record, persisted_item_ids = load_private_strategy_draft_mapping(store, envelope["draft_id"])
+    if (
+        draft_record is None
+        or draft_record["status"] != "needs_human_review"
+        or draft_record["source_id"] != source_id
+        or draft_record["strategy_id"] != (strategy.get("id") if isinstance(strategy, dict) else None)
+        or persisted_item_ids != item_ids
+    ):
+        raise StrategyPromotionError("private source mapping or draft identity does not match the authoritative SQLite record")
+
     try:
         approvals = assert_items_publishable(store, item_ids)
     except (ValueError, KeyError) as exc:
@@ -122,7 +134,6 @@ def promote_strategy_draft(
     if provenance_basis is None:
         raise StrategyPromotionError("mapped items do not have a supported publication rights basis")
 
-    strategy = envelope["strategy"]
     if not isinstance(strategy, dict) or "provenance" in strategy or "review" in strategy:
         raise StrategyPromotionError("model draft must not supply provenance or approval fields")
     candidate = dict(strategy)
@@ -163,11 +174,23 @@ def promote_strategy_draft(
             "candidate_sha256": hashlib.sha256(candidate_payload).hexdigest(),
         }
         _write_private_json(receipt_path, receipt)
+        with store._connection:
+            cursor = store._connection.execute(
+                """UPDATE private_strategy_drafts
+                   SET status='promoted', promoted_at=?, content_reviewer=?,
+                       content_review_note=?, candidate_sha256=?, candidate_path=?
+                   WHERE draft_id=? AND status='needs_human_review'""",
+                (receipt["content_reviewed_at"], reviewer.strip(), review_note.strip(),
+                 receipt["candidate_sha256"], str(output_path), receipt_id),
+            )
+            if cursor.rowcount != 1:
+                raise StrategyPromotionError("private draft was already promoted or changed concurrently")
     except Exception:
-        try:
-            output_path.unlink()
-        except OSError:
-            pass
+        for artifact in (output_path, receipt_path):
+            try:
+                artifact.unlink()
+            except OSError:
+                pass
         raise
 
     return {
