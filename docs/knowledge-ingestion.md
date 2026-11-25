@@ -274,8 +274,8 @@ the selected HTTPS endpoint. Do not use it for material that must remain local.
 The generated file is written under `.local/strategy-drafts/` with restrictive
 permissions. It contains a private source/item mapping and a
 `needs_human_review` state. The authoritative ordered mapping is also recorded
-in private SQLite tables; promotion compares the editable envelope against that
-record and rejects changed source IDs, item IDs, or strategy identity. The model receives reviewed item content without
+in private SQLite tables; promotion compares the editable envelope, generation
+metadata, skill, and strategy identity against that record and rejects tampering. The model receives reviewed item content without
 private database identifiers or private reviewer notes. Draft generation does
 not change either review state, does not infer publication rights, and cannot
 build or publish a pack. A human must inspect and edit the strategy, then
@@ -290,7 +290,8 @@ object before promotion. Do not edit `draft_id`, `private_source`, `generation`,
 or `review`, and do not add provenance or review fields yourself. The SQLite
 mapping is authoritative; modifying the envelope mapping causes promotion to fail.
 Then, for every mapped semantic item, record both decisions in the private
-library:
+library. The generator records the original ordered item mapping in SQLite;
+only the `strategy` object should be edited in the draft file:
 
 ```sh
 ielts library --db .local/knowledge.sqlite3 review-semantic <ITEM_ID> --status user_approved
