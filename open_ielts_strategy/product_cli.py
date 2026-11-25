@@ -8,11 +8,18 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         prog="ielts",
         description="Open IELTS Strategy product command line.",
+        epilog=(
+            "Scope: library/extract/knowledge-draft/knowledge-promote/knowledge-answer "
+            "use the private local authoring database; practice/study/mentor/mcp use "
+            "the published Knowledge Pack. knowledge-publish/diff/release bridge "
+            "the two only through explicit human approval. Run `ielts preflight --help` "
+            "to check the local setup."
+        ),
     )
     parser.add_argument(
         "command",
         choices=(
-            "library", "extract", "knowledge-draft", "knowledge-promote", "knowledge-answer",
+            "preflight", "library", "extract", "knowledge-draft", "knowledge-promote", "knowledge-answer",
             "knowledge-status", "knowledge-init", "adapter-status",
             "knowledge-publish", "knowledge-diff", "knowledge-release",
             "study", "mentor", "mentor-chat", "practice",
@@ -21,7 +28,9 @@ def main(argv=None) -> int:
     )
     args, remainder = parser.parse_known_args(argv)
 
-    if args.command == "library":
+    if args.command == "preflight":
+        from .preflight_cli import main as run
+    elif args.command == "library":
         from .knowledge_library_cli import main as run
     elif args.command == "extract":
         from .knowledge_extract_cli import main as run

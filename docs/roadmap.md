@@ -98,12 +98,13 @@ The generator and promotion mechanics are implemented. PR #128 proves the earlie
 
 ### P1 — Make first use predictable
 
-- [ ] One documented quick-start covers environment setup, local model selection,
+- [x] One documented quick-start covers environment setup, local model selection,
   transcript ingestion, extraction, review, candidate build, and local study.
 - [ ] CLI help and errors explain whether a command reads the private database
   or the published Knowledge Pack.
-- [ ] A preflight command reports missing optional dependencies, model availability,
-  pack validity, and local writable paths without sending data to a network.
+- [x] A preflight command reports optional dependency availability, explicit model
+  availability, pack validity, and local writable paths without sending learner data
+  to a network (`ielts preflight`; Ollama inspection is loopback-only).
 - [ ] A small, independently authored sample Knowledge Pack is added only after
   content review; never ship fabricated or model-generated unreviewed examples.
 
