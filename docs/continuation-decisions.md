@@ -13,8 +13,9 @@ without private learner data, external services, paid model calls, or fabricated
 
 - `library`, `extract`, `knowledge-draft`, `knowledge-promote`, and
   `knowledge-answer` operate on the private local authoring database.
-- `practice`, `study`, `mentor`, `mentor-chat`, and `mcp` consume the
-  published Knowledge Pack. A consumer must not require the author's private SQLite DB.
+- `practice`, `practice-evaluate`, `study`, `mentor`, `mentor-chat`, and `mcp`
+  consume the published Knowledge Pack. Optional `--session-db` flags persist
+  learner attempts locally; they are not a dependency for pack consumption.
 - `knowledge-publish`, `knowledge-diff`, and `knowledge-release` bridge
   authoring and publication only through separate, explicit human review and release gates.
 - `preflight` must preserve the author/consumer separation. Consumer readiness must
