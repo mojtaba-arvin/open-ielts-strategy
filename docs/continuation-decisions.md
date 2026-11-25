@@ -89,7 +89,7 @@ commands and `--help` output must remain unchanged. Keep this scope map aligned 
 ## Document import resource bounds
 
 - TXT/Markdown reads stop at one character beyond `MAX_EXTRACTED_CHARS`; file SHA-256 uses `hashlib.file_digest` rather than a second whole-file allocation.
-- PDF extraction must pass a `pypdf` `visitor_text` callback that aborts as soon as decoded text fragments exceed the remaining output budget. Keep tests proving a later page is not touched and the oversized page extraction does not complete.
+- PDF extraction must guard `Tj`, `TJ`, single-quote, and double-quote text operands through `visitor_operand_before`, then guard decoded output with `visitor_text`. Use a private `BaseException` sentinel so pypdf's broad nested-XObject `except Exception` cannot swallow the abort. Keep tests proving an oversized text operator aborts before page extraction completes and later pages are not touched. This does not bound pypdf's earlier decompression of the content stream itself.
 - DOCX remains a local ZIP/XML parser with entry-count, uncompressed-size, and extracted-character bounds. Do not add generic archive extraction, OCR, remote fetching, or third-party ingestion as part of parser hardening.
 - These bounds are resource controls, not an independent parser security audit.
 
