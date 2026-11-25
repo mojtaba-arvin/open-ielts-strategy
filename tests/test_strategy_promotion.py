@@ -115,6 +115,8 @@ class StrategyPromotionTests(unittest.TestCase):
         self.assertNotIn(self.source["source_id"], serialized)
         self.assertNotIn(self.item_id, serialized)
         self.assertTrue(Path(result["promotion_receipt"]).is_file())
+        self.assertEqual(Path(result["candidate_path"]).stat().st_mode & 0o777, 0o600)
+        self.assertEqual(Path(result["promotion_receipt"]).stat().st_mode & 0o777, 0o600)
         self.assertFalse(result["published"])
         self.assertEqual(result["source_item_args"], [
             f"--source-item speaking.direct-answer={self.item_id}",
