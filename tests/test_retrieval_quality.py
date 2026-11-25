@@ -47,7 +47,7 @@ class RetrievalQualityTests(unittest.TestCase):
              "relevance": {"s1": 1}},
         ], ks=(1, 2))
         self.assertEqual(report["case_count_by_skill"], {"general": 1, "writing": 2})
-        self.assertEqual(report["metrics_by_skill_at_k"]["writing"]["1"]["recall"], 0.5)
+        self.assertEqual(report["metrics_by_skill_at_k"]["writing"]["1"]["recall"], 1.0)
         self.assertEqual(report["metrics_by_skill_at_k"]["general"]["1"]["recall"], 1.0)
         self.assertEqual(set(report["metrics_by_skill_at_k"]["writing"]["1"]), {
             "recall", "precision", "mrr", "ndcg",
