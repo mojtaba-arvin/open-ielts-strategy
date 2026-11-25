@@ -245,3 +245,36 @@ The private authoring library has implemented local ingestion, optional structur
 - Comparison and playbook drafts: see [Strategy Playbooks](strategy-playbooks.md). Every step preserves source offsets and selection order; no conflicting advice is silently reconciled.
 - Paste-first UI and local documents: see [Local UI and Documents](local-ui-and-documents.md). The UI is loopback-only; parser limits apply.
 - Extraction evaluation: see [Knowledge Evaluation](knowledge-evaluation.md). Synthetic tests measure code behavior, not educational validity.
+
+
+## Model-generated private Strategy Drafts
+
+After semantic extraction, inspect items with:
+
+```sh
+ielts library semantic-items --db .local/knowledge.sqlite3 <SOURCE_ID>
+ielts library review-semantic --db .local/knowledge.sqlite3 <ITEM_ID> --status user_approved
+```
+
+Generate a draft only after reviewing the semantic items:
+
+```sh
+ielts knowledge-draft --db .local/knowledge.sqlite3 \
+  --source-id <SOURCE_ID> \
+  --strategy-id speaking.direct-answer \
+  --skill speaking \
+  --provider ollama --model <LOCAL_OLLAMA_MODEL>
+```
+
+For a remote provider, explicitly select `--provider openai-compatible`; the API
+key is read from `OPENAI_API_KEY` (or the environment variable named by
+`--api-key-env`). Remote generation sends the reviewed semantic-item text to
+the selected HTTPS endpoint. Do not use it for material that must remain local.
+
+The generated file is written under `.local/strategy-drafts/` with restrictive
+best-effort permissions. It contains a private source/item mapping and a
+`needs_human_review` state. The model receives reviewed item content without
+private database identifiers. Draft generation does not change either review
+state, does not infer publication rights, and cannot build or publish a pack.
+A human must inspect and edit the strategy, then complete the independent
+content and publication review workflow before any publication build.
