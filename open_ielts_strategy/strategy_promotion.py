@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -136,7 +137,7 @@ def promote_strategy_draft(
     if output_path.exists():
         raise StrategyPromotionError("destination already exists; promotion never overwrites")
     receipt_id = envelope["draft_id"]
-    if not isinstance(receipt_id, str) or not __import__("re").fullmatch(r"draft_[a-f0-9]{32}", receipt_id):
+    if not isinstance(receipt_id, str) or not re.fullmatch(r"draft_[a-f0-9]{32}", receipt_id):
         raise StrategyPromotionError("draft ID is invalid")
     receipt_path = Path(receipt_dir).expanduser() / f"{receipt_id}.promotion.json"
     if receipt_path.exists():
