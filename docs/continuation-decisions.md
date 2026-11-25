@@ -86,11 +86,26 @@ commands and `--help` output must remain unchanged. Keep this scope map aligned 
   certificate issuance, test OIDC bypass resistance, or establish operational acceptance.
   Those remain operator-owned deployment and evidence gates.
 
+## Backup and restore boundary
+
+- `open_ielts_strategy.knowledge_backup` uses SQLite's online backup API and checks
+  database integrity; tests must cover committed WAL data as well as ordinary files.
+- Backups contain private source text and review data, are **not encrypted**, and must
+  stay on encrypted, access-controlled storage outside Git. Never claim a backup is
+  secure merely because its file mode is restrictive.
+- Restore only to a new destination. Inspect the restored library before an explicit
+  operator switches the active database. Integrity checks are necessary, not sufficient
+  proof of a successful application-level recovery.
+- The recovery runbook documents a manual local procedure. Scheduling, off-site copies,
+  retention, ransomware protection, and measured RPO/RTO remain unimplemented.
+
 ## Next product work
 
-1. Complete CI coverage and operator-facing examples for rendered Kubernetes profile validation.
+1. Continue private-library recovery, parser robustness, malformed/large archive tests,
+   PDF edge cases, and usability work.
 2. Improve retrieval evaluation ergonomics for caller-supplied, rights-cleared judgments,
    while keeping quality thresholds unset until independent reviewers establish them.
-3. Continue private-library recovery, backup/restore, parser robustness, and usability work.
-4. Reassess OCR, ASR, cloud sync, crawling, and public hosting only through separate threat,
-   rights, privacy, and product decisions; they are not implicit roadmap commitments.
+3. Continue CI coverage and operator-facing examples for rendered Kubernetes profile
+   validation.
+4. Reassess OCR, ASR, cloud sync, crawling, and public hosting only through separate
+   threat, rights, privacy, and product decisions; they are not implicit roadmap commitments.
