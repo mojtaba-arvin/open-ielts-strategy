@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sqlite3
 import sys
 
 from .knowledge_store import DEFAULT_DB_PATH, KnowledgeStore
@@ -31,7 +32,7 @@ def main(argv=None):
                 confirm_content_review=args.confirm_content_review,
             )
         print(json.dumps(result, ensure_ascii=False, indent=2))
-    except (OSError, RuntimeError, ValueError, KeyError) as exc:
+    except (OSError, RuntimeError, ValueError, KeyError, sqlite3.Error) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
     return 0
