@@ -69,7 +69,19 @@ the unified CLI must append the command's data-scope boundary to stderr. Success
 commands and `--help` output must remain unchanged. Keep this scope map aligned with
 `docs/product-cli.md` and the individual command handlers.
 
-## Next product work after CLI scope/help
+## Kubernetes validation boundary
+
+- `scripts/validate_kubernetes_manifest.py` is a static template regression check, not
+  proof that a rendered deployment is accepted or enforced by a live cluster/CNI.
+- Keep it fail-closed for host namespaces, hostPath mounts, seccomp, resource bounds,
+  service/ingress wiring, and narrow ingress/egress policy. Add regression tests for
+  every security invariant that can be checked without cluster access.
+- The next operational tooling step is a separate rendered-manifest validator driven by
+  an operator-supplied cluster profile (real ingress namespace, Redis CIDRs, hostname,
+  OIDC endpoint, and immutable image digest). Never put live secrets or private cluster
+  inventory into Git. Live CNI enforcement still requires operator evidence.
+
+## Next product work
 
 1. Add safe operational acceptance tooling that validates rendered deployment artifacts
    against an operator-supplied cluster profile without pretending to validate a live cluster.
