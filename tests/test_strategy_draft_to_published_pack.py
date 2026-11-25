@@ -240,7 +240,7 @@ example = generate_published_strategy_example(
 )
 assert example["example"]
 practice = generate_published_practice_answer(
-    pack, "What time of day do you prefer to study?", skill="speaking", provider=provider
+    pack, "How can I give a focused response with a supporting explanation?", skill="speaking", provider=provider
 )
 assert practice["status"] == "generated"
 assert practice["strategy_attribution"][0]["strategy_id"] == strategy_id
