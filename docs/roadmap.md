@@ -79,6 +79,7 @@ Keep these gates separate; passing one must not be used to imply the others.
 
 ### P0 — Verify the core value path
 
+- [ ] Generate a private Strategy Draft from only `supported` / `user_approved` semantic items using an explicitly selected local Ollama model or HTTPS API provider. The draft must be strict-schema validated, private, source-mapped only in the local envelope, and remain unapproved. This generator is an authoring aid, not educational validation.
 - [ ] A learner can import their own transcript/notes into the private local library.
 - [ ] An explicitly selected local model can extract candidate strategies with exact source anchors; model output remains a draft.
 - [ ] The learner can inspect, edit/curate, and content-review each candidate.
@@ -87,7 +88,7 @@ Keep these gates separate; passing one must not be used to imply the others.
 - [ ] A fresh clone can validate the published pack and use Practice, Study, Mentor, and MCP without the original transcript or private SQLite database.
 - [ ] Integration tests cover the private-source-to-portable-pack boundary and prove private source text/IDs are absent from the pack.
 
-The repository now has unit coverage for each underlying stage. The
+The repository now has unit coverage for each underlying stage. The private Strategy Draft generator is the current P0 implementation; its output is not publishable until a human edits/reviews the content and the separate rights/publication workflow approves every mapped source item. The
 `test_transcript_to_published_pack.py` acceptance test exercises the core
 private-to-portable boundary with an offline deterministic fixture; it is not
 a live-model accuracy test and does not create real learner content.
