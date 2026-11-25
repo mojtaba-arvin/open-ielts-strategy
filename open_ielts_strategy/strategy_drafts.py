@@ -277,6 +277,7 @@ def generate_strategy_draft(
     _ensure_private_draft_schema(store)
     created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     descriptor = None
+    file_created = False
     try:
         with store._connection:
             store._connection.execute(
@@ -294,17 +295,18 @@ def generate_strategy_draft(
                  for index, item in enumerate(eligible)],
             )
             descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            file_created = True
             with os.fdopen(descriptor, "wb") as handle:
                 descriptor = None
                 handle.write(payload)
     except sqlite3.IntegrityError as exc:
-        if destination.exists():
+        if file_created and destination.exists():
             destination.unlink()
         raise StrategyDraftError("draft ID or source-item mapping already exists in the private workspace") from exc
     except Exception:
         if descriptor is not None:
             os.close(descriptor)
-        if destination.exists():
+        if file_created and destination.exists():
             destination.unlink()
         raise
     try:
