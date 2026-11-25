@@ -86,6 +86,13 @@ commands and `--help` output must remain unchanged. Keep this scope map aligned 
   certificate issuance, test OIDC bypass resistance, or establish operational acceptance.
   Those remain operator-owned deployment and evidence gates.
 
+## Document import resource bounds
+
+- TXT/Markdown reads stop at one character beyond `MAX_EXTRACTED_CHARS`; file SHA-256 uses `hashlib.file_digest` rather than a second whole-file allocation.
+- PDF extraction must pass a `pypdf` `visitor_text` callback that aborts as soon as decoded text fragments exceed the remaining output budget. Keep tests proving a later page is not touched and the oversized page extraction does not complete.
+- DOCX remains a local ZIP/XML parser with entry-count, uncompressed-size, and extracted-character bounds. Do not add generic archive extraction, OCR, remote fetching, or third-party ingestion as part of parser hardening.
+- These bounds are resource controls, not an independent parser security audit.
+
 ## Backup and restore boundary
 
 - `open_ielts_strategy.knowledge_backup` uses SQLite's online backup API and checks
