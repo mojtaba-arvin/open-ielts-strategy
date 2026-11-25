@@ -29,10 +29,12 @@ class RenderedKubernetesProfileTests(unittest.TestCase):
         deployment["image"] = "ghcr.io/mojtaba-arvin/open-ielts-strategy/published-mcp@" + DIGEST
         args = deployment["args"]
         args[args.index("published-mcp.example.com")] = self.profile["hostname"]
+        args[args.index("https://client.example.com")] = "https://client.ielts.example.org"
         for probe in ("startupProbe", "readinessProbe", "livenessProbe"):
             command = deployment[probe]["exec"]["command"]
             command[-1] = command[-1].replace("published-mcp.example.com", self.profile["hostname"])
         ingress = by_kind["Ingress"]
+        ingress["metadata"]["annotations"]["cert-manager.io/cluster-issuer"] = "letsencrypt-prod"
         ingress["metadata"]["annotations"]["nginx.ingress.kubernetes.io/auth-url"] = self.profile["oidc_auth_url"]
         ingress["spec"]["tls"][0]["hosts"] = [self.profile["hostname"]]
         ingress["spec"]["rules"][0]["host"] = self.profile["hostname"]
@@ -84,6 +86,10 @@ class RenderedKubernetesProfileTests(unittest.TestCase):
     def test_profile_rejects_open_redis_cidr(self):
         errors = self._validate(profile_mutate=lambda profile: profile.update({"redis_cidrs": ["0.0.0.0/0"]}))
         self.assertTrue(any("must not allow every address" in error for error in errors))
+
+    def test_profile_rejects_unknown_fields(self):
+        errors = self._validate(profile_mutate=lambda profile: profile.update({"redis_password": "never-store-here"}))
+        self.assertTrue(any("unsupported keys" in error for error in errors))
 
 
 if __name__ == "__main__":
