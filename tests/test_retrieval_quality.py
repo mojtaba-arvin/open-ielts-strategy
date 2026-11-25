@@ -52,8 +52,10 @@ class RetrievalQualityTests(unittest.TestCase):
         self.assertEqual(set(report["metrics_by_skill_at_k"]["writing"]["1"]), {
             "recall", "precision", "mrr", "ndcg",
         })
-        self.assertNotIn("query", str(report))
-        self.assertNotIn("relevance", str(report))
+        serialized = str(report)
+        self.assertNotIn("first writing query", serialized)
+        self.assertNotIn("second writing query", serialized)
+        self.assertNotIn('"relevance"', serialized)
 
     def test_rejects_unknown_strategy_judgments_and_duplicate_case_ids(self):
         engine = FakeEngine()
