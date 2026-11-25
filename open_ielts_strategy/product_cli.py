@@ -8,6 +8,13 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         prog="ielts",
         description="Open IELTS Strategy product command line.",
+        epilog=(
+            "Scope: library/extract/knowledge-draft/knowledge-promote/knowledge-answer "
+            "use the private local authoring database; practice/study/mentor/mcp use "
+            "the published Knowledge Pack. knowledge-publish/diff/release bridge "
+            "the two only through explicit human approval. Run `ielts preflight --help` "
+            "to check the local setup."
+        ),
     )
     parser.add_argument(
         "command",
