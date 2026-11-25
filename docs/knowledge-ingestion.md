@@ -272,8 +272,10 @@ key is read from `OPENAI_API_KEY` (or the environment variable named by
 the selected HTTPS endpoint. Do not use it for material that must remain local.
 
 The generated file is written under `.local/strategy-drafts/` with restrictive
-best-effort permissions. It contains a private source/item mapping and a
-`needs_human_review` state. The model receives reviewed item content without
+permissions. It contains a private source/item mapping and a
+`needs_human_review` state. The authoritative ordered mapping is also recorded
+in private SQLite tables; promotion compares the editable envelope against that
+record and rejects changed source IDs, item IDs, or strategy identity. The model receives reviewed item content without
 private database identifiers or private reviewer notes. Draft generation does
 not change either review state, does not infer publication rights, and cannot
 build or publish a pack. A human must inspect and edit the strategy, then
@@ -284,7 +286,9 @@ publication build.
 ## Human-gated Strategy Draft promotion
 
 The generated JSON is a private envelope. Inspect and edit only its `strategy`
-object before promotion. Do not add provenance or review fields yourself.
+object before promotion. Do not edit `draft_id`, `private_source`, `generation`,
+or `review`, and do not add provenance or review fields yourself. The SQLite
+mapping is authoritative; modifying the envelope mapping causes promotion to fail.
 Then, for every mapped semantic item, record both decisions in the private
 library:
 
