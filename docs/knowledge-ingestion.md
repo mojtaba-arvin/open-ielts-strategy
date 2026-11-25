@@ -252,8 +252,8 @@ The private authoring library has implemented local ingestion, optional structur
 After semantic extraction, inspect items with:
 
 ```sh
-ielts library semantic-items --db .local/knowledge.sqlite3 <SOURCE_ID>
-ielts library review-semantic --db .local/knowledge.sqlite3 <ITEM_ID> --status user_approved
+ielts library --db .local/knowledge.sqlite3 semantic-items <SOURCE_ID>
+ielts library --db .local/knowledge.sqlite3 review-semantic <ITEM_ID> --status user_approved
 ```
 
 Generate a draft only after reviewing the semantic items:
