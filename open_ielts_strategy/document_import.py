@@ -21,6 +21,10 @@ class DocumentImportError(ValueError):
     pass
 
 
+class _PDFTextBudgetExceeded(BaseException):
+    """Internal abort signal that survives pypdf's broad XObject exception handler."""
+
+
 def import_document(path: str | Path) -> dict:
     file_path = Path(path)
     if not file_path.is_file():
@@ -114,21 +118,51 @@ def _read_pdf(path: Path) -> str:
         pages = []
         extracted_chars = 0
         for page in reader.pages:
-            observed_chars = 0
+            remaining_chars = MAX_EXTRACTED_CHARS - extracted_chars
+            observed_operand_chars = 0
+            observed_output_chars = 0
+
+            def text_operand_size(value):
+                if isinstance(value, (str, bytes, bytearray)):
+                    return len(value) if value.strip() else 0
+                if isinstance(value, (list, tuple)):
+                    return sum(text_operand_size(item) for item in value)
+                return 0
+
+            def guard_operator(operator, operands, *_):
+                nonlocal observed_operand_chars
+                if operator in (b"Tj", b"'"):
+                    text_operands = operands[:1]
+                elif operator == b'"':
+                    text_operands = operands[-1:]
+                elif operator == b"TJ":
+                    text_operands = operands[:1]
+                else:
+                    return
+                observed_operand_chars += sum(text_operand_size(item) for item in text_operands)
+                if observed_operand_chars > remaining_chars:
+                    raise _PDFTextBudgetExceeded()
 
             def guard_text_fragment(text, *_):
-                nonlocal observed_chars
+                nonlocal observed_output_chars
                 if not text or not text.strip():
                     return
-                observed_chars += len(text)
-                if observed_chars > MAX_EXTRACTED_CHARS - extracted_chars:
-                    raise DocumentImportError(
-                        "extracted PDF text exceeds the 5-million-character limit"
-                    )
+                observed_output_chars += len(text)
+                if observed_output_chars > remaining_chars:
+                    raise _PDFTextBudgetExceeded()
 
-            # pypdf invokes the visitor as text fragments are decoded. Raising
-            # here aborts an oversized page before its complete text is built.
-            page_text = page.extract_text(visitor_text=guard_text_fragment) or ""
+            try:
+                # Check Tj/TJ/quote operands before pypdf decodes and aggregates
+                # them. The BaseException sentinel also escapes pypdf's broad
+                # Exception handler around nested XObject extraction.
+                page_text = page.extract_text(
+                    visitor_operand_before=guard_operator,
+                    visitor_text=guard_text_fragment,
+                ) or ""
+            except _PDFTextBudgetExceeded as exc:
+                raise DocumentImportError(
+                    "extracted PDF text exceeds the 5-million-character limit"
+                ) from exc
             if not page_text.strip():
                 continue
             normalized = re.sub(r"[ \t]+", " ", page_text).strip()
