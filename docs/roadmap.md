@@ -71,3 +71,62 @@ New learning skills may be developed only from original explanations and synthet
 8. Obtain independent legal/rights review and actual human inspection for each candidate Knowledge Pack; automated scans are not legal clearance.
 
 No paid API, GPU spending, third-party content ingestion, or legal clearance is assumed.
+
+## Product acceptance priorities (next)
+
+The next milestone is an end-to-end learner workflow, not another infrastructure layer.
+Keep these gates separate; passing one must not be used to imply the others.
+
+### P0 — Verify the core value path
+
+- [ ] A learner can import their own transcript/notes into the private local library.
+- [ ] An explicitly selected local model can extract candidate strategies with exact source anchors; model output remains a draft.
+- [ ] The learner can inspect, edit/curate, and content-review each candidate.
+- [ ] Publication/rights review remains separate and fail-closed.
+- [ ] A candidate Knowledge Pack builds only after the applicable approvals and leakage checks.
+- [ ] A fresh clone can validate the published pack and use Practice, Study, Mentor, and MCP without the original transcript or private SQLite database.
+- [ ] Integration tests cover the private-source-to-portable-pack boundary and prove private source text/IDs are absent from the pack.
+
+The repository now has unit coverage for each underlying stage. The
+`test_transcript_to_published_pack.py` acceptance test exercises the core
+private-to-portable boundary with an offline deterministic fixture; it is not
+a live-model accuracy test and does not create real learner content.
+
+### P1 — Make first use predictable
+
+- [ ] One documented quick-start covers environment setup, local model selection,
+  transcript ingestion, extraction, review, candidate build, and local study.
+- [ ] CLI help and errors explain whether a command reads the private database
+  or the published Knowledge Pack.
+- [ ] A preflight command reports missing optional dependencies, model availability,
+  pack validity, and local writable paths without sending data to a network.
+- [ ] A small, independently authored sample Knowledge Pack is added only after
+  content review; never ship fabricated or model-generated unreviewed examples.
+
+### P2 — Operational acceptance for hosted MCP
+
+Track the environment-specific gates in
+[Production Readiness & Operations](deployment/production-readiness.md):
+OIDC gateway and bypass prevention, managed Redis TLS/ACL, external secrets,
+enforced NetworkPolicy, durable audit retention, immutable image/pack pairing,
+rollback, load/soak/failure-injection drills, and independent penetration testing.
+These cannot be marked complete by repository CI alone.
+
+### P3 — Independent educational validation
+
+Use the preregistration-first
+[Independent Educational Validation Protocol](evaluation/independent-validation-protocol.md).
+Collect qualified human ratings and representative rights-cleared retrieval
+judgments before setting quality thresholds. Do not publish IELTS band,
+examiner-equivalence, positive skill-lift, or guaranteed-improvement claims
+without independently reviewed evidence.
+
+### External inputs that cannot be fabricated by engineering
+
+- A real learner-supplied transcript or personal notes for the first product
+  content pass. Synthetic fixtures are for software tests only.
+- Human review of strategy correctness and clarity.
+- Documented publication permission for any third-party-derived material that
+  is proposed for public release.
+- An operator-controlled production environment and independent security/evaluation
+  reviewers for the corresponding acceptance gates.

@@ -6,6 +6,8 @@ An evaluation-first IELTS learning platform with a portable, versioned Knowledge
 
 ## Status
 
+See the [product acceptance roadmap](docs/roadmap.md) for the remaining end-to-end, operational, and independent educational validation gates.
+
 Repository foundation with original Writing-feedback, Speaking-transcript-feedback, Reading-strategy, and Listening-strategy skills. Speaking feedback is text-only and does not assess pronunciation or audio delivery. Reading guidance uses learner-supplied material and original synthetic examples. Listening guidance is text-only and reviews learner-authored notes; it does not process audio or transcripts. A separate offline audio-validation foundation validates WAV/MP3 containers but does not transcribe speech or alter those skill contracts. No third-party source content is bundled. The optional knowledge library imports learner-supplied UTF-8 text into a private local SQLite database; it does not scrape or fetch source bodies.
 
 ## Published Knowledge Pack readiness
