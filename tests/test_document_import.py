@@ -116,7 +116,7 @@ class DocumentImportTests(unittest.TestCase):
             def __init__(self, text):
                 self.text = text
                 self.calls = 0
-            self.completed = False
+                self.completed = False
 
             def extract_text(self, visitor_text=None):
                 self.calls += 1
