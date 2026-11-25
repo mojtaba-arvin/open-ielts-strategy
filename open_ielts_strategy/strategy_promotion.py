@@ -83,8 +83,12 @@ def promote_strategy_draft(
     }
     if not isinstance(envelope, dict) or set(envelope) != expected_keys:
         raise StrategyPromotionError("private draft envelope fields are invalid")
-    if envelope["draft_format"] != "open-ielts-private-strategy-draft" or envelope["draft_version"] != 1:
+    if (envelope["draft_format"] != "open-ielts-private-strategy-draft"
+            or type(envelope["draft_version"]) is not int or envelope["draft_version"] != 1):
         raise StrategyPromotionError("unsupported private strategy draft format")
+    receipt_id = envelope["draft_id"]
+    if not isinstance(receipt_id, str) or not re.fullmatch(r"draft_[a-f0-9]{32}", receipt_id):
+        raise StrategyPromotionError("draft ID is invalid")
     if envelope["status"] != "needs_human_review":
         raise StrategyPromotionError("only a needs_human_review draft can be promoted")
     if envelope["review"] != {
@@ -104,7 +108,7 @@ def promote_strategy_draft(
         raise StrategyPromotionError("private source-item mapping is invalid")
 
     strategy = envelope["strategy"]
-    draft_record, persisted_item_ids = load_private_strategy_draft_mapping(store, envelope["draft_id"])
+    draft_record, persisted_item_ids = load_private_strategy_draft_mapping(store, receipt_id)
     if (
         draft_record is None
         or draft_record["status"] != "needs_human_review"
@@ -153,9 +157,6 @@ def promote_strategy_draft(
     output_path = Path(destination).expanduser().absolute()
     if output_path.exists():
         raise StrategyPromotionError("destination already exists; promotion never overwrites")
-    receipt_id = envelope["draft_id"]
-    if not isinstance(receipt_id, str) or not re.fullmatch(r"draft_[a-f0-9]{32}", receipt_id):
-        raise StrategyPromotionError("draft ID is invalid")
     receipt_path = Path(receipt_dir).expanduser() / f"{receipt_id}.promotion.json"
     if receipt_path.exists():
         raise StrategyPromotionError("a promotion receipt already exists for this draft")
