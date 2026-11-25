@@ -256,3 +256,53 @@ class DocumentImportTests(unittest.TestCase):
             with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
                 with self.assertRaisesRegex(DocumentImportError, "300-page limit"):
                     import_document(path)
+
+
+    def test_text_import_rejects_output_over_limit_without_reading_whole_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "oversized.txt"
+            path.write_text("x" * 32, encoding="utf-8")
+            with patch("open_ielts_strategy.document_import.MAX_EXTRACTED_CHARS", 8):
+                with patch.object(Path, "read_bytes", side_effect=AssertionError("whole-file read")):
+                    with self.assertRaisesRegex(DocumentImportError, "5-million-character limit"):
+                        import_document(path)
+
+    def test_text_import_hashes_original_bytes_without_path_read_bytes(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "notes.txt"
+            original = b"First line.\\r\\nSecond line."
+            path.write_bytes(original)
+            with patch.object(Path, "read_bytes", side_effect=AssertionError("whole-file read")):
+                result = import_document(path)
+        self.assertEqual(result["file_sha256"], hashlib.sha256(original).hexdigest())
+
+    def test_malformed_docx_mutation_corpus_is_normalized(self):
+        # Deterministic parser smoke-fuzzing: malformed local inputs must fail
+        # through the public error contract rather than leaking ZIP exceptions.
+        with tempfile.TemporaryDirectory() as tmp:
+            for index in range(32):
+                path = Path(tmp) / f"mutated-{index}.docx"
+                path.write_bytes(bytes([index + 1]) * (257 + index))
+                with self.subTest(index=index):
+                    with self.assertRaises(DocumentImportError):
+                        import_document(path)
+
+    def test_pdf_page_extraction_failures_are_normalized(self):
+        class Page:
+            def extract_text(self):
+                raise RuntimeError("malformed page content")
+
+        class Reader:
+            is_encrypted = False
+            pages = [Page()]
+
+            def __init__(self, path, strict):
+                pass
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "broken-page.pdf"
+            path.write_bytes(b"%PDF")
+            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+                with self.assertRaisesRegex(DocumentImportError, "PDF parsing failed"):
+                    import_document(path)
