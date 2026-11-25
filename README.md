@@ -78,6 +78,8 @@ The deterministic router remains the default. An opt-in loopback-only Ollama ada
 
 ## Private knowledge library
 
+The unified `ielts` CLI now exposes the private source-ingestion and semantic-review workflow alongside published-pack consumption. See the [Unified product CLI guide](docs/product-cli.md) for the complete transcript-to-reviewed-Knowledge-Pack workflow.
+
 The local knowledge library now has optional modules for structured local-model extraction, hybrid retrieval, source-grounded playbook drafts, a loopback-only paste UI, bounded local document import, and a private extraction-evaluation CLI. Start the private UI with:
 
 ```bash
