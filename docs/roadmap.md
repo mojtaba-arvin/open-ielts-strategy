@@ -146,3 +146,6 @@ without independently reviewed evidence.
   is proposed for public release.
 - An operator-controlled production environment and independent security/evaluation
   reviewers for the corresponding acceptance gates.
+
+
+- **PDF decompression bounds:** the local importer now applies per-import pypdf 6.x configuration limits of 20 MiB per declared/decoded stream and 40 MiB cumulative decoding work, in addition to the existing 5-million-character text callbacks. This closes the documented unbounded content-stream decompression gap at the parser configuration layer; it is not process isolation or an independent parser security audit.
