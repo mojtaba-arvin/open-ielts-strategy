@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -26,8 +27,15 @@ def _read_cases_file(path: Path):
 
 def _reject_output_overwrite(cases_path: Path, output_path: Path | None) -> None:
     """Prevent a report from replacing its source judgments, including symlink aliases."""
-    if output_path is not None and cases_path.resolve() == output_path.resolve():
-        raise ValueError("--output must not resolve to the same file as --cases-json")
+    if output_path is None:
+        return
+    same_resolved_path = cases_path.resolve() == output_path.resolve()
+    same_existing_file = (
+        cases_path.exists() and output_path.exists()
+        and os.path.samefile(cases_path, output_path)
+    )
+    if same_resolved_path or same_existing_file:
+        raise ValueError("--output must not refer to the same file as --cases-json")
 
 
 def main(argv=None):
