@@ -4,8 +4,6 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
-
 from scripts import evaluate_published_retrieval as retrieval_cli
 
 from open_ielts_strategy.retrieval_quality import evaluate_retrieval
