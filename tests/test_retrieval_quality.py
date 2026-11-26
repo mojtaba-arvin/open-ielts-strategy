@@ -129,6 +129,23 @@ class RetrievalEvaluatorCliSafetyTests(unittest.TestCase):
             self.assertEqual(status, 2)
             self.assertIn("same file", stderr.getvalue())
             self.assertEqual(path.read_bytes(), original)
+    def test_cli_refuses_hardlink_alias_for_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            alias = Path(directory) / "report.json"
+            original = b'[]'
+            path.write_bytes(original)
+            try:
+                os.link(path, alias)
+            except (NotImplementedError, OSError):
+                self.skipTest("hard links are not available on this platform")
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                status = retrieval_cli.main(["--cases-json", str(path), "--output", str(alias)])
+            self.assertEqual(status, 2)
+            self.assertIn("same file", stderr.getvalue())
+            self.assertEqual(path.read_bytes(), original)
+
 
 if __name__ == "__main__":
     unittest.main()
