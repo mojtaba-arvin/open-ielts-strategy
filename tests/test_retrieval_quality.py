@@ -87,10 +87,6 @@ class RetrievalQualityTests(unittest.TestCase):
         self.assertEqual(report["retrieval_mode"], "hybrid")
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class RetrievalEvaluatorCliSafetyTests(unittest.TestCase):
     def test_reads_valid_utf8_judgments(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -134,4 +130,5 @@ class RetrievalEvaluatorCliSafetyTests(unittest.TestCase):
             self.assertIn("same file", stderr.getvalue())
             self.assertEqual(path.read_bytes(), original)
 
-
+if __name__ == "__main__":
+    unittest.main()
