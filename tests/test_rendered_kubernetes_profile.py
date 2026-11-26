@@ -92,5 +92,51 @@ class RenderedKubernetesProfileTests(unittest.TestCase):
         self.assertTrue(any("unsupported keys" in error for error in errors))
 
 
+    def test_profile_rejects_invalid_dns_hostname(self):
+        errors = self._validate(
+            profile_mutate=lambda profile: profile.update({"hostname": "bad host.example.org"})
+        )
+        self.assertIn("profile hostname must be a lowercase DNS subdomain", errors)
+
+    def test_profile_rejects_invalid_kubernetes_namespace(self):
+        errors = self._validate(
+            profile_mutate=lambda profile: profile.update({"namespace": "Open IELTS"})
+        )
+        self.assertIn("profile namespace must be a valid Kubernetes DNS label", errors)
+
+    def test_profile_rejects_malformed_oidc_port(self):
+        errors = self._validate(
+            profile_mutate=lambda profile: profile.update(
+                {"oidc_auth_url": "https://auth.example.org:not-a-port/oauth2/auth"}
+            )
+        )
+        self.assertTrue(any("oidc_auth_url must be a valid HTTPS URL" in error for error in errors))
+
+    def test_profile_rejects_oidc_url_credentials_and_fragment(self):
+        for url in (
+            "https://user:password@auth.example.org/oauth2/auth",
+            "https://auth.example.org/oauth2/auth#fragment",
+        ):
+            with self.subTest(url=url):
+                errors = self._validate(
+                    profile_mutate=lambda profile: profile.update({"oidc_auth_url": url})
+                )
+                self.assertTrue(any("oidc_auth_url must be a valid HTTPS URL" in error for error in errors))
+
+    def test_profile_rejects_public_redis_network(self):
+        errors = self._validate(
+            profile_mutate=lambda profile: profile.update({"redis_cidrs": ["8.8.8.0/24"]})
+        )
+        self.assertIn("profile Redis CIDRs must contain only private unicast addresses", errors)
+
+    def test_profile_rejects_overbroad_private_redis_network(self):
+        errors = self._validate(
+            profile_mutate=lambda profile: profile.update({"redis_cidrs": ["10.0.0.0/8"]})
+        )
+        self.assertIn(
+            "profile Redis CIDRs must be narrow (IPv4 /16 or smaller, IPv6 /32 or smaller)",
+            errors,
+        )
+
 if __name__ == "__main__":
     unittest.main()
