@@ -140,3 +140,10 @@ commands and `--help` output must remain unchanged. Keep this scope map aligned 
 - Reject an output path whose resolved path equals the judgment input, including symlink and hard-link aliases, before loading the Knowledge Pack or writing any report. Never risk destroying the caller's private judgments.
 - The relevance map is already bounded by the selected pack's finite strategy ID set: every key must be a known strategy ID and dictionary keys are unique. Do not add an arbitrary independent judgment-count cap unless a measured pack-size or memory risk justifies one.
 - Keep judgment files and learner/reviewer data outside Git. These safeguards do not create representative judgments, quality thresholds, or IELTS educational evidence.
+
+
+## PDF decompression resource bounds
+
+- The optional PDF parser dependency is pypdf 6.x so the importer can apply its supported per-context `Configuration` API without mutating process-global parser settings.
+- Apply a 20 MiB cap to declared and decoded streams (including Flate, LZW, RunLength, Brotli, JBIG2, array-based streams, and image buffers) and a 40 MiB cumulative stream-decoding-work cap for each import. Keep the existing 5-million-character callback guards as a separate output bound.
+- Do not claim process isolation or a complete parser security audit. Keep PDF import local-only and treat parser limits as defense in depth.
