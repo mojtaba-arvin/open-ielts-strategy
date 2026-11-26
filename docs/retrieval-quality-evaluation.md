@@ -58,7 +58,7 @@ Keep the input judgment file private when it contains sensitive learner data.
 The evaluator rejects duplicate case IDs, unknown strategy IDs, malformed
 grades, and judgment files larger than 5 MiB. It reads at most one byte beyond
 that limit before rejecting the file. The output path must not resolve to the same
-file as the judgment input, including when a symlink aliases the input.
+file as the judgment input, including when a symlink or hard link aliases the input.
 
 ## Interpretation
 
