@@ -34,6 +34,9 @@ class KnowledgeWebTests(unittest.TestCase):
                 with urlopen(base + "/") as response:
                     page = response.read().decode()
                 token = re.search(r"name='token' value='([^']+)'", page).group(1)
+                self.assertIn("Rights declaration is self-reported, not clearance.", page)
+                self.assertIn("documented permission for the exact processing and redistribution use", page)
+                self.assertIn("Review states are private curation labels", page)
                 body = "<script>alert(1)</script> IELTS Writing note."
                 payload = urlencode({
                     "token": token, "title": "Local test source", "source_type": "personal_notes",
