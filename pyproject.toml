@@ -14,7 +14,7 @@ authors = [{ name = "Mojtaba Arvin" }]
 dependencies = []
 
 [project.optional-dependencies]
-documents = ["pypdf>=5,<7"]
+documents = ["pypdf>=6,<7"]
 local-embeddings = ["sentence-transformers>=3,<6"]
 mcp = ["mcp>=1.9,<2"]
 http-mcp = ["mcp>=1.9,<2", "uvicorn>=0.30,<1"]

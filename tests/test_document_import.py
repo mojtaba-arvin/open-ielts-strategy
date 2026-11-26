@@ -1,4 +1,5 @@
 import tempfile
+from contextlib import nullcontext
 import unittest
 import warnings
 import zipfile
@@ -10,6 +11,8 @@ from open_ielts_strategy.document_import import (
     MAX_DOCX_ENTRIES,
     MAX_DOCX_UNCOMPRESSED,
     MAX_PDF_PAGES,
+    MAX_PDF_DECODED_STREAM_BYTES,
+    MAX_PDF_DECODED_WORK_BYTES,
     DocumentImportError,
     import_document,
 )
@@ -169,7 +172,7 @@ class DocumentImportTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "large-text.pdf"
             path.write_bytes(b"%PDF")
-            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader, apply_configuration=lambda **kwargs: nullcontext(kwargs))}):
                 with self.assertRaises(DocumentImportError):
                     import_document(path)
 
@@ -210,7 +213,7 @@ class DocumentImportTests(unittest.TestCase):
                 with tempfile.TemporaryDirectory() as tmp:
                     path = Path(tmp) / "oversized-operator.pdf"
                     path.write_bytes(b"%PDF")
-                    with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+                    with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader, apply_configuration=lambda **kwargs: nullcontext(kwargs))}):
                         with self.assertRaisesRegex(DocumentImportError, "5-million-character limit"):
                             import_document(path)
                 self.assertFalse(page.completed)
@@ -242,7 +245,7 @@ class DocumentImportTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "oversized-decoded-text.pdf"
             path.write_bytes(b"%PDF")
-            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader, apply_configuration=lambda **kwargs: nullcontext(kwargs))}):
                 with self.assertRaisesRegex(DocumentImportError, "5-million-character limit"):
                     import_document(path)
         self.assertFalse(page.completed)
@@ -269,7 +272,7 @@ class DocumentImportTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "at-limit.pdf"
             path.write_bytes(b"%PDF")
-            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader, apply_configuration=lambda **kwargs: nullcontext(kwargs))}):
                 result = import_document(path)
 
         self.assertEqual(result["characters"], 5_000_000)
@@ -291,9 +294,68 @@ class DocumentImportTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "encrypted.pdf"
             path.write_bytes(b"%PDF")
-            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader, apply_configuration=lambda **kwargs: nullcontext(kwargs))}):
                 with self.assertRaisesRegex(DocumentImportError, "encrypted"):
                     import_document(path)
+
+    def test_installed_pypdf_accepts_the_importer_resource_profile(self):
+        try:
+            import pypdf
+        except ImportError:
+            self.skipTest("optional pypdf dependency is not installed")
+
+        with pypdf.apply_configuration(
+            maximum_declared_stream_length=MAX_PDF_DECODED_STREAM_BYTES,
+            array_based_stream_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            jbig2_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            lzw_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            run_length_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            zlib_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            brotli_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            image_maximum_buffer_size=MAX_PDF_DECODED_STREAM_BYTES,
+            stream_decoding_work_maximum_length=MAX_PDF_DECODED_WORK_BYTES,
+        ):
+            configuration = pypdf.get_configuration()
+            self.assertEqual(configuration.zlib_maximum_output_length, MAX_PDF_DECODED_STREAM_BYTES)
+            self.assertEqual(configuration.stream_decoding_work_maximum_length, MAX_PDF_DECODED_WORK_BYTES)
+
+    def test_pdf_parser_decompression_limits_are_applied_per_import(self):
+        configurations = []
+
+        class Page:
+            def extract_text(self, visitor_operand_before=None, visitor_text=None):
+                if visitor_operand_before is not None:
+                    visitor_operand_before(b"Tj", ["bounded"], None, None)
+                if visitor_text is not None:
+                    visitor_text("bounded", None, None, None, None)
+                return "bounded"
+
+        class Reader:
+            is_encrypted = False
+            pages = [Page()]
+
+            def __init__(self, path, strict):
+                pass
+
+        def apply_configuration(**kwargs):
+            configurations.append(kwargs)
+            return nullcontext()
+
+        module = SimpleNamespace(PdfReader=Reader, apply_configuration=apply_configuration)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "bounded.pdf"
+            path.write_bytes(b"%PDF")
+            with patch.dict("sys.modules", {"pypdf": module}):
+                result = import_document(path)
+
+        self.assertEqual(result["text"], "bounded")
+        self.assertEqual(len(configurations), 1)
+        limits = configurations[0]
+        self.assertEqual(limits["maximum_declared_stream_length"], MAX_PDF_DECODED_STREAM_BYTES)
+        self.assertEqual(limits["zlib_maximum_output_length"], MAX_PDF_DECODED_STREAM_BYTES)
+        self.assertEqual(limits["lzw_maximum_output_length"], MAX_PDF_DECODED_STREAM_BYTES)
+        self.assertEqual(limits["run_length_maximum_output_length"], MAX_PDF_DECODED_STREAM_BYTES)
+        self.assertEqual(limits["stream_decoding_work_maximum_length"], MAX_PDF_DECODED_WORK_BYTES)
 
     def test_pdf_parser_failures_are_normalized(self):
         class Reader:
@@ -306,7 +368,7 @@ class DocumentImportTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "broken.pdf"
             path.write_bytes(b"%PDF")
-            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader, apply_configuration=lambda **kwargs: nullcontext(kwargs))}):
                 with self.assertRaisesRegex(DocumentImportError, "PDF parsing failed"):
                     import_document(path)
 
@@ -363,7 +425,7 @@ class DocumentImportTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "too-many-pages.pdf"
             path.write_bytes(b"%PDF")
-            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader, apply_configuration=lambda **kwargs: nullcontext(kwargs))}):
                 with self.assertRaisesRegex(DocumentImportError, "300-page limit"):
                     import_document(path)
 
@@ -413,6 +475,6 @@ class DocumentImportTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "broken-page.pdf"
             path.write_bytes(b"%PDF")
-            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader)}):
+            with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader, apply_configuration=lambda **kwargs: nullcontext(kwargs))}):
                 with self.assertRaisesRegex(DocumentImportError, "PDF parsing failed"):
                     import_document(path)

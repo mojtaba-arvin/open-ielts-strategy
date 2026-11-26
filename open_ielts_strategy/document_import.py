@@ -13,6 +13,8 @@ MAX_FILE_BYTES = 20 * 1024 * 1024
 MAX_DOCX_UNCOMPRESSED = 80 * 1024 * 1024
 MAX_DOCX_ENTRIES = 2000
 MAX_PDF_PAGES = 300
+MAX_PDF_DECODED_STREAM_BYTES = 20 * 1024 * 1024
+MAX_PDF_DECODED_WORK_BYTES = 40 * 1024 * 1024
 MAX_EXTRACTED_CHARS = 5_000_000
 WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 
@@ -106,75 +108,90 @@ def _read_docx(path: Path) -> str:
 
 def _read_pdf(path: Path) -> str:
     try:
-        from pypdf import PdfReader
+        from pypdf import PdfReader, apply_configuration
     except ImportError as exc:
         raise DocumentImportError("PDF support requires the optional pypdf dependency") from exc
     try:
-        reader = PdfReader(str(path), strict=True)
-        if reader.is_encrypted:
-            raise DocumentImportError("encrypted PDFs are not accepted")
-        if len(reader.pages) > MAX_PDF_PAGES:
-            raise DocumentImportError("PDF exceeds the 300-page limit")
-        pages = []
-        extracted_chars = 0
-        for page in reader.pages:
-            remaining_chars = MAX_EXTRACTED_CHARS - extracted_chars
-            observed_operand_chars = 0
-            observed_output_chars = 0
-
-            def text_operand_size(value):
-                if isinstance(value, (str, bytes, bytearray)):
-                    return len(value)
-                if isinstance(value, (list, tuple)):
-                    return sum(text_operand_size(item) for item in value)
-                return 0
-
-            def guard_operator(operator, operands, *_):
-                nonlocal observed_operand_chars
-                if operator in (b"Tj", b"'"):
-                    text_operands = operands[:1]
-                elif operator == b'"':
-                    text_operands = operands[-1:]
-                elif operator == b"TJ":
-                    text_operands = operands[:1]
-                else:
-                    return
-                observed_operand_chars += sum(text_operand_size(item) for item in text_operands)
-                if observed_operand_chars > remaining_chars:
-                    raise _PDFTextBudgetExceeded()
-
-            def guard_text_fragment(text, *_):
-                nonlocal observed_output_chars
-                if not text:
-                    return
-                observed_output_chars += len(text)
-                if observed_output_chars > remaining_chars:
-                    raise _PDFTextBudgetExceeded()
-
-            try:
-                # Check Tj/TJ/quote operands before pypdf decodes and aggregates
-                # them. The BaseException sentinel also escapes pypdf's broad
-                # Exception handler around nested XObject extraction.
-                page_text = page.extract_text(
-                    visitor_operand_before=guard_operator,
-                    visitor_text=guard_text_fragment,
-                ) or ""
-            except _PDFTextBudgetExceeded as exc:
-                raise DocumentImportError(
-                    "extracted PDF text exceeds the 5-million-character limit"
-                ) from exc
-            if not page_text.strip():
-                continue
-            normalized = re.sub(r"[ \t]+", " ", page_text).strip()
-            if not normalized:
-                continue
-            # Account for the paragraph separators before retaining the page.
-            extracted_chars += len(normalized) + (2 if pages else 0)
-            if extracted_chars > MAX_EXTRACTED_CHARS:
-                raise DocumentImportError("extracted PDF text exceeds the 5-million-character limit")
-            pages.append(normalized)
+        with apply_configuration(
+            maximum_declared_stream_length=MAX_PDF_DECODED_STREAM_BYTES,
+            array_based_stream_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            jbig2_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            lzw_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            run_length_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            zlib_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            brotli_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            image_maximum_buffer_size=MAX_PDF_DECODED_STREAM_BYTES,
+            stream_decoding_work_maximum_length=MAX_PDF_DECODED_WORK_BYTES,
+        ):
+            return _extract_pdf_text(PdfReader, path)
     except DocumentImportError:
         raise
     except Exception as exc:
         raise DocumentImportError("PDF parsing failed") from exc
+
+
+def _extract_pdf_text(PdfReader, path: Path) -> str:
+    reader = PdfReader(str(path), strict=True)
+    if reader.is_encrypted:
+        raise DocumentImportError("encrypted PDFs are not accepted")
+    if len(reader.pages) > MAX_PDF_PAGES:
+        raise DocumentImportError("PDF exceeds the 300-page limit")
+    pages = []
+    extracted_chars = 0
+    for page in reader.pages:
+        remaining_chars = MAX_EXTRACTED_CHARS - extracted_chars
+        observed_operand_chars = 0
+        observed_output_chars = 0
+
+        def text_operand_size(value):
+            if isinstance(value, (str, bytes, bytearray)):
+                return len(value)
+            if isinstance(value, (list, tuple)):
+                return sum(text_operand_size(item) for item in value)
+            return 0
+
+        def guard_operator(operator, operands, *_):
+            nonlocal observed_operand_chars
+            if operator in (b"Tj", b"'"):
+                text_operands = operands[:1]
+            elif operator == b'"':
+                text_operands = operands[-1:]
+            elif operator == b"TJ":
+                text_operands = operands[:1]
+            else:
+                return
+            observed_operand_chars += sum(text_operand_size(item) for item in text_operands)
+            if observed_operand_chars > remaining_chars:
+                raise _PDFTextBudgetExceeded()
+
+        def guard_text_fragment(text, *_):
+            nonlocal observed_output_chars
+            if not text:
+                return
+            observed_output_chars += len(text)
+            if observed_output_chars > remaining_chars:
+                raise _PDFTextBudgetExceeded()
+
+        try:
+            # Check Tj/TJ/quote operands before pypdf decodes and aggregates
+            # them. The BaseException sentinel also escapes pypdf's broad
+            # Exception handler around nested XObject extraction.
+            page_text = page.extract_text(
+                visitor_operand_before=guard_operator,
+                visitor_text=guard_text_fragment,
+            ) or ""
+        except _PDFTextBudgetExceeded as exc:
+            raise DocumentImportError(
+                "extracted PDF text exceeds the 5-million-character limit"
+            ) from exc
+        if not page_text.strip():
+            continue
+        normalized = re.sub(r"[ \t]+", " ", page_text).strip()
+        if not normalized:
+            continue
+        # Account for the paragraph separators before retaining the page.
+        extracted_chars += len(normalized) + (2 if pages else 0)
+        if extracted_chars > MAX_EXTRACTED_CHARS:
+            raise DocumentImportError("extracted PDF text exceeds the 5-million-character limit")
+        pages.append(normalized)
     return "\n\n".join(pages)
