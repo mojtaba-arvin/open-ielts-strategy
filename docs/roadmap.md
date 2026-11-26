@@ -45,6 +45,8 @@ This roadmap distinguishes implemented repository mechanics from educational val
 
 - **Rendered Kubernetes profile validation hardening (PR #156):** operator-supplied namespaces/hostnames and OIDC URLs receive strict syntax checks; Redis egress profiles reject public, overly broad, and non-canonical ranges. Regression tests run through the existing full unit-test discovery job. This remains offline artifact validation, not live cluster/CNI acceptance.
 
+- **Retrieval evaluator input safety (current hardening):** bound caller-supplied judgment JSON reads to 5 MiB plus one detection byte and reject report paths resolving to the input, including symlink aliases. This protects private evaluation data; it does not establish retrieval quality or educational validity.
+
 - **Private authoring rights/review guardrails (PR #157):** the local UI explicitly distinguishes self-reported rights metadata from legal clearance and private curation states from educational validation/publication approval. This is a UX clarification, not a rights determination or approval.
 
 - **Private authoring UI and parser regression follow-ups (PR #152–#154):** the loopback UI validates the complete Host authority and rejects malformed ports/userinfo/path components; PDF budget tests cover `Tj`, `TJ`, single-quote, double-quote, and the decoded-text callback; DOCX CRC corruption is normalized to `DocumentImportError`. These are regression/security controls, not authentication, parser isolation, or independent security review.
