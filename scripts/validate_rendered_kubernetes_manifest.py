@@ -38,6 +38,17 @@ def _walk_strings(value):
             yield from _walk_strings(item)
 
 
+def _valid_dns_subdomain(value):
+    if not isinstance(value, str) or len(value) > 253:
+        return False
+    labels = value.split(".")
+    return bool(labels) and all(
+        1 <= len(label) <= 63
+        and re.fullmatch(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", label)
+        for label in labels
+    )
+
+
 def _profile_errors(profile):
     errors = []
     if not isinstance(profile, dict):
@@ -48,17 +59,43 @@ def _profile_errors(profile):
         errors.append(f"cluster profile is missing keys: {sorted(missing)}")
     if extra:
         errors.append(f"cluster profile has unsupported keys: {sorted(extra)}")
-    for key in ("namespace", "ingress_namespace", "hostname"):
+
+    for key in ("namespace", "ingress_namespace"):
         value = profile.get(key)
-        if not isinstance(value, str) or not value.strip():
-            errors.append(f"profile {key} must be a non-empty string")
+        if not isinstance(value, str) or len(value) > 63 or not re.fullmatch(
+            r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", value
+        ):
+            errors.append(f"profile {key} must be a valid Kubernetes DNS label")
+    if not _valid_dns_subdomain(profile.get("hostname")):
+        errors.append("profile hostname must be a lowercase DNS subdomain")
+
     auth_url = profile.get("oidc_auth_url")
-    parsed = urlparse(auth_url) if isinstance(auth_url, str) else None
-    if not parsed or parsed.scheme != "https" or not parsed.netloc or parsed.username or parsed.password:
-        errors.append("profile oidc_auth_url must be an HTTPS URL without embedded credentials")
+    try:
+        parsed = urlparse(auth_url) if isinstance(auth_url, str) else None
+        auth_host = parsed.hostname if parsed else None
+        auth_port = parsed.port if parsed else None
+    except ValueError:
+        parsed, auth_host, auth_port = None, None, None
+    if (
+        not parsed
+        or parsed.scheme != "https"
+        or not _valid_dns_subdomain(auth_host)
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+        or any(char.isspace() for char in auth_url)
+        or (auth_port is not None and not 1 <= auth_port <= 65535)
+    ):
+        errors.append(
+            "profile oidc_auth_url must be a valid HTTPS URL with a DNS host, "
+            "no embedded credentials, query, or fragment"
+        )
+
     digest = profile.get("image_digest")
     if not isinstance(digest, str) or not DIGEST_RE.fullmatch(digest):
         errors.append("profile image_digest must be a lowercase sha256 digest")
+
     cidrs = profile.get("redis_cidrs")
     if not isinstance(cidrs, list) or not cidrs or any(not isinstance(item, str) for item in cidrs):
         errors.append("profile redis_cidrs must be a non-empty list of CIDR strings")
@@ -70,13 +107,15 @@ def _profile_errors(profile):
             except ValueError:
                 errors.append(f"profile Redis CIDR is invalid or non-canonical: {item}")
                 continue
-            if network.prefixlen == 0:
-                errors.append("profile Redis CIDRs must not allow every address")
+            minimum_prefix = 16 if network.version == 4 else 32
+            if network.prefixlen < minimum_prefix:
+                errors.append("profile Redis CIDRs must be narrow (IPv4 /16 or smaller, IPv6 /32 or smaller)")
+            if not network.network_address.is_private or not network.broadcast_address.is_private:
+                errors.append("profile Redis CIDRs must contain only private unicast addresses")
             normalized.append(str(network))
         if len(normalized) != len(set(normalized)):
             errors.append("profile redis_cidrs must not contain duplicates")
     return errors
-
 
 def validate(manifest_path: str | Path, profile_path: str | Path) -> list[str]:
     errors = []
