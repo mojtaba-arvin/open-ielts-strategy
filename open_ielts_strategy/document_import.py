@@ -186,7 +186,7 @@ def _extract_pdf_text(PdfReader, path: Path) -> str:
             ) from exc
         if not page_text.strip():
             continue
-        normalized = re.sub(r"[ \\t]+", " ", page_text).strip()
+        normalized = re.sub(r"[ \t]+", " ", page_text).strip()
         if not normalized:
             continue
         # Account for the paragraph separators before retaining the page.
@@ -194,4 +194,4 @@ def _extract_pdf_text(PdfReader, path: Path) -> str:
         if extracted_chars > MAX_EXTRACTED_CHARS:
             raise DocumentImportError("extracted PDF text exceeds the 5-million-character limit")
         pages.append(normalized)
-    return "\\n\\n".join(pages)
+    return "\n\n".join(pages)
