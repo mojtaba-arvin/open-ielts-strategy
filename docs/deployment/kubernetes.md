@@ -7,7 +7,7 @@ A hardened Kubernetes manifest template is provided at `deploy/kubernetes/publis
 Before applying the template, provision:
 
 1. An immutable published MCP image reference and registry pull credentials, if needed.
-2. Namespace-scoped Secret `published-mcp-secrets` with `tokens-json`; optionally `redis-url` and `openai-api-key`.
+2. Namespace-scoped Secret `published-mcp-secrets` with required `tokens-json` and `redis-url`; `openai-api-key` is optional and only needed when remote generation/embedding is explicitly approved.
 3. A read-only mountable PVC named `published-knowledge-pack` containing a verified Knowledge Pack.
 4. An ingress controller in the `ingress-nginx` namespace (or adjust the NetworkPolicy selector).
 5. A cert-manager ClusterIssuer (or replace the Ingress annotation with your certificate workflow).
@@ -26,7 +26,7 @@ The pod runs as UID/GID 10001, disables service-account token mounting, uses a r
 
 ## Distributed rate limiting and egress
 
-The image includes the optional Redis client. Set the Secret key `redis-url` to an authenticated `rediss://` endpoint for shared per-subject rate limiting across replicas. Redis failures are fail-closed (HTTP 503). The sample NetworkPolicy permits same-namespace Redis pods on 6379 and outbound HTTPS for explicitly configured API providers. Adjust egress rules for a managed Redis endpoint, private DNS, or private model gateway; do not broaden egress without review.
+The image includes the Redis client, and the multi-replica production template requires the Secret key `redis-url` to point to an authenticated `rediss://` endpoint for shared per-subject rate limiting across replicas. Redis failures are fail-closed (HTTP 503); do not deploy the production template without managed Redis TLS/ACL. The sample NetworkPolicy permits cluster DNS and Redis TLS only on TCP 6380 to the configured destination CIDR; it does not permit plaintext Redis or unrestricted outbound HTTPS. If a separately approved private model gateway is required, add only its exact destination and port after a data-egress review.
 
 Structured audit events are written to container stdout without request/response bodies or credentials. Configure your platform log collector for durable retention, access controls, and tamper-resistant storage. The template does not configure OIDC, workload identity, external secret synchronization, backup policy, autoscaling, or incident response.
 

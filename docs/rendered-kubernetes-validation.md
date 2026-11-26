@@ -25,8 +25,7 @@ contract. Keep the profile outside the repository. Do not include passwords, tok
 private keys, or secret values; secret material belongs in the operator's secret manager
 and Kubernetes Secret synchronization path.
 
-The validator rejects unresolved template/documentation placeholders, profile drift,
-mutable image references, and unrestricted Redis CIDRs. It does not contact Kubernetes,
+The validator rejects unresolved template/documentation placeholders, invalid Kubernetes namespace labels, malformed DNS hostnames and OIDC URLs, profile drift, mutable image references, public/non-unicast Redis ranges, and Redis CIDRs broader than IPv4 /16 or IPv6 /32. It does not contact Kubernetes,
 verify admission policies, prove CNI enforcement, validate certificate issuance, test
 OIDC bypass resistance, or establish production acceptance. Those remain live operator
 checks tracked in issue #109.

@@ -92,6 +92,9 @@ commands and `--help` output must remain unchanged. Keep this scope map aligned 
   Kubernetes, prove admission policy behavior, verify CNI enforcement, validate
   certificate issuance, test OIDC bypass resistance, or establish operational acceptance.
   Those remain operator-owned deployment and evidence gates.
+- Validate operator profile namespace values as Kubernetes DNS labels, the service hostname as a lowercase DNS subdomain, and OIDC URLs without credentials/query/fragment or malformed ports.
+- Redis egress profiles must be private unicast ranges and no broader than IPv4 /16 or IPv6 /32. This is a conservative profile guard, not proof that the cluster routes or enforces those ranges.
+- Keep regression cases in `tests/test_rendered_kubernetes_profile.py`; the regular unit-test discovery job executes them. The validator must continue to avoid reading secret values or contacting the cluster.
 
 ## Document import resource bounds
 
