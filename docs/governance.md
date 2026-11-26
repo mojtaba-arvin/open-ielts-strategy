@@ -2,9 +2,9 @@
 
 - `main` is the sole integration/release branch.
 - Changes enter through pull requests; direct pushes to `main` should be disabled in repository settings.
-- Require the deterministic `validate` CI check on pull requests to `main` once the repository ruleset is configured and verified.
+- Require the deterministic `validate` CI check on pull requests to `main`; the active repository ruleset now includes this exact required context.
 - Keep `nightly`, `runtime_validation`, and `calibration_validation` supplemental; they are not required PR gates.
-- The active ruleset currently requires pull requests, linear history, and protection against deletion/non-fast-forward updates. It does **not** currently require a status check.
+- The active `Protect main` ruleset (ID `27785173`) requires pull requests, linear history, deletion/non-fast-forward protection, and the exact `validate` status check. Its strict/up-to-date setting is currently **false**; enable it before treating the governance configuration as fully hardened.
 - CODEOWNERS covers skills, legal policy, registry, and workflows.
 - Never fabricate reviews or bypass protected-branch requirements.
 - PRs must include evaluation results and a rights declaration.
@@ -15,23 +15,37 @@
 
 ### Verified workflow contract
 
-The `CI` workflow in `.github/workflows/ci.yml` has an unfiltered `pull_request` trigger and one job named exactly `validate`. The runtime and judge-calibration workflows use distinct validation job names. The latest inspected `main` commit emitted exactly one check run named `validate`, and it completed successfully.
+The `CI` workflow in `.github/workflows/ci.yml` has an unfiltered
+`pull_request` trigger and one job named exactly `validate`. The runtime and
+judge-calibration workflows use distinct validation job names.
 
-This proves that the check exists and runs; it does **not** make the check required. The active repository ruleset `Protect main` (ID `27785173`) must be changed by a repository administrator.
+The active repository ruleset `Protect main` (ID `27785173`) already requires
+the exact `validate` context. Its current
+`strict_required_status_checks_policy` is `false`, so GitHub does not require
+the PR branch to be up to date with `main` before merging. The required check
+is enforced, but strict freshness is not.
+
+### Remaining administrative hardening
+
+Enable strict/up-to-date status checks while preserving every existing rule and
+the zero-approval policy. This is a repository-settings operation and must be
+performed by an authenticated repository administrator.
 
 ### Configure through GitHub
 
 1. Open **Settings → Rules → Rulesets** in this repository.
-2. Edit the active ruleset **Protect main** (ID `27785173`), scoped to `refs/heads/main`.
-3. Under **Require status checks to pass**, add the exact check context `validate`. Do not select similarly named supplemental workflow checks.
-4. Enable the strict/up-to-date requirement if offered.
-5. Preserve the existing deletion, non-fast-forward, linear-history, and pull-request rules.
-6. Keep the pull-request approval count at **0**; this change must not introduce a self-approval or mandatory-review-count rule. Existing CODEOWNERS and review-thread-resolution behavior remain as currently configured.
-7. Save the ruleset, then re-read it and verify that `rules` contains a `required_status_checks` entry whose `required_status_checks` includes `validate`.
+2. Edit **Protect main** (ID `27785173`), scoped to `refs/heads/main`.
+3. Under **Require status checks to pass**, retain the exact context `validate`.
+4. Enable the strict/up-to-date requirement.
+5. Preserve deletion, non-fast-forward, linear-history, pull-request, and review-thread-resolution rules.
+6. Keep the required approving-review count at **0**; do not introduce a self-approval or mandatory-review-count rule.
+7. Save, re-read the ruleset, and verify that `validate` remains required and
+   `strict_required_status_checks_policy` is `true`.
 
 ### Equivalent GitHub CLI update
 
-Run only as an authenticated repository administrator. This replaces the ruleset definition, so the payload deliberately restates every currently observed rule and preserves the existing zero-approval policy:
+Run only as an authenticated repository administrator. This replaces the ruleset
+definition, so the payload deliberately restates every currently observed rule:
 
 ```bash
 gh api --method PUT repos/mojtaba-arvin/open-ielts-strategy/rulesets/27785173 --input - <<'JSON'
@@ -53,9 +67,10 @@ gh api --method PUT repos/mojtaba-arvin/open-ielts-strategy/rulesets/27785173 --
       "type": "required_status_checks",
       "parameters": {
         "required_status_checks": [
-          { "context": "validate" }
+          { "context": "validate", "integration_id": 15368 }
         ],
-        "strict_required_status_checks_policy": true
+        "strict_required_status_checks_policy": true,
+        "do_not_enforce_on_create": false
       }
     },
     {
