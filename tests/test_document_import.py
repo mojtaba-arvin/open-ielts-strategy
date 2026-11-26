@@ -298,6 +298,27 @@ class DocumentImportTests(unittest.TestCase):
                 with self.assertRaisesRegex(DocumentImportError, "encrypted"):
                     import_document(path)
 
+    def test_installed_pypdf_accepts_the_importer_resource_profile(self):
+        try:
+            import pypdf
+        except ImportError:
+            self.skipTest("optional pypdf dependency is not installed")
+
+        with pypdf.apply_configuration(
+            maximum_declared_stream_length=MAX_PDF_DECODED_STREAM_BYTES,
+            array_based_stream_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            jbig2_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            lzw_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            run_length_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            zlib_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            brotli_maximum_output_length=MAX_PDF_DECODED_STREAM_BYTES,
+            image_maximum_buffer_size=MAX_PDF_DECODED_STREAM_BYTES,
+            stream_decoding_work_maximum_length=MAX_PDF_DECODED_WORK_BYTES,
+        ):
+            configuration = pypdf.get_configuration()
+            self.assertEqual(configuration.zlib_maximum_output_length, MAX_PDF_DECODED_STREAM_BYTES)
+            self.assertEqual(configuration.stream_decoding_work_maximum_length, MAX_PDF_DECODED_WORK_BYTES)
+
     def test_pdf_parser_decompression_limits_are_applied_per_import(self):
         configurations = []
 
