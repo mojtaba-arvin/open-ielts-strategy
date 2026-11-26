@@ -132,3 +132,11 @@ commands and `--help` output must remain unchanged. Keep this scope map aligned 
    validation.
 4. Reassess OCR, ASR, cloud sync, crawling, and public hosting only through separate
    threat, rights, privacy, and product decisions; they are not implicit roadmap commitments.
+
+
+## Retrieval evaluator input safety
+
+- The published-retrieval judgment CLI must read at most 5 MiB plus one detection byte from its caller-supplied JSON file; reject larger files before decoding or parsing. This is a CLI transport/resource bound, separate from the evaluator's existing 10,000-case and per-field validation.
+- Reject an output path whose resolved path equals the judgment input, including symlink and hard-link aliases, before loading the Knowledge Pack or writing any report. Never risk destroying the caller's private judgments.
+- The relevance map is already bounded by the selected pack's finite strategy ID set: every key must be a known strategy ID and dictionary keys are unique. Do not add an arbitrary independent judgment-count cap unless a measured pack-size or memory risk justifies one.
+- Keep judgment files and learner/reviewer data outside Git. These safeguards do not create representative judgments, quality thresholds, or IELTS educational evidence.

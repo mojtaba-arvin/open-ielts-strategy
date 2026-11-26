@@ -1,5 +1,11 @@
+import contextlib
+import io
+import os
+import tempfile
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
+from scripts import evaluate_published_retrieval as retrieval_cli
 
 from open_ielts_strategy.retrieval_quality import evaluate_retrieval
 
@@ -80,6 +86,66 @@ class RetrievalQualityTests(unittest.TestCase):
         report = evaluate_retrieval(engine, [{"id": "x", "query": "q",
                                                "relevance": {"s1": 1}}], ks=(1,))
         self.assertEqual(report["retrieval_mode"], "hybrid")
+
+
+class RetrievalEvaluatorCliSafetyTests(unittest.TestCase):
+    def test_reads_valid_utf8_judgments(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            path.write_text('[{"id":"one","query":"original query","relevance":{"s1":3}}]', encoding="utf-8")
+            self.assertEqual(retrieval_cli._read_cases_file(path)[0]["id"], "one")
+
+    def test_rejects_judgment_file_over_five_mib(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "oversized.json"
+            path.write_bytes(b" " * (retrieval_cli.MAX_CASES_FILE_BYTES + 1))
+            with self.assertRaisesRegex(ValueError, "5 MiB"):
+                retrieval_cli._read_cases_file(path)
+
+    def test_cli_refuses_to_overwrite_judgment_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            original = b'[]'
+            path.write_bytes(original)
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                status = retrieval_cli.main(["--cases-json", str(path), "--output", str(path)])
+            self.assertEqual(status, 2)
+            self.assertIn("same file", stderr.getvalue())
+            self.assertEqual(path.read_bytes(), original)
+
+    def test_cli_refuses_symlink_alias_for_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            alias = Path(directory) / "report.json"
+            original = b'[]'
+            path.write_bytes(original)
+            try:
+                alias.symlink_to(path)
+            except (NotImplementedError, OSError):
+                self.skipTest("symlinks are not available on this platform")
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                status = retrieval_cli.main(["--cases-json", str(path), "--output", str(alias)])
+            self.assertEqual(status, 2)
+            self.assertIn("same file", stderr.getvalue())
+            self.assertEqual(path.read_bytes(), original)
+    def test_cli_refuses_hardlink_alias_for_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "cases.json"
+            alias = Path(directory) / "report.json"
+            original = b'[]'
+            path.write_bytes(original)
+            try:
+                os.link(path, alias)
+            except (NotImplementedError, OSError):
+                self.skipTest("hard links are not available on this platform")
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                status = retrieval_cli.main(["--cases-json", str(path), "--output", str(alias)])
+            self.assertEqual(status, 2)
+            self.assertIn("same file", stderr.getvalue())
+            self.assertEqual(path.read_bytes(), original)
 
 
 if __name__ == "__main__":

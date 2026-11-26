@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -10,6 +11,31 @@ from open_ielts_strategy.knowledge_pack import load_knowledge_pack
 from open_ielts_strategy.published_retrieval import PublishedRetrievalEngine
 from open_ielts_strategy.retrieval_quality import evaluate_retrieval
 from open_ielts_strategy.hybrid_retrieval import LocalSentenceTransformer
+
+
+MAX_CASES_FILE_BYTES = 5 * 1024 * 1024
+
+
+def _read_cases_file(path: Path):
+    """Read a bounded UTF-8 judgment file without an unbounded allocation."""
+    with path.open("rb") as source:
+        payload = source.read(MAX_CASES_FILE_BYTES + 1)
+    if len(payload) > MAX_CASES_FILE_BYTES:
+        raise ValueError("cases JSON file exceeds the 5 MiB size limit")
+    return json.loads(payload.decode("utf-8"))
+
+
+def _reject_output_overwrite(cases_path: Path, output_path: Path | None) -> None:
+    """Prevent a report from replacing its source judgments, including symlink aliases."""
+    if output_path is None:
+        return
+    same_resolved_path = cases_path.resolve() == output_path.resolve()
+    same_existing_file = (
+        cases_path.exists() and output_path.exists()
+        and os.path.samefile(cases_path, output_path)
+    )
+    if same_resolved_path or same_existing_file:
+        raise ValueError("--output must not refer to the same file as --cases-json")
 
 
 def main(argv=None):
@@ -23,16 +49,18 @@ def main(argv=None):
     parser.add_argument("--output", help="Optional aggregate JSON report path")
     args = parser.parse_args(argv)
     try:
-        cases = json.loads(Path(args.cases_json).read_text(encoding="utf-8"))
+        cases_path = Path(args.cases_json)
+        output_path = Path(args.output) if args.output else None
+        _reject_output_overwrite(cases_path, output_path)
+        cases = _read_cases_file(cases_path)
         pack = load_knowledge_pack(args.pack)
         provider = LocalSentenceTransformer(args.embedding_model_path) if args.embedding_model_path else None
         engine = PublishedRetrievalEngine(pack, embedding_provider=provider)
         report = evaluate_retrieval(engine, cases, ks=tuple(args.k))
         payload = json.dumps(report, ensure_ascii=False, indent=2)
-        if args.output:
-            destination = Path(args.output)
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            destination.write_text(payload + "\n", encoding="utf-8")
+        if output_path is not None:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(payload + "\n", encoding="utf-8")
         print(payload)
     except (OSError, UnicodeError, json.JSONDecodeError, RuntimeError, ValueError, KeyError, ImportError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
