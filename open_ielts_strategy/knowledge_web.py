@@ -74,7 +74,7 @@ def make_handler(db_path: str):
 
         def _layout(self, query: str = ""):
             content = (
-                "<h2>Add a source</h2><form method='post' action='/ingest'>"
+                "<h2>Add a source</h2><p><strong>Rights declaration is self-reported, not clearance.</strong> Public release requires documented permission for the exact processing and redistribution use plus a separate human publication review. A personal copy or an unknown rights status does not grant publication rights.</p><form method='post' action='/ingest'>"
                 f"<input type='hidden' name='token' value='{token}'>"
                 "<label>Title <input name='title' maxlength='300' required></label>"
                 "<label>Source type <select name='source_type'>"
@@ -90,7 +90,7 @@ def make_handler(db_path: str):
             )
             with KnowledgeStore(db_path) as store:
                 sources = store.list_sources(limit=100)
-            content += "<h2>Sources</h2><ul>"
+            content += "<h2>Sources</h2><p>Review states are private curation labels; they do not validate educational accuracy or grant publication approval.</p><ul>"
             for source in sources:
                 content += (
                     "<li><a href='/?source=" + quote(source["source_id"], safe="")
