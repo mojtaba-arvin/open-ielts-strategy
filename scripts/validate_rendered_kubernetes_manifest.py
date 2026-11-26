@@ -107,6 +107,8 @@ def _profile_errors(profile):
             except ValueError:
                 errors.append(f"profile Redis CIDR is invalid or non-canonical: {item}")
                 continue
+            if network.prefixlen == 0:
+                errors.append("profile Redis CIDRs must not allow every address")
             minimum_prefix = 16 if network.version == 4 else 32
             if network.prefixlen < minimum_prefix:
                 errors.append("profile Redis CIDRs must be narrow (IPv4 /16 or smaller, IPv6 /32 or smaller)")
