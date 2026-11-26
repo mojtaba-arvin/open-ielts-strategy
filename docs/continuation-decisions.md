@@ -62,6 +62,12 @@ independent code, documentation, test, and CI work while they are pending.
   no follow-up depends on it. Never delete a branch merely to tidy the branch list.
 - Keep main protected; do not weaken rulesets or bypass review/status requirements.
 
+## Private authoring UI trust copy
+
+- The local authoring UI must say that rights status is self-reported metadata, not legal clearance. Public release still requires documented permission for the exact processing and redistribution use plus a separate human publication review.
+- Private card/semantic review statuses are curation workflow states only; they are not educational validation or publication approval.
+- Never make a UI label or checkbox imply that the system has independently verified ownership, copyright permission, or educational correctness.
+
 ## CLI error context
 
 When a command returns a non-zero status or its argument parser exits with an error,
