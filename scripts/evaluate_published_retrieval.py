@@ -52,7 +52,7 @@ def main(argv=None):
         payload = json.dumps(report, ensure_ascii=False, indent=2)
         if output_path is not None:
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_text(payload + "\\n", encoding="utf-8")
+            output_path.write_text(payload + "\n", encoding="utf-8")
         print(payload)
     except (OSError, UnicodeError, json.JSONDecodeError, RuntimeError, ValueError, KeyError, ImportError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
