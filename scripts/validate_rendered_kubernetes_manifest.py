@@ -82,6 +82,7 @@ def _profile_errors(profile):
         or not _valid_dns_subdomain(auth_host)
         or parsed.username is not None
         or parsed.password is not None
+        or parsed.netloc.endswith(":")
         or parsed.query
         or parsed.fragment
         or any(char.isspace() for char in auth_url)
