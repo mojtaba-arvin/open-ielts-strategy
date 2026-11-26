@@ -116,6 +116,7 @@ class RenderedKubernetesProfileTests(unittest.TestCase):
         for url in (
             "https://user:password@auth.example.org/oauth2/auth",
             "https://auth.example.org/oauth2/auth#fragment",
+            "https://auth.example.org:/oauth2/auth",
         ):
             with self.subTest(url=url):
                 errors = self._validate(
