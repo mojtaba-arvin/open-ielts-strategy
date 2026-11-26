@@ -478,3 +478,68 @@ class DocumentImportTests(unittest.TestCase):
             with patch.dict("sys.modules", {"pypdf": SimpleNamespace(PdfReader=Reader, apply_configuration=lambda **kwargs: nullcontext(kwargs))}):
                 with self.assertRaisesRegex(DocumentImportError, "PDF parsing failed"):
                     import_document(path)
+
+
+    def test_pdf_import_restores_pypdf_configuration_after_success(self):
+        try:
+            import pypdf
+        except ImportError:
+            self.skipTest("optional pypdf dependency is not installed")
+
+        original = pypdf.get_configuration()
+        observed = []
+
+        def inspect_configuration(reader_class, path):
+            observed.append(pypdf.get_configuration())
+            return "bounded PDF text"
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "configuration-success.pdf"
+            path.write_bytes(b"%PDF")
+            with patch("open_ielts_strategy.document_import._extract_pdf_text",
+                       side_effect=inspect_configuration):
+                result = import_document(path)
+
+        self.assertEqual(result["text"], "bounded PDF text")
+        self.assertEqual(len(observed), 1)
+        self.assertEqual(
+            observed[0].maximum_declared_stream_length,
+            MAX_PDF_DECODED_STREAM_BYTES,
+        )
+        self.assertEqual(
+            observed[0].stream_decoding_work_maximum_length,
+            MAX_PDF_DECODED_WORK_BYTES,
+        )
+        self.assertEqual(pypdf.get_configuration(), original)
+
+    def test_pdf_import_restores_pypdf_configuration_after_parser_failure(self):
+        try:
+            import pypdf
+        except ImportError:
+            self.skipTest("optional pypdf dependency is not installed")
+
+        original = pypdf.get_configuration()
+        observed = []
+
+        def fail_after_observing_configuration(reader_class, path):
+            observed.append(pypdf.get_configuration())
+            raise RuntimeError("synthetic parser failure")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "configuration-failure.pdf"
+            path.write_bytes(b"%PDF")
+            with patch("open_ielts_strategy.document_import._extract_pdf_text",
+                       side_effect=fail_after_observing_configuration):
+                with self.assertRaisesRegex(DocumentImportError, "PDF parsing failed"):
+                    import_document(path)
+
+        self.assertEqual(len(observed), 1)
+        self.assertEqual(
+            observed[0].maximum_declared_stream_length,
+            MAX_PDF_DECODED_STREAM_BYTES,
+        )
+        self.assertEqual(
+            observed[0].stream_decoding_work_maximum_length,
+            MAX_PDF_DECODED_WORK_BYTES,
+        )
+        self.assertEqual(pypdf.get_configuration(), original)
