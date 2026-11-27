@@ -53,12 +53,15 @@ def validate(pr, commits):
     return errors
 
 
-def get_json(url, token):
-    req = urllib.request.Request(url, headers={
+def get_json(url, token=None):
+    headers = {
         "Accept": "application/vnd.github+json",
-        "Authorization": "Bearer " + token,
         "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "commit-identity-policy-check"})
+        "User-Agent": "commit-identity-policy-check",
+    }
+    if token:
+        headers["Authorization"] = "Bearer " + token
+    req = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(req, timeout=30) as res:
         return json.loads(res.read().decode())
 
@@ -88,10 +91,10 @@ def main():
     args = p.parse_args()
     if args.self_test:
         self_test()
-    if not (args.repository and args.pr_number and args.token):
-        if args.self_test and not args.repository and not args.pr_number and not args.token:
+    if not (args.repository and args.pr_number):
+        if args.self_test and not args.repository and not args.pr_number:
             return 0
-        p.error("--repository, --pr-number and --token are required")
+        p.error("--repository and --pr-number are required")
     base = "https://api.github.com/repos/" + args.repository
     pr = get_json(base + "/pulls/" + str(args.pr_number), args.token)
     commits, page = [], 1
