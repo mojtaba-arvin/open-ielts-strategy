@@ -74,7 +74,10 @@ def validate(pr, commits, expected_head_sha=None):
                 )
 
         # Author attribution and committer identity are separate Git fields.
+        # A bot committer is acceptable only for the same approved bot author.
         # GitHub's web-flow committer is permitted; it never changes author attribution.
+        if committer_login in AUTOMATION and login != committer_login:
+            errors.append(f"{sha}: bot committer does not match the commit author")
         if committer_login and committer_login not in {LOGIN, "web-flow"} | set(AUTOMATION):
             if is_bot(
                 committer.get("name") or "", committer.get("email") or "",
