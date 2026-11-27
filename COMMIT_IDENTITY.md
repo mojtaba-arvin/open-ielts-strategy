@@ -17,3 +17,5 @@ git config --global user.email "m.arvin@live.com"
 `scripts/check_commit_identity.py` checks all PR commits, rejects bot/agent authors and bot co-author trailers, permits known automation only with the explicit label, and enforces the maintainer identity when the marker is present. The `Commit identity` workflow uses no GitHub token, no secrets, and no write permissions; it checks out the public PR head and reads public commit metadata without authentication. This follows this repository's prohibition on `pull_request_target` workflows. Configure this check as required in branch protection/rulesets where governance permits; a workflow alone does not block merges.
 
 Git metadata is self-asserted: validation cannot prove who physically typed code or detect every disguised agent identity. Verify the email association and disclose AI assistance transparently.
+
+Never amend, rebase, or cherry-pick a contributor's work under the maintainer identity. Preserve the contributor's original author fields and add a separate maintainer-authored commit for AI-assisted changes.
