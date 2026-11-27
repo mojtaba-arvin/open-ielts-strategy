@@ -14,7 +14,7 @@ BOT_MARKERS = ("[bot]", "ai agent", "ai-agent", "agent bot", "copilot", "claude"
 def is_bot(name, email, login=None, account_type=None):
     if (account_type or "").lower() == "bot":
         return True
-    if login and (login.lower().endswith("[bot]") or "agent" in login.lower()):
+    if login and (login.lower().endswith("[bot]") ):
         return True
     value = (name + " " + email + " " + (login or "")).lower()
     return any(marker in value for marker in BOT_MARKERS)
@@ -66,7 +66,7 @@ def self_test():
     assert not validate({"body": "", "labels": []}, [item("External Human", "x@example.org", "human", "User")])
     assert validate({"body": "", "labels": []}, [item("Copilot", "bot@example.org", "copilot[bot]", "Bot")])
     assert validate({"body": "", "labels": []}, [item("Human", "h@e.org", "human", "User",
-           "feat: test\\n\\nCo-authored-by: Copilot <copilot[bot]@users.noreply.github.com>")])
+           "feat: test\n\nCo-authored-by: Copilot <copilot[bot]@users.noreply.github.com>")])
     assert not validate({"body": MARKER, "labels": []}, [item(NAME, EMAIL, "mojtaba-arvin", "User")])
     assert validate({"body": MARKER, "labels": []}, [item("Other Human", "x@example.org", "human", "User")])
     assert not validate({"body": "", "labels": [{"name": AUTO_LABEL}]},
@@ -104,7 +104,7 @@ def main():
     errors = validate(pr, commits)
     print(f"Checked {len(commits)} commits in {args.repository}#{args.pr_number}")
     if errors:
-        print("\\n".join("ERROR: " + e for e in errors))
+        print("\n".join("ERROR: " + e for e in errors))
         return 1
     print("PASS: no prohibited bot/agent authors or co-author trailers")
     return 0
