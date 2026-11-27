@@ -164,7 +164,7 @@ def self_test():
                     [item(NAME, "wrong@example.org", LOGIN, "User")])
     bot_email = AUTOMATION["github-actions[bot]"]
     genuine = item("github-actions[bot]", bot_email, "github-actions[bot]", "Bot")
-    assert validate({"body": "", "labels": [{"name": AUTO_LABEL}]}, [genuine])
+    assert validate({"body": "", "labels": []}, [genuine])
     genuine_action = item(
         "github-actions[bot]", bot_email, "github-actions[bot]", "Bot",
         committer_name="github-actions[bot]", committer_email=bot_email,
