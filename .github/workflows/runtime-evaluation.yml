@@ -92,11 +92,15 @@ jobs:
         with:
           pattern: runtime-*
           merge-multiple: true
-      - name: Aggregate each skill independently
+      - name: Aggregate each selected skill independently
+        env:
+          SKILLS_JSON: ${{ needs.runtime_validation.outputs.skill_matrix }}
         shell: bash
         run: |
           set -euo pipefail
-          for skill_id in ielts-writing-feedback ielts-speaking-transcript-feedback ielts-reading-strategy ielts-listening-strategy; do
+          mapfile -t skill_ids < <(python -c 'import json, os; print("\\n".join(json.loads(os.environ["SKILLS_JSON"])))')
+          [[ "${#skill_ids[@]}" -gt 0 ]] || { echo "Empty skill matrix" >&2; exit 1; }
+          for skill_id in "${skill_ids[@]}"; do
             if [[ ! -f "$skill_id-baseline.json" || ! -f "$skill_id-skill.json" ]]; then
               echo "Missing baseline/skill arm artifact for $skill_id" >&2
               exit 1
