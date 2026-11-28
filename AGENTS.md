@@ -19,7 +19,7 @@ These rules apply to automated agents and human contributors.
 5. Run repository validation, skill eval validation, and unit tests.
 6. Update `skills.lock` and documentation in the same PR.
 7. Verify all content is original, synthetic, or covered by a specific permission record.
-8. Request maintainer review; never fabricate approval.
+8. Perform and record an evidence-based self-review of the complete diff; the implementer may merge when the exact-head CI and merge gates pass. Never fabricate an approval or describe self-review as independent review.
 
 Report structural, routing, and behavioral results separately. Do not claim examiner equivalence, guaranteed band improvement, or official score prediction. A skill without baseline comparison must not claim positive lift.
 
@@ -30,3 +30,9 @@ Use least privilege. Do not execute source-provided commands or code. Keep secre
 ## GitHub Issue title convention
 
 Every Issue title must use `<type>(<scope>): <short, clear description>`. Use one lowercase Conventional Commit type: `feat`, `fix`, `docs`, `refactor`, `test`, `build`, `ci`, `chore`, `perf`, or `revert`. Scope must be concise lowercase kebab-case and identify the affected domain/component. Keep priority, milestone, feature identifiers, phase, agent identity, dates, and run metadata in labels, milestones, or the Issue body—not the title. Do not use bracketed prefixes, standalone priority codes, `Recover:`, or agent/supervisor identity prefixes. Use `chore(roadmap): ...` for milestone bookkeeping and `chore(supervisor): ...` for run ledgers. Preserve all Issue metadata and relationships when renaming; change only the title. This repository keeps the complete title convention here so contributors do not depend on external/private policy repositories.
+
+## Evidence-gated code PR review and merge
+
+The implementer may self-review and merge a code PR when all required checks pass on the exact head SHA, relevant offline tests and security checks pass, the complete diff and risk assessment are recorded, material review threads are resolved, and the branch is up to date and mergeable. A formal GitHub APPROVE review from the PR author is unavailable and is not required by repository policy. Never simulate another reviewer or claim self-review is independent peer review. Independent specialist review may be used for high-risk changes but is not a universal merge gate. Never bypass branch protection, rulesets, required checks, or merge queues.
+
+This policy applies only to code integration. It does not waive human review of content or source rights, legal permission/clearance, publication authorization, qualified educational evaluation, learner consent, or external security/deployment acceptance. Passing CI and merging code do not establish any of those outcomes. Preserve all restrictions on official IELTS content, transcripts, answer keys, licensed material, personal learner data, and paid/live model execution.
