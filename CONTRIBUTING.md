@@ -20,7 +20,13 @@ python -m unittest discover -s tests -v
 - [ ] Documentation updated.
 - [ ] No secrets or personal data included.
 
-A passing CI run is not legal approval and does not replace human review.
+A passing CI run is not legal approval and does not replace the required human content/rights review, qualified educational evaluation, or explicit publication authorization. Those are domain acceptance gates, not a mandatory second-person approval for every code PR.
+
+## Evidence-gated code PR review and merge
+
+The implementer may review and merge their own code PR when the complete diff and risk assessment are recorded, all required checks pass on the exact head SHA, relevant offline tests pass, material review threads are resolved, and the branch is up to date and mergeable. GitHub does not allow the PR author to submit a formal approval of their own PR; self-review is recorded as self-review and must never be represented as independent peer review. Independent specialist review is risk-based, not a universal merge prerequisite. Never bypass branch protection, rulesets, required checks, or merge queues.
+
+This code-merge policy does not change content rights, legal clearance, source permissions, human content approval, qualified educational review, learner consent, publication authorization, or production/security acceptance. Do not close those gates based on a merged PR or passing CI.
 
 ## GitHub Issue title convention
 
