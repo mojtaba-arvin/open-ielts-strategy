@@ -98,7 +98,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t skill_ids < <(python -c 'import json, os; print("\\n".join(json.loads(os.environ["SKILLS_JSON"])))')
+          mapfile -t skill_ids < <(python -c 'import json, os; print("\n".join(json.loads(os.environ["SKILLS_JSON"])))')
           [[ "${#skill_ids[@]}" -gt 0 ]] || { echo "Empty skill matrix" >&2; exit 1; }
           for skill_id in "${skill_ids[@]}"; do
             if [[ ! -f "$skill_id-baseline.json" || ! -f "$skill_id-skill.json" ]]; then
