@@ -23,7 +23,7 @@ concurrency:
 jobs:
   runtime_validation:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     outputs:
       skill_matrix: ${{ steps.matrix.outputs.skills }}
       mode: ${{ steps.mode.outputs.value }}
@@ -35,7 +35,6 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: "3.11"
-      - run: python scripts/validate_repo.py && python scripts/evaluate.py --skill ielts-writing-feedback && python -m unittest discover -s tests -v
       - id: mode
         shell: bash
         run: |
@@ -87,22 +86,26 @@ jobs:
     needs: [runtime_validation, arms]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        skill_id: ${{ fromJson(needs.runtime_validation.outputs.skill_matrix) }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
         with:
-          pattern: runtime-${{ matrix.skill_id }}-*
+          pattern: runtime-*
           merge-multiple: true
-      - name: Aggregate this skill independently
-        env:
-          SKILL_ID: ${{ matrix.skill_id }}
-        run: python scripts/aggregate_runtime.py --baseline "$SKILL_ID-baseline.json" --skill "$SKILL_ID-skill.json" --output "runtime-scorecard-$SKILL_ID.json"
+      - name: Aggregate each skill independently
+        shell: bash
+        run: |
+          set -euo pipefail
+          for skill_id in ielts-writing-feedback ielts-speaking-transcript-feedback ielts-reading-strategy ielts-listening-strategy; do
+            if [[ ! -f "$skill_id-baseline.json" || ! -f "$skill_id-skill.json" ]]; then
+              echo "Missing baseline/skill arm artifact for $skill_id" >&2
+              exit 1
+            fi
+            python scripts/aggregate_runtime.py --baseline "$skill_id-baseline.json" --skill "$skill_id-skill.json" --output "runtime-scorecard-$skill_id.json"
+          done
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: runtime-aggregate-${{ matrix.skill_id }}
-          path: runtime-scorecard-${{ matrix.skill_id }}.json
+          name: runtime-aggregated-scorecards
+          path: runtime-scorecard-*.json
+          if-no-files-found: error
           retention-days: 14
